@@ -3,6 +3,14 @@
   "WorkspaceRootPath": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\frontend(max)\\component1.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\frontend(max)\\component1.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
@@ -14,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -26,13 +34,39 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\App.xaml.cs",
+              "RelativeDocumentMoniker": "SecurePassword\\App.xaml.cs",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\App.xaml.cs",
+              "RelativeToolTip": "SecurePassword\\App.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-07T06:59:02.689Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Home.razor",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Components\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "SecurePassword\\Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Components\\Pages\\Home.razor",
+              "RelativeToolTip": "SecurePassword\\Components\\Pages\\Home.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-02-07T06:52:56.81Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "Component1.razor",
               "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Frontend(Max)\\Component1.razor",
               "RelativeDocumentMoniker": "SecurePassword\\Frontend(Max)\\Component1.razor",
               "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Frontend(Max)\\Component1.razor",
               "RelativeToolTip": "SecurePassword\\Frontend(Max)\\Component1.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-02-07T06:44:46.706Z",
               "EditorCaption": ""

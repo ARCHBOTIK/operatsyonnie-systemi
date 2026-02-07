@@ -3,16 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\mainpage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\mainpage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\frontend(max)\\component1.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -26,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -35,19 +31,6 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "MainPage.xaml",
-              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\MainPage.xaml",
-              "RelativeDocumentMoniker": "SecurePassword\\MainPage.xaml",
-              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\MainPage.xaml",
-              "RelativeToolTip": "SecurePassword\\MainPage.xaml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-02-07T06:59:52.62Z",
-              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -64,20 +47,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "Home.razor",
               "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Components\\Pages\\Home.razor",
               "RelativeDocumentMoniker": "SecurePassword\\Components\\Pages\\Home.razor",
               "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Components\\Pages\\Home.razor",
               "RelativeToolTip": "SecurePassword\\Components\\Pages\\Home.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-02-07T06:52:56.81Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "Component1.razor",
               "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Frontend(Max)\\Component1.razor",
               "RelativeDocumentMoniker": "SecurePassword\\Frontend(Max)\\Component1.razor",
