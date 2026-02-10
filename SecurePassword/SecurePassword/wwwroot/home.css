@@ -1,0 +1,288 @@
+:root {
+    --bg: #f3f3f3;
+    --card: #ffffff;
+    --text: #111;
+    --muted: #7a7a7a;
+    --divider: #e6e6e6;
+    --label: #2a9b2a;
+    --radius: 12px;
+    --shadow: 0 1px 0 rgba(0,0,0,.06);
+    --pad: 14px;
+    --gap: 12px;
+    --nav-h: 72px;
+    --fab: #1f9f2f;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: #1aa000; /* зелЄный фон вокруг устройства (как на скрине) */
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--text);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px 0;
+}
+
+/* УЁкран телефонаФ */
+.screen {
+    width: 360px;
+    min-height: 800px;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    border-radius: 0; /* на скрине рамки нет */
+}
+
+/* Top bar */
+.appbar {
+    height: 74px;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 10px;
+    border-bottom: 1px solid var(--divider);
+}
+
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    background: transparent;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+    .icon-btn svg {
+        width: 26px;
+        height: 26px;
+        fill: #111;
+    }
+
+.appbar-title {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Content area leaves room for bottom nav */
+.content {
+    padding: 10px var(--pad) calc(var(--nav-h) + 16px);
+}
+
+/* Section label */
+.section-label {
+    font-size: 12px;
+    letter-spacing: .5px;
+    color: var(--label);
+    font-weight: 700;
+    margin: 10px 4px 8px;
+}
+
+/* Card */
+.card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* Rows */
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    gap: 12px;
+}
+
+.row-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0; /* allows ellipsis */
+}
+
+.row-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.row-right {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+}
+
+.row-sub {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.row-text {
+    min-width: 0;
+}
+
+.divider {
+    height: 1px;
+    background: var(--divider);
+}
+
+/* Small black icons for types */
+.ico img {
+    width: 24px;
+    height: 24px;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+    .ico svg {
+        width: 26px;
+        height: 26px;
+        fill: #111;
+        opacity: .92;
+    }
+
+/* Brands */
+.brand {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.brand-y {
+    background: #e53935;
+}
+/* яндекс */
+.brand-vk {
+    background: #1976d2;
+}
+/* VK */
+.brand-sb {
+    background: #2e7d32;
+}
+/* —бер */
+.brand-g {
+    background: #ffb300;
+}
+/* Google (условно) */
+.brand-gh {
+    background: #111;
+}
+/* GitHub */
+
+/* Kebab menu */
+.kebab {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    background: transparent;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+    .kebab span {
+        display: block;
+        width: 4px;
+        height: 4px;
+        background: #111;
+        border-radius: 50%;
+        margin: 2px 0;
+    }
+
+/* Floating action button */
+.fab {
+    position: absolute;
+    right: 18px;
+    bottom: calc(var(--nav-h) + 18px);
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    border: 0;
+    background: var(--fab);
+    box-shadow: 0 10px 22px rgba(0,0,0,.18);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+    .fab svg {
+        width: 28px;
+        height: 28px;
+        fill: #fff;
+    }
+
+/* Bottom navigation */
+.bottom-nav {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--nav-h);
+    background: var(--card);
+    border-top: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 6px 6px 10px;
+}
+
+.nav-item {
+    flex: 1;
+    text-decoration: none;
+    color: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 0;
+}
+
+.nav-ico svg {
+    width: 22px;
+    height: 22px;
+    fill: #111;
+    opacity: .9;
+}
+
+.nav-text {
+    font-size: 12px;
+    color: #111;
+    opacity: .9;
+}
+
+.nav-item.active .nav-text {
+    color: var(--label);
+    font-weight: 700;
+}
+
+.nav-item.active .nav-ico svg {
+    fill: var(--label);
+    opacity: 1;
+}

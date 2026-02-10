@@ -1,6 +1,199 @@
-﻿<h3>Component1</h3>
+﻿@page "/"
 
 
-@code {
 
-}
+
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Мой сейф</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="screen">
+    <!-- Top app bar -->
+    <header class="appbar">
+      <button class="icon-btn" aria-label="Меню">
+        <!-- hamburger -->
+        <img src="icons/menu.png" alt="Меню" />
+      </button>
+
+      <h1 class="appbar-title">Мой сейф</h1>
+
+      <button class="icon-btn" aria-label="Профиль">
+        <!-- user-circle -->
+        <img src="icons/profile.png" alt="Профили" />
+      </button>
+    </header>
+
+    <!-- Content -->
+    <main class="content">
+      <!-- TYPES -->
+      <div class="section-label">ТИПЫ (4)</div>
+
+      <section class="card">
+        <div class="row">
+          <div class="row-left">
+            <span class="ico">
+              <!-- globe -->
+                            <img src="icons/login.png" alt="Логины" />
+            </span>
+            <span class="row-title">Логины</span>
+          </div>
+          <span class="row-right">5</span>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="ico">
+              <!-- card -->
+                            <img src="icons/card.png" alt="Карты" />
+            </span>
+            <span class="row-title">Карты</span>
+          </div>
+          <span class="row-right">2</span>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="ico">
+              <!-- person -->
+                            <img src="icons/person.png" alt="Личность" />
+            </span>
+            <span class="row-title">Личность</span>
+          </div>
+          <span class="row-right">0</span>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="ico">
+              <!-- note -->
+                            <img src="icons/secure_note.png" alt="Защищённая заметка" />
+            </span>
+            <span class="row-title">Защищённая заметка</span>
+          </div>
+          <span class="row-right">0</span>
+        </div>
+      </section>
+
+      <!-- WITHOUT FOLDERS -->
+      <div class="section-label">БЕЗ ПАПОК (5)</div>
+
+      <section class="card">
+        <div class="row">
+          <div class="row-left">
+            <span class="brand brand-y">Я</span>
+            <div class="row-text">
+              <div class="row-title">Яндекс</div>
+              <div class="row-sub">ivan.ivanov@mail.ru</div>
+            </div>
+          </div>
+          <button class="kebab" aria-label="Действия">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="brand brand-vk">vk</span>
+            <div class="row-text">
+              <div class="row-title">ВКонтакте</div>
+              <div class="row-sub">ivan.ivanov@mail.ru</div>
+            </div>
+          </div>
+          <button class="kebab" aria-label="Действия">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="brand brand-sb">S</span>
+            <div class="row-text">
+              <div class="row-title">СберБанк</div>
+              <div class="row-sub">i.ivanov@mail.ru</div>
+            </div>
+          </div>
+          <button class="kebab" aria-label="Действия">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="brand brand-g">G</span>
+            <div class="row-text">
+              <div class="row-title">Google</div>
+              <div class="row-sub">i.ivanov@mail.ru</div>
+            </div>
+          </div>
+          <button class="kebab" aria-label="Действия">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+        <div class="divider"></div>
+
+        <div class="row">
+          <div class="row-left">
+            <span class="brand brand-gh">GH</span>
+            <div class="row-text">
+              <div class="row-title">GitHub</div>
+              <div class="row-sub">i.ivanov@mail.ru</div>
+            </div>
+          </div>
+          <button class="kebab" aria-label="Действия">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Floating action button -->
+      <button class="fab" aria-label="Добавить">
+        <img src="icons/plus.png" alt="Добавить" />
+      </button>
+    </main>
+
+    <!-- Bottom nav -->
+    <nav class="bottom-nav" aria-label="Навигация">
+      <a class="nav-item active" href="#">
+        <span class="nav-ico">
+                    <img src="icons/mech.png" alt="Сейф" />
+        </span>
+        <span class="nav-text">Мой сейф</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <span class="nav-ico">
+                    <img src="icons/send.png" alt="Отправка" />
+        </span>
+        <span class="nav-text">Отправка</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <span class="nav-ico">
+                    <img src="icons/generator.png" alt="Генератор" />
+        </span>
+        <span class="nav-text">Генератор</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <span class="nav-ico">
+                    <img src="icons/settings.png" alt="Настройки" />
+        </span>
+        <span class="nav-text">Настройки</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>
+
+
