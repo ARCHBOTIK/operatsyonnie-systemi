@@ -1,5 +1,15 @@
 ﻿using Microsoft.Extensions.Logging;
 
+#if WINDOWS
+using System.Runtime.InteropServices;
+using Microsoft.UI.Windowing;
+using Microsoft.UI;
+using Microsoft.Maui.Handlers;
+using WinRT.Interop;
+using Windows.Graphics;
+
+#endif
+
 namespace SecurePassword
 {
     public static class MauiProgram
@@ -19,6 +29,28 @@ namespace SecurePassword
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
+#endif
+
+#if WINDOWS
+        // Выполнится, когда WindowHandler создастся (т.е. окно уже реально существует)
+        WindowHandler.Mapper.AppendToMapping("PhoneSize", (handler, view) =>
+        {
+            const int W = 400;
+            const int H = 800;
+
+            var window = handler.PlatformView; // Microsoft.UI.Xaml.Window
+            var hwnd = WindowNative.GetWindowHandle(window);
+            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+            appWindow.Resize(new SizeInt32(W, H));
+
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.IsResizable = false;
+                presenter.IsMaximizable = false;
+            }
+        });
 #endif
 
             return builder.Build();

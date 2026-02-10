@@ -19,31 +19,30 @@
 
 html, body {
     height: 100%;
+    margin: 0;
 }
 
+
 body {
-    margin: 0;
-    background: #1aa000; /* зелЄный фон вокруг устройства (как на скрине) */
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    color: var(--text);
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 16px 0;
+    background: #fff;
+    padding: 0;
+    display: block;
+    overflow: hidden;
 }
 
 /* УЁкран телефонаФ */
 .screen {
-    width: 360px;
-    min-height: 800px;
+    height: 100dvh; 
+    display: flex;
+    flex-direction: column;
     background: var(--bg);
-    position: relative;
-    overflow: hidden;
-    border-radius: 0; /* на скрине рамки нет */
+    overflow: hidden; 
+    position: relative; 
 }
 
 /* Top bar */
 .appbar {
+    flex: 0 0 auto;
     height: 74px;
     background: var(--card);
     display: flex;
@@ -70,6 +69,14 @@ body {
         fill: #111;
     }
 
+.without-folders-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    max-height: calc(100dvh - 74px - var(--nav-h) - 120px);
+
+}
+
 .appbar-title {
     margin: 0;
     flex: 1;
@@ -80,7 +87,9 @@ body {
 
 /* Content area leaves room for bottom nav */
 .content {
-    padding: 10px var(--pad) calc(var(--nav-h) + 16px);
+    flex: 1 1 auto;
+    overflow: hidden; 
+    padding: 10px var(--pad) 16px;
 }
 
 /* Section label */
@@ -218,7 +227,7 @@ body {
 
 /* Floating action button */
 .fab {
-    position: absolute;
+    position: fixed;
     right: 18px;
     bottom: calc(var(--nav-h) + 18px);
     width: 56px;
@@ -230,6 +239,7 @@ body {
     display: grid;
     place-items: center;
     cursor: pointer;
+    z-index: 20;
 }
 
     .fab svg {
@@ -240,10 +250,11 @@ body {
 
 /* Bottom navigation */
 .bottom-nav {
-    position: absolute;
+    flex: 0 0 auto;
+    position: relative;
+    bottom: 0;
     left: 0;
     right: 0;
-    bottom: 0;
     height: var(--nav-h);
     background: var(--card);
     border-top: 1px solid var(--divider);
@@ -251,6 +262,7 @@ body {
     align-items: center;
     justify-content: space-around;
     padding: 6px 6px 10px;
+    z-index: 10;
 }
 
 .nav-item {
