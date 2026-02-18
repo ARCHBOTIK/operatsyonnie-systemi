@@ -1,84 +1,5 @@
 ﻿@page "/"
 
-
-@*
-@code {
-    private enum ItemType { Password, Card, Note }
-    private ItemType selectedType = ItemType.Password;
-
-    // Общие поля
-    private string title = "";
-    
-    // Поля для пароля
-    private string login = "";
-    private string password = "";
-    
-    // Поля для карточки
-    private string cardNumber = "";
-    private string cardHolder = "";
-    private string expiryDate = "";
-    private string cvv = "";
-    
-    // Поля для заметки
-    private string noteTitle = "";
-    private string noteContent = "";
-
-    private bool showAddForm = false;
-
-    private void SaveItem()
-    {
-        Console.WriteLine($"Сохранение {selectedType}:");
-        
-        switch (selectedType)
-        {
-            case ItemType.Password:
-                Console.WriteLine($"  Название: {title}");
-                Console.WriteLine($"  Логин: {login}");
-                Console.WriteLine($"  Пароль: {password}");
-                break;
-            case ItemType.Card:
-                Console.WriteLine($"  Название: {title}");
-                Console.WriteLine($"  Номер: {cardNumber}");
-                Console.WriteLine($"  Владелец: {cardHolder}");
-                Console.WriteLine($"  Срок: {expiryDate}");
-                Console.WriteLine($"  CVV: {cvv}");
-                break;
-            case ItemType.Note:
-                Console.WriteLine($"  Название заметки: {noteTitle}");
-                Console.WriteLine($"  Содержание: {noteContent}");
-                break;
-        }
-        
-        // Очистка формы
-        title = "";
-        login = "";
-        password = "";
-        cardNumber = "";
-        cardHolder = "";
-        expiryDate = "";
-        cvv = "";
-        noteTitle = "";
-        noteContent = "";
-        
-        showAddForm = false;
-    }
-
-    private void ToggleForm()
-    {
-        showAddForm = !showAddForm;
-        if (showAddForm)
-        {
-            selectedType = ItemType.Password;
-        }
-    }
-
-    private void CloseForm()
-    {
-        showAddForm = false;
-    }
-}
-*@
-
 <!doctype html>
 <html lang="ru">
 <head>
@@ -105,7 +26,7 @@
         <!-- Content -->
         <main class="content">
 
-            <!-- Форма добавления -->
+            <!-- ФОРМА ДОБАВЛЕНИЯ -->
             @*
             @if (showAddForm)
             {
@@ -147,7 +68,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="password">Пароль</label>
-                                        <input type="password" id="password" class="form-control" @bind="password" placeholder="········" />
+                                        <input type="password" id="password" class="form-control" @bind="password" placeholder="········" maxlength="100" />
                                     </div>
                                 </div>
                             }
@@ -209,145 +130,186 @@
             }
             *@
 
+            <!-- КАТЕГОРИИ -->
+            <div class="section-label">КАТЕГОРИИ (4)</div>
 
-            <!-- TYPES -->
-            <div class="section-label">ТИПЫ (4)</div>
-
+            <!-- Логины -->
             <section class="card">
-                <div class="row">
+                <div class="row" @onclick="() => ToggleCategory(0)">
                     <div class="row-left">
                         <span class="ico">
                             <img src="icons/login.png" alt="Логины" />
                         </span>
                         <span class="row-title">Логины</span>
                     </div>
-                    <span class="row-right">5</span>
+                    <div>
+                        <span class="row-right">4</span>
+                        <span> @(expandedIndex == 0 ? "▼" : "▶")</span>
+                    </div>
                 </div>
-                <div class="divider"></div>
+                
+                @if (expandedIndex == 0)
+                {
+                    <div>
+                        <div class="divider"></div>
+                        <!-- Яндекс -->
+                        <div class="row">
+                            <div class="row-left">
+                                <span class="brand">
+                                    <img src="passwords/yandex.png" alt="Яндекс" width="40" height="40" />
+                                </span>
+                                <div class="row-text">
+                                    <div class="row-title">Яндекс</div>
+                                    <div class="row-sub">ivan.ivanov@mail.ru</div>
+                                </div>
+                            </div>
+                            <button class="kebab" aria-label="Действия">
+                                <span></span><span></span><span></span>
+                            </button>
+                        </div>
+                        <div class="divider"></div>
+                        <!-- Google -->
+                        <div class="row">
+                            <div class="row-left">
+                                <span class="brand">
+                                    <img src="passwords/google.webp" alt="Google" width="40" height="40" />
+                                </span>
+                                <div class="row-text">
+                                    <div class="row-title">Google</div>
+                                    <div class="row-sub">i.ivanov@mail.ru</div>
+                                </div>
+                            </div>
+                            <button class="kebab" aria-label="Действия">
+                                <span></span><span></span><span></span>
+                            </button>
+                        </div>
+                        <div class="divider"></div>
+                        <!-- GitHub -->
+                        <div class="row">
+                            <div class="row-left">
+                                <span class="brand">
+                                    <img src="passwords/github.jpg" alt="GitHub" width="40" height="40" />
+                                </span>
+                                <div class="row-text">
+                                    <div class="row-title">GitHub</div>
+                                    <div class="row-sub">i.ivanov@mail.ru</div>
+                                </div>
+                            </div>
+                            <button class="kebab" aria-label="Действия">
+                                <span></span><span></span><span></span>
+                            </button>
+                        </div>
+                        <div class="divider"></div>
+                        <!-- ВКонтакте -->
+                        <div class="row">
+                            <div class="row-left">
+                                <span class="brand">
+                                    <img src="passwords/vk.jpg" alt="ВКонтакте" width="40" height="40" />
+                                </span>
+                                <div class="row-text">
+                                    <div class="row-title">ВКонтакте</div>
+                                    <div class="row-sub">ivan.ivanov@mail.ru</div>
+                                </div>
+                            </div>
+                            <button class="kebab" aria-label="Действия">
+                                <span></span><span></span><span></span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </section>
 
-                <div class="row">
+            <!-- Карты (только СберБанк) -->
+            <section class="card">
+                <div class="row" @onclick="() => ToggleCategory(1)">
                     <div class="row-left">
                         <span class="ico">
                             <img src="icons/card.png" alt="Карты" />
                         </span>
                         <span class="row-title">Карты</span>
                     </div>
-                    <span class="row-right">2</span>
+                    <div>
+                        <span class="row-right">1</span>
+                        <span> @(expandedIndex == 1 ? "▼" : "▶")</span>
+                    </div>
                 </div>
-                <div class="divider"></div>
+                
+                @if (expandedIndex == 1)
+                {
+                    <div>
+                        <div class="divider"></div>
+                        <!-- Только СберБанк -->
+                        <div class="row">
+                            <div class="row-left">
+                                <span class="brand">
+                                    <img src="passwords/sber.jpg" alt="СберБанк" width="40" height="40" />
+                                </span>
+                                <div class="row-text">
+                                    <div class="row-title">СберБанк</div>
+                                    <div class="row-sub">i.ivanov@mail.ru</div>
+                                </div>
+                            </div>
+                            <button class="kebab" aria-label="Действия">
+                                <span></span><span></span><span></span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </section>
 
-                <div class="row">
+            <!-- Личность -->
+            <section class="card">
+                <div class="row" @onclick="() => ToggleCategory(2)">
                     <div class="row-left">
                         <span class="ico">
                             <img src="icons/person.png" alt="Личность" />
                         </span>
                         <span class="row-title">Личность</span>
                     </div>
-                    <span class="row-right">0</span>
+                    <div>
+                        <span class="row-right">0</span>
+                        <span> @(expandedIndex == 2 ? "▼" : "▶")</span>
+                    </div>
                 </div>
-                <div class="divider"></div>
+                
+                @if (expandedIndex == 2)
+                {
+                    <div>
+                        <div class="divider"></div>
+                        <div class="row">
+                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                        </div>
+                    </div>
+                }
+            </section>
 
-                <div class="row">
+            <!-- Защищённая заметка -->
+            <section class="card">
+                <div class="row" @onclick="() => ToggleCategory(3)">
                     <div class="row-left">
                         <span class="ico">
                             <img src="icons/secure_note.png" alt="Защищённая заметка" />
                         </span>
                         <span class="row-title">Защищённая заметка</span>
                     </div>
-                    <span class="row-right">0</span>
+                    <div>
+                        <span class="row-right">0</span>
+                        <span> @(expandedIndex == 3 ? "▼" : "▶")</span>
+                    </div>
                 </div>
+                
+                @if (expandedIndex == 3)
+                {
+                    <div>
+                        <div class="divider"></div>
+                        <div class="row">
+                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                        </div>
+                    </div>
+                }
             </section>
 
-            <!-- WITHOUT FOLDERS -->
-            <div class="section-label">БЕЗ ПАПОК (5)</div>
-
-            <section class="card">
-                <!-- Яндекс -->
-                <div class="row">
-                    <div class="row-left">
-                        <span class="brand">
-                            <img src="passwords/yandex.png" alt="Яндекс" width="40" height="40" />
-                        </span>
-                        <div class="row-text">
-                            <div class="row-title">Яндекс</div>
-                            <div class="row-sub">ivan.ivanov@mail.ru</div>
-                        </div>
-                    </div>
-                    <button class="kebab" aria-label="Действия">
-                        <span></span><span></span><span></span>
-                    </button>
-                </div>
-                <div class="divider"></div>
-
-                <!-- ВКонтакте -->
-                <div class="row">
-                    <div class="row-left">
-                        <span class="brand">
-                            <img src="passwords/vk.jpg" alt="ВКонтакте" width="40" height="40" />
-                        </span>
-                        <div class="row-text">
-                            <div class="row-title">ВКонтакте</div>
-                            <div class="row-sub">ivan.ivanov@mail.ru</div>
-                        </div>
-                    </div>
-                    <button class="kebab" aria-label="Действия">
-                        <span></span><span></span><span></span>
-                    </button>
-                </div>
-                <div class="divider"></div>
-
-                <!-- СберБанк -->
-                <div class="row">
-                    <div class="row-left">
-                        <span class="brand">
-                            <img src="passwords/sber.jpg" alt="СберБанк" width="40" height="40" />
-                        </span>
-                        <div class="row-text">
-                            <div class="row-title">СберБанк</div>
-                            <div class="row-sub">i.ivanov@mail.ru</div>
-                        </div>
-                    </div>
-                    <button class="kebab" aria-label="Действия">
-                        <span></span><span></span><span></span>
-                    </button>
-                </div>
-                <div class="divider"></div>
-
-                <!-- Google -->
-                <div class="row">
-                    <div class="row-left">
-                        <span class="brand">
-                            <img src="passwords/google.webp" alt="Google" width="40" height="40" />
-                        </span>
-                        <div class="row-text">
-                            <div class="row-title">Google</div>
-                            <div class="row-sub">i.ivanov@mail.ru</div>
-                        </div>
-                    </div>
-                    <button class="kebab" aria-label="Действия">
-                        <span></span><span></span><span></span>
-                    </button>
-                </div>
-                <div class="divider"></div>
-
-                <!-- GitHub -->
-                <div class="row">
-                    <div class="row-left">
-                        <span class="brand">
-                            <img src="passwords/github.jpg" alt="GitHub" width="40" height="40" />
-                        </span>
-                        <div class="row-text">
-                            <div class="row-title">GitHub</div>
-                            <div class="row-sub">i.ivanov@mail.ru</div>
-                        </div>
-                    </div>
-                    <button class="kebab" aria-label="Действия">
-                        <span></span><span></span><span></span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- Floating action button (просто иконка, без функционала) -->
+            <!-- Floating action button -->
             <button class="fab" aria-label="Добавить">
                 <img src="icons/plus.png" alt="Добавить" />
             </button>
@@ -386,3 +348,81 @@
     </div>
 </body>
 </html>
+
+@code {
+    private int expandedIndex = 0; // 0-логины, 1-карты, 2-личность, 3-заметки
+
+    private void ToggleCategory(int index)
+    {
+        if (expandedIndex == index)
+            expandedIndex = -1; // сворачиваем
+        else
+            expandedIndex = index; // разворачиваем выбранную
+    }
+
+    // Код для формы
+    /*
+    private enum ItemType { Password, Card, Note }
+    private ItemType selectedType = ItemType.Password;
+
+    private string title = "";
+    private string login = "";
+    private string password = "";
+    private string cardNumber = "";
+    private string cardHolder = "";
+    private string expiryDate = "";
+    private string cvv = "";
+    private string noteTitle = "";
+    private string noteContent = "";
+
+    private bool showAddForm = false;
+
+    private void OpenForm()
+    {
+        showAddForm = true;
+        selectedType = ItemType.Password;
+    }
+
+    private void SaveItem()
+    {
+        Console.WriteLine($"Сохранение {selectedType}:");
+        
+        switch (selectedType)
+        {
+            case ItemType.Password:
+                Console.WriteLine($"  Название: {title}");
+                Console.WriteLine($"  Логин: {login}");
+                Console.WriteLine($"  Пароль: {password}");
+                break;
+            case ItemType.Card:
+                Console.WriteLine($"  Название: {title}");
+                Console.WriteLine($"  Номер: {cardNumber}");
+                Console.WriteLine($"  Владелец: {cardHolder}");
+                Console.WriteLine($"  Срок: {expiryDate}");
+                Console.WriteLine($"  CVV: {cvv}");
+                break;
+            case ItemType.Note:
+                Console.WriteLine($"  Название заметки: {noteTitle}");
+                Console.WriteLine($"  Содержание: {noteContent}");
+                break;
+        }
+        
+        title = "";
+        login = "";
+        password = "";
+        cardNumber = "";
+        cardHolder = "";
+        expiryDate = "";
+        cvv = "";
+        noteTitle = "";
+        noteContent = "";
+        
+        showAddForm = false;
+    }
+
+    private void CloseForm()
+    {
+        showAddForm = false;
+    }
+    */
+}
