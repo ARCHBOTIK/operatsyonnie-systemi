@@ -48,21 +48,13 @@ public class ServiceImageGenerator
 
     public static string GetInitials(string text)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            return "?";
-
-        var cleanText = new string(text.Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)).ToArray());
-
-        if (string.IsNullOrEmpty(cleanText))
-            return "?";
-
-        if (!cleanText.Contains(" "))
-        {
-            return cleanText.Length >= 2
-                ? cleanText.Substring(0, 2).ToUpper()
-                : cleanText.Substring(0, 1).ToUpper();
-        }
-
+        string[] strings = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (strings.Length == 0)
+            throw new ArgumentException("Название должно содержать символы, передаваемая строка не может быть пустой");
+        return (strings.Length < 2) 
+            ? strings[0][0].ToString().ToUpper() 
+            : strings[0][0].ToString().ToUpper()+ strings[1][0].ToString().ToUpper();
+    }
         var words = cleanText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
         if (words.Length >= 2)
@@ -161,3 +153,4 @@ public class ServiceImageGenerator
         return (imageBytes, color1, color2, ColorToHex(color1), ColorToHex(color2));
     } // Возвращает и картинку, и цвета
 }
+
