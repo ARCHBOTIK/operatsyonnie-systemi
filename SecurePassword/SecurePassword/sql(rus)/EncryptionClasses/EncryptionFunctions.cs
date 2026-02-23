@@ -3,6 +3,7 @@ using System.Text;
 using System.Security.Cryptography;
 using Konscious.Security.Cryptography;
 using System.Net.WebSockets;
+using Org.Apache.Http.Conn;
 namespace SecurePassword;
 
 public class EncryptionFunctions : IEncryptionFunctions
@@ -63,7 +64,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         {
             aesGcm.Encrypt(nonce, dek, ciphertext, tag); //Применение самого алгоритма шифрования
         }
-        byte[] encryptedDEK = PackDEK(nonce, tag, ciphertext); //Объединение данных в одну структуру чтобы не терять ее и шифровать как одно поле
+        byte[] encryptedDEK = PackAESGCMData(nonce, tag, ciphertext); //Объединение данных в одну структуру чтобы не терять ее и шифровать как одно поле
         return encryptedDEK;
     }
 
@@ -72,7 +73,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         byte[] nonce = new byte[12];
         byte[] tag = new byte[16];
         byte[] ciphertext = new byte[encryptedDEK.Length - 12 - 16];
-        UnpackDEK(encryptedDEK, out nonce, out tag, out ciphertext); //Распаковка данных о зашифрованном DEK
+        UnpackAESGCMData(encryptedDEK, out nonce, out tag, out ciphertext); //Распаковка данных о зашифрованном DEK
         byte[] dek = new byte[encryptedDEK.Length - 12 - 16];
         using (var aesGcm = new AesGcm(kek, kek.Length))
         {
@@ -81,7 +82,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         return dek;
     }
 
-    public static byte[] PackDEK(byte[] nonce, byte[] tag, byte[] ciphertext)
+    public static byte[] PackAESGCMData(byte[] nonce, byte[] tag, byte[] ciphertext)
     {
         byte[] pack = new byte[nonce.Length + tag.Length + ciphertext.Length];
         Buffer.BlockCopy(nonce, 0, pack, 0, nonce.Length); //По сути просто записали данные подряд в одну байтовую строчку
@@ -90,7 +91,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         return pack;
     }
 
-    public static void UnpackDEK(byte[] pack, out byte[] nonce, out byte[] tag, out byte[] ciphertext)
+    public static void UnpackAESGCMData(byte[] pack, out byte[] nonce, out byte[] tag, out byte[] ciphertext)
     {
         nonce = new byte[12];
         tag = new byte[16];
@@ -98,5 +99,32 @@ public class EncryptionFunctions : IEncryptionFunctions
         Buffer.BlockCopy(pack, 0, nonce, 0, 12); //Аналогично упаковке, просто читаем байты от нужного места до нужного
         Buffer.BlockCopy(pack, 12, tag, 0, 16);
         Buffer.BlockCopy(pack, 12 + 16, ciphertext, 0, ciphertext.Length);
+    }
+
+    public static byte[] EncryptData(byte[] dek, byte[] plaintext) //Та же самая функция для шифрования, только для данных произвольной длины. Может, объединю потом
+    {
+        byte[] dataNonce = RandomNumberGenerator.GetBytes(12);
+        byte[] ciphertextData = new byte[plaintext.Length]; //Длина уже не обязательно 32 байта
+        byte[] dataTag = new byte[16];
+        using (var aes = new AesGcm(dek, dek.Length))
+        {
+            aes.Encrypt(dataNonce, plaintext, ciphertextData, dataTag);
+        }
+        byte[] encryptedData = PackAESGCMData(dataNonce, dataTag, ciphertextData);
+        return encryptedData;
+    }
+
+    public static byte[] DecryptData(byte[] dek, byte[] encryptedData) //Аналогично, функция для расшифровки данных произвольного размера с помощью AESGCM
+    {
+        byte[] nonce = new byte[12];
+        byte[] tag = new byte[16];
+        byte[] ciphertext = new byte[encryptedData.Length - 12 - 16];
+        UnpackAESGCMData(encryptedData, out nonce, out tag, out ciphertext);
+        byte[] plaintext = new byte[ciphertext.Length];
+        using (var aes = new AesGcm(dek, dek.Length))
+        {
+            aes.Decrypt(nonce, ciphertext, tag, plaintext);
+        }
+        return plaintext;
     }
 }
