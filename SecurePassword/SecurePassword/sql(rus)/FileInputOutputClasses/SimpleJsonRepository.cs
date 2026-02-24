@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text.Json;
 namespace SecurePassword;
 
-public class SimpleJsonRepository<T> where T : IHasID //Класс для обычной работы с файлами JSON, без шифрования
+public class SimpleJsonRepository<T> where T : IHasID //Класс для обычной работы с файлами JSON, без шифрования. Для тестов, а лучше вообще не трогать
 {
     private readonly string _filename;
     private List<T> _items;
