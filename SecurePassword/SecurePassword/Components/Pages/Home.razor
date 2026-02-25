@@ -7,20 +7,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Мой сейф</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Запрет выделения для всех элементов интерфейса */
+.appbar,
+.appbar *,
+.content,
+.content *,
+.bottom-nav,
+.bottom-nav *,
+.card,
+.card *,
+.row,
+.row *,
+.ico,
+.brand,
+.kebab,
+.fab,
+.section-label,
+.search-button,
+.search-button * {
+    user-select: none;
+    -webkit-user-select: none; /* для Safari */
+    -moz-user-select: none;    /* для Firefox */
+    -ms-user-select: none;     /* для IE/Edge */
+}
+
+/* Разрешить выделение только в полях ввода (если они есть) */
+input,
+textarea {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 85%;                  
+        max-width: 380px;             
+        min-width: 280px;             
+        display: flex;
+        justify-content: space-around;
+        background: white;
+        border-top: 1px solid #eee;
+        border-radius: 25px 25px 0 0;  
+        padding: 8px 12px;
+        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        margin-bottom: 0;
+        height: 65px;
+        align-items: center;
+    }
+    @@media (max-width: 380px) {
+        .bottom-nav {
+            width: 95%;
+            padding: 8px 6px;
+        }
+        .nav-text {
+            font-size: 10px;
+        }
+        .nav-ico img {
+            width: 22px;
+            height: 22px;
+        }
+    }
+    @@media (min-width: 600px) {
+        .bottom-nav {
+            width: 70%;
+            max-width: 450px;
+        }
+    }
+    .content {
+        padding-bottom: 80px;
+    }
+</style>
 </head>
 <body>
     <div class="screen">
         <!-- Top app bar -->
         <header class="appbar">
-            <button class="icon-btn" aria-label="Меню">
-                <img src="icons/menu.png" alt="Меню" />
-            </button>
 
             <h1 class="appbar-title">Мой сейф</h1>
 
-            <button class="icon-btn" aria-label="Профиль">
-                <img src="icons/profile.png" alt="Профили" />
-            </button>
         </header>
 
         <!-- Content -->
@@ -131,7 +201,7 @@
             *@
 
             <!-- КАТЕГОРИИ -->
-            <div class="section-label">КАТЕГОРИИ (4)</div>
+            <div class="section-label">КАТЕГОРИИ (3)</div>
 
             <!-- Логины -->
             <section class="card">
@@ -257,14 +327,16 @@
                 }
             </section>
 
-            <!-- Личность -->
+         
+
+            <!-- Защищённая заметка -->
             <section class="card">
                 <div class="row" @onclick="() => ToggleCategory(2)">
                     <div class="row-left">
                         <span class="ico">
-                            <img src="icons/person.png" alt="Личность" />
+                            <img src="icons/note.png" alt="Защищённая заметка" />
                         </span>
-                        <span class="row-title">Личность</span>
+                        <span class="row-title">Защищённая заметка</span>
                     </div>
                     <div>
                         <span class="row-right">0</span>
@@ -273,32 +345,6 @@
                 </div>
                 
                 @if (expandedIndex == 2)
-                {
-                    <div>
-                        <div class="divider"></div>
-                        <div class="row">
-                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
-                        </div>
-                    </div>
-                }
-            </section>
-
-            <!-- Защищённая заметка -->
-            <section class="card">
-                <div class="row" @onclick="() => ToggleCategory(3)">
-                    <div class="row-left">
-                        <span class="ico">
-                            <img src="icons/secure_note.png" alt="Защищённая заметка" />
-                        </span>
-                        <span class="row-title">Защищённая заметка</span>
-                    </div>
-                    <div>
-                        <span class="row-right">0</span>
-                        <span> @(expandedIndex == 3 ? "▼" : "▶")</span>
-                    </div>
-                </div>
-                
-                @if (expandedIndex == 3)
                 {
                     <div>
                         <div class="divider"></div>
@@ -350,7 +396,7 @@
 </html>
 
 @code {
-    private int expandedIndex = 0; // 0-логины, 1-карты, 2-личность, 3-заметки
+   private int expandedIndex = 0; // 0-логины, 1-карты, 2-заметки
 
     private void ToggleCategory(int index)
     {

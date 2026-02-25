@@ -55,18 +55,7 @@ public class ServiceImageGenerator
             ? strings[0][0].ToString().ToUpper() 
             : strings[0][0].ToString().ToUpper()+ strings[1][0].ToString().ToUpper();
     }
-        var words = cleanText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-        if (words.Length >= 2)
-        {
-            return $"{words[0][0]}{words[1][0]}".ToUpper();
-        }
-
-        return words[0].Length >= 2
-            ? words[0].Substring(0, 2).ToUpper()
-            : words[0].Substring(0, 1).ToUpper();
-    } // Берет инициалы
-
+       
     public static (int Hash1, int Hash2) GenerateTwoHashes(string input) 
     {
         if (string.IsNullOrEmpty(input))
