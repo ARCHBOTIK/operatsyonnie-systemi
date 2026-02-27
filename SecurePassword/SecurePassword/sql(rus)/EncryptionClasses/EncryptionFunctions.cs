@@ -3,7 +3,6 @@ using System.Text;
 using System.Security.Cryptography;
 using Konscious.Security.Cryptography;
 using System.Net.WebSockets;
-using Org.Apache.Http.Conn;
 namespace SecurePassword;
 
 public class EncryptionFunctions : IEncryptionFunctions

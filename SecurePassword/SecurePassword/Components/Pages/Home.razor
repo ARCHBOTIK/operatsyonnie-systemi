@@ -7,100 +7,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Мой сейф</title>
     <link rel="stylesheet" href="styles.css" />
-    <style>
-        /* Запрет выделения для всех элементов интерфейса */
-.appbar,
-.appbar *,
-.content,
-.content *,
-.bottom-nav,
-.bottom-nav *,
-.card,
-.card *,
-.row,
-.row *,
-.ico,
-.brand,
-.kebab,
-.fab,
-.section-label,
-.search-button,
-.search-button * {
-    user-select: none;
-    -webkit-user-select: none; /* для Safari */
-    -moz-user-select: none;    /* для Firefox */
-    -ms-user-select: none;     /* для IE/Edge */
-}
-
-/* Разрешить выделение только в полях ввода (если они есть) */
-input,
-textarea {
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-}
-    .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 85%;                  
-        max-width: 380px;             
-        min-width: 280px;             
-        display: flex;
-        justify-content: space-around;
-        background: white;
-        border-top: 1px solid #eee;
-        border-radius: 25px 25px 0 0;  
-        padding: 8px 12px;
-        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
-        z-index: 100;
-        margin-bottom: 0;
-        height: 65px;
-        align-items: center;
-    }
-    @@media (max-width: 380px) {
-        .bottom-nav {
-            width: 95%;
-            padding: 8px 6px;
-        }
-        .nav-text {
-            font-size: 10px;
-        }
-        .nav-ico img {
-            width: 22px;
-            height: 22px;
-        }
-    }
-    @@media (min-width: 600px) {
-        .bottom-nav {
-            width: 70%;
-            max-width: 450px;
-        }
-    }
-    .content {
-        padding-bottom: 80px;
-    }
-</style>
 </head>
 <body>
     <div class="screen">
         <!-- Top app bar -->
         <header class="appbar">
-
             <h1 class="appbar-title">Мой сейф</h1>
-
         </header>
 
         <!-- Content -->
         <main class="content">
-
             <!-- ФОРМА ДОБАВЛЕНИЯ -->
-            @*
             @if (showAddForm)
             {
-                <div class="modal-overlay" @onclick="CloseForm">
+                <div class="modal-overlay" @onclick="SetFormState">
                     <div class="modal-container" @onclick:stopPropagation="true">
                         <div class="modal-header">
                             <h2>Добавление нового элемента</h2>
@@ -146,27 +66,83 @@ textarea {
                             @if (selectedType == ItemType.Card)
                             {
                                 <div class="card-form">
+
+                                    <!-- CARD INPUT SURFACE -->
+                                    <div class="card-input"
+                                         tabindex="0"
+                                         @onclick="() => FocusField(CardField.Number)">
+
+                                        <div class="card-chip"></div>
+
+                                        <div class="card-line">
+                                            <div class="card-label">Номер</div>
+                                            <div class="card-value card-value-mono @( _activeField == CardField.Number ? "is-active" : "" )">
+                                                @(string.IsNullOrWhiteSpace(cardNumber) ? "1234 5678 9012 3456" : cardNumber)
+                                            </div>
+                                        </div>
+
+                                        <div class="card-grid">
+                                            <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Holder)">
+                                                <div class="card-label">Владелец</div>
+                                                <div class="card-value @( _activeField == CardField.Holder ? "is-active" : "" )">
+                                                    @(string.IsNullOrWhiteSpace(cardHolder) ? "IVAN IVANOV" : cardHolder.ToUpperInvariant())
+                                                </div>
+                                            </div>
+
+                                            <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Exp)">
+                                                <div class="card-label">Срок</div>
+                                                <div class="card-value card-value-mono @( _activeField == CardField.Exp ? "is-active" : "" )">
+                                                    @(string.IsNullOrWhiteSpace(expiryDate) ? "MM/YY" : expiryDate)
+                                                </div>
+                                            </div>
+
+                                            <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Cvv)">
+                                                <div class="card-label">CVV</div>
+                                                <div class="card-value card-value-mono @( _activeField == CardField.Cvv ? "is-active" : "" )">
+                                                    @(string.IsNullOrWhiteSpace(cvv) ? "•••" : new string('•', cvv.Length))
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Минимальные поля (можно оставить, можно спрятать визуально) -->
+                                    <div class="card-hidden-inputs">
+                                        <input id="cardNumberInput"
+                                               class="form-control"
+                                               inputmode="numeric"
+                                               autocomplete="cc-number"
+                                               maxlength="19"
+                                               value="@cardNumber"
+                                               @oninput="OnCardNumberInput" />
+
+                                        <input id="cardHolderInput"
+                                               class="form-control"
+                                               autocomplete="cc-name"
+                                               value="@cardHolder"
+                                               @oninput="OnCardHolderInput" />
+
+                                        <div class="form-row">
+                                            <input id="expiryInput"
+                                                   class="form-control"
+                                                   inputmode="numeric"
+                                                   autocomplete="cc-exp"
+                                                   maxlength="5"
+                                                   value="@expiryDate"
+                                                   @oninput="OnExpiryInput" />
+
+                                            <input id="cvvInput"
+                                                   class="form-control"
+                                                   inputmode="numeric"
+                                                   autocomplete="cc-csc"
+                                                   maxlength="3"
+                                                   value="@cvv"
+                                                   @oninput="OnCvvInput" />
+                                        </div>
+                                    </div>
+
                                     <div class="form-group">
                                         <label for="title">Название карты</label>
-                                        <input type="text" id="title" class="form-control" @bind="title" placeholder="Карта" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cardNumber">Номер карты</label>
-                                        <input type="text" id="cardNumber" class="form-control" @bind="cardNumber" placeholder="1234 5678 9012 3456" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cardHolder">Владелец</label>
-                                        <input type="text" id="cardHolder" class="form-control" @bind="cardHolder" placeholder="IVAN IVANOV" />
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group half">
-                                            <label for="expiryDate">Срок действия</label>
-                                            <input type="text" id="expiryDate" class="form-control" @bind="expiryDate" placeholder="12/25" />
-                                        </div>
-                                        <div class="form-group half">
-                                            <label for="cvv">CVV</label>
-                                            <input type="password" id="cvv" class="form-control" @bind="cvv" placeholder="123" maxlength="3" />
-                                        </div>
+                                        <input type="text" id="title" class="form-control" @bind="title" placeholder="Например: Зарплатная" />
                                     </div>
                                 </div>
                             }
@@ -191,17 +167,13 @@ textarea {
                                 <img src="icons/plus.png" alt="Сохранить" />
                                 <span>Сохранить</span>
                             </button>
-                            <button class="btn btn-secondary" @onclick="CloseForm">
+                            <button class="btn btn-secondary" @onclick="SetFormState">
                                 Отмена
                             </button>
                         </div>
                     </div>
                 </div>
             }
-            *@
-
-            <!-- КАТЕГОРИИ -->
-            <div class="section-label">КАТЕГОРИИ (3)</div>
 
             <!-- Логины -->
             <section class="card">
@@ -356,47 +328,104 @@ textarea {
             </section>
 
             <!-- Floating action button -->
-            <button class="fab" aria-label="Добавить">
+            <button class="fab" aria-label="Добавить" @onclick="SetFormState">
                 <img src="icons/plus.png" alt="Добавить" />
             </button>
         </main>
-
-        <!-- Bottom nav -->
-        <nav class="bottom-nav" aria-label="Навигация">
-            <a class="nav-item active" href="#" aria-current="page">
-                <span class="nav-ico">
-                    <img src="icons/mech.png" alt="Сейф" />
-                </span>
-                <span class="nav-text">Мой сейф</span>
-            </a>
-
-            <a class="nav-item" href="#">
-                <span class="nav-ico">
-                    <img src="icons/send.png" alt="Отправка" />
-                </span>
-                <span class="nav-text">Отправка</span>
-            </a>
-
-            <a class="nav-item" href="#">
-                <span class="nav-ico">
-                    <img src="icons/generator.png" alt="Генератор" />
-                </span>
-                <span class="nav-text">Генератор</span>
-            </a>
-
-            <a class="nav-item" href="#">
-                <span class="nav-ico">
-                    <img src="icons/settings.png" alt="Настройки" />
-                </span>
-                <span class="nav-text">Настройки</span>
-            </a>
-        </nav>
     </div>
 </body>
 </html>
 
 @code {
-   private int expandedIndex = 0; // 0-логины, 1-карты, 2-заметки
+    private enum PageType
+    {
+        Safe,
+        Send,
+        Generator,
+        Settings
+    }
+
+    private PageType currentPage = PageType.Safe;
+
+    private string GetPageTitle()
+    {
+        return currentPage switch
+        {
+            PageType.Safe => "Мой сейф",
+            PageType.Send => "Отправка",
+            PageType.Generator => "Генератор",
+            PageType.Settings => "Настройки",
+            _ => "Мой сейф"
+        };
+    }
+
+    private void NavigateTo(PageType page)
+    {
+        currentPage = page;
+    }
+
+    private enum CardField { Number, Holder, Exp, Cvv }
+    private CardField _activeField = CardField.Number;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private async Task FocusField(CardField f)
+    {
+        _activeField = f;
+
+        var id = f switch
+        {
+            CardField.Number => "cardNumberInput",
+            CardField.Holder => "cardHolderInput",
+            CardField.Exp => "expiryInput",
+            CardField.Cvv => "cvvInput",
+            _ => "cardNumberInput"
+        };
+
+        await JS.InvokeVoidAsync("bpFocus", id);
+    }
+
+    private void OnCardNumberInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        var digits = new string(raw.Where(char.IsDigit).ToArray());
+        if (digits.Length > 16) digits = digits[..16];
+
+        cardNumber = string.Join(" ", Enumerable.Range(0, (digits.Length + 3) / 4)
+            .Select(i => digits.Skip(i * 4).Take(4))
+            .Where(g => g.Any())
+            .Select(g => new string(g.ToArray())));
+    }
+
+    private void OnCardHolderInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        // Можно оставить любые символы, но часто делают латиницу + пробел
+        cardHolder = raw.Trim();
+    }
+
+    private void OnCvvInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        var digits = new string(raw.Where(char.IsDigit).ToArray());
+        if (digits.Length > 3) digits = digits[..3];
+        cvv = digits;
+    }
+
+    private void OnExpiryInput(ChangeEventArgs e)
+    {
+        var raw = (e.Value?.ToString() ?? "");
+        var digits = new string(raw.Where(char.IsDigit).ToArray());
+        if (digits.Length > 4) digits = digits[..4];
+
+        expiryDate = digits.Length switch
+        {
+            <= 2 => digits,
+            _ => digits[..2] + "/" + digits[2..]
+        };
+    }
+
+    private int expandedIndex = 0; // 0-логины, 1-карты, 2-заметки
 
     private void ToggleCategory(int index)
     {
@@ -407,7 +436,7 @@ textarea {
     }
 
     // Код для формы
-    /*
+
     private enum ItemType { Password, Card, Note }
     private ItemType selectedType = ItemType.Password;
 
@@ -423,16 +452,17 @@ textarea {
 
     private bool showAddForm = false;
 
-    private void OpenForm()
+    private void SetFormState()
     {
-        showAddForm = true;
+        
+        showAddForm = showAddForm?false:true;
         selectedType = ItemType.Password;
     }
 
     private void SaveItem()
     {
         Console.WriteLine($"Сохранение {selectedType}:");
-        
+
         switch (selectedType)
         {
             case ItemType.Password:
@@ -452,7 +482,7 @@ textarea {
                 Console.WriteLine($"  Содержание: {noteContent}");
                 break;
         }
-        
+
         title = "";
         login = "";
         password = "";
@@ -462,13 +492,7 @@ textarea {
         cvv = "";
         noteTitle = "";
         noteContent = "";
-        
-        showAddForm = false;
-    }
 
-    private void CloseForm()
-    {
         showAddForm = false;
     }
-    */
 }

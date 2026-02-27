@@ -1,7 +1,33 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="content">
-        @Body
-    </div>
-</div>
+@Body
+
+<nav class="bottom-nav" aria-label="Навигация">
+    <a class="nav-item" href="/">
+        <span class="nav-ico">
+            <img src="icons/mech.png" alt="Сейф" />
+        </span>
+        <span class="nav-text">Мой сейф</span>
+    </a>
+
+    <a class="nav-item" href="/">
+        <span class="nav-ico">
+            <img src="icons/send.png" alt="Отправка" />
+        </span>
+        <span class="nav-text">Отправка</span>
+    </a>
+
+    <a class="nav-item active" href="/generator" aria-current="page">
+        <span class="nav-ico">
+            <img src="icons/generator.png" alt="Генератор" />
+        </span>
+        <span class="nav-text">Генератор</span>
+    </a>
+
+    <a class="nav-item" href="/">
+        <span class="nav-ico">
+            <img src="icons/settings.png" alt="Настройки" />
+        </span>
+        <span class="nav-text">Настройки</span>
+    </a>
+</nav>

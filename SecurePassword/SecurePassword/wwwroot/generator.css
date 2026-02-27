@@ -1,0 +1,189 @@
+﻿.generator-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.password-display-area {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.password-display {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #fafafa;
+    border: 1px dashed var(--divider);
+    color: var(--text);
+    word-break: break-all;
+    text-align: center;
+}
+
+.btn-generate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--fab);
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(31,159,47,.25);
+}
+
+    .btn-generate img {
+        width: 18px;
+        height: 18px;
+    }
+
+    .btn-generate:hover {
+        filter: brightness(.96);
+    }
+
+.options-section {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px;
+}
+
+    .options-section h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--label);
+        letter-spacing: .4px;
+    }
+
+    .options-section .form-group {
+        margin-bottom: 12px;
+    }
+
+.checkbox-item {
+    margin-bottom: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+}
+
+    .checkbox-label input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--fab);
+    }
+
+.checkbox-text {
+    user-select: none;
+}
+
+.password-strength {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px;
+}
+
+    .password-strength h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--label);
+        letter-spacing: .4px;
+    }
+
+.strength-meter {
+    height: 8px;
+    background: #eee;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.strength-meter {
+    height: 14px; /* было 8px */
+    background: #e9e9e9;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.08);
+}
+
+.strength-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--strength-gradient);
+    transition: width .35s cubic-bezier(.2,.8,.2,1), background .25s ease;
+    min-width: 12px;
+}
+    .strength-bar::after {
+        content: "";
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: linear-gradient( 90deg, rgba(255,255,255,.25), rgba(255,255,255,0), rgba(255,255,255,.18) );
+        opacity: .55;
+    }
+
+.strength-weak {
+    --strength-gradient: linear-gradient( 90deg, #d32f2f, #f44336 );
+}
+
+.strength-medium {
+    --strength-gradient: linear-gradient( 90deg, #f57c00, #fbc02d );
+}
+
+.strength-strong {
+    --strength-gradient: linear-gradient( 90deg, #2e7d32, #66bb6a );
+}
+.strength-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.strength-details {
+    font-size: 12px;
+    color: var(--muted);
+}
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: min(380px, 85vw);
+    height: var(--nav-h);
+    bottom: calc(env(safe-area-inset-bottom) + 10px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #fff;
+    border-top: 1px solid #eee;
+    border-radius: 25px;
+    padding: 8px 12px;
+    box-shadow: 0 -4px 10px rgba(0,0,0,.1);
+    z-index: 100;
+    will-change: transform;
+    transform: translateZ(0);
+}
+.content {
+    padding-bottom: calc(var(--nav-h) + 20px);
+}
