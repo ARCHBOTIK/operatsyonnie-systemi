@@ -4,7 +4,7 @@ using System.Linq;
 using SkiaSharp;
 public class ServiceImageGenerator
 {
-    public static byte[] GenerateServiceImage(string serviceName, int width = 200, int height = 200) //
+    private static byte[] GenerateServiceImage(string serviceName, int width = 200, int height = 200) //
     {
         if (string.IsNullOrWhiteSpace(serviceName))
             serviceName = "?";
@@ -46,7 +46,7 @@ public class ServiceImageGenerator
         File.WriteAllBytes(filePath, imageBytes);
     } // сохранение в файл
 
-    public static string GetInitials(string text)
+    private static string GetInitials(string text)
     {
         string[] strings = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (strings.Length == 0)
@@ -56,7 +56,7 @@ public class ServiceImageGenerator
             : strings[0][0].ToString().ToUpper()+ strings[1][0].ToString().ToUpper();
     }
        
-    public static (int Hash1, int Hash2) GenerateTwoHashes(string input) 
+    private static (int Hash1, int Hash2) GenerateTwoHashes(string input) 
     {
         if (string.IsNullOrEmpty(input))
             input = "default";
@@ -77,7 +77,7 @@ public class ServiceImageGenerator
         return (Math.Abs(hash1), Math.Abs(hash2));
     } // Генерирует два разных хеша из строки для цветов градиента
 
-    public static SKColor HashToSkColor(int hash)
+    private static SKColor HashToSkColor(int hash)
     {
         int r = (hash & 0xFF0000) >> 16;
         int g = (hash & 0x00FF00) >> 8;
@@ -90,7 +90,7 @@ public class ServiceImageGenerator
         return new SKColor((byte)r, (byte)g, (byte)b);
     }  // Преобразует хеш в цвет
 
-    public static string ColorToHex(SKColor color)
+    private static string ColorToHex(SKColor color)
     {
         return $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
     }  // Конвертирует цвет в HEX строку
@@ -131,7 +131,7 @@ public class ServiceImageGenerator
         }
     } // Рисует текст
 
-    public static (byte[] ImageBytes, SKColor Color1, SKColor Color2, string Hex1, string Hex2) GenerateWithColors(string serviceName, int width = 200, int height = 200)
+    private static (byte[] ImageBytes, SKColor Color1, SKColor Color2, string Hex1, string Hex2) GenerateWithColors(string serviceName, int width = 200, int height = 200)
     {
         var (hash1, hash2) = GenerateTwoHashes(serviceName);
         SKColor color1 = HashToSkColor(hash1);
@@ -142,4 +142,5 @@ public class ServiceImageGenerator
         return (imageBytes, color1, color2, ColorToHex(color1), ColorToHex(color2));
     } // Возвращает и картинку, и цвета
 }
+
 
