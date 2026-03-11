@@ -10,10 +10,18 @@
 </head>
 <body>
     <div class="screen">
-        <!-- Top app bar -->
-        <header class="appbar">
-            <h1 class="appbar-title">Мой сейф</h1>
-        </header>
+
+            <header class="appbar">
+                <div class="appbar-left">
+                    <button class="icon-button" @onclick="ToggleSort">
+                        <img src="icons/sort.svg" />
+                    </button>
+                </div>
+
+                <div class="appbar-right">
+                    <img src="icons/search.svg" class="icon" />
+                </div>
+            </header>
 
         <!-- Content -->
         <main class="content">
@@ -384,6 +392,9 @@
 
         await JS.InvokeVoidAsync("bpFocus", id);
     }
+
+    private void ToggleSort() { } //логика сортировки
+
 
     private void OnCardNumberInput(ChangeEventArgs e)
     {
