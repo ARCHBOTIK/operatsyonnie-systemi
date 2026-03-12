@@ -1,0 +1,217 @@
+﻿@page "/Settings"
+
+<div class="screen">
+    <!-- Top app bar -->
+    <header class="appbar">
+        <h1 class="appbar-title">Настройки</h1>
+    </header>
+
+    <!-- Content -->
+    <main class="content">
+        <!-- Смена пароля -->
+        <section class="card">
+            <div class="row" @onclick="OpenReplaceModal">
+                <div class="row-left">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                    </span>
+                    <span class="row-title">Сменить мастер‑пароль</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Таймер автоблокировки -->
+        <div class="section-label">БЕЗОПАСНОСТЬ</div>
+        <section class="card">
+            <div class="row">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 ">
+                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        </svg>
+                    </span>
+                    <span class="row-title">Автоблокировка</span>
+
+                <select class="form-control timeout-select"  @bind="selectedTimeout">
+                    <option value="0">Никогда</option>
+                    <option value="30">30 секунд</option>
+                    <option value="60">1 минута</option>
+                    <option value="120">2 минуты</option>
+                    <option value="300">5 минут</option>
+                    <option value="600">10 минут</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Очистка БД -->
+        <section class="card">
+            <div class="row" @onclick="OpenDeleteModal">
+                <div class="row-left">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </span>
+                    <span class="row-title">Очистить все данные</span>
+                </div>
+            </div>
+        </section>
+
+        <div style="height: 16px;"></div>
+
+        <!-- Перенос данных -->
+        <section class="card">
+            <div class="row" @onclick="SendUserToForm">
+                <div class="row-left">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/>
+                        </svg>
+                    </span>
+                    <span class="row-title">Перенести данные</span>
+                 </div>
+             </div>
+        </section>
+    </main>
+<!-- Модальное окно смены пароля -->
+    @if (showReplaceModal)
+    {
+        <div class="modal-overlay" @onclick="CloseReplaceModal">
+            <div class="modal-container" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h2>Смена мастер‑пароля</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Текущий пароль</label>
+                        <input type="password" class="form-control" @bind="currentPassword" placeholder="········" />
+                    </div>
+                    <div class="form-group">
+                        <label>Новый пароль</label>
+                        <input type="password" class="form-control" @bind="newPassword" placeholder="········" />
+                    </div>
+                    <div class="form-group">
+                        <label>Подтверждение</label>
+                        <input type="password" class="form-control" @bind="confirmPassword" placeholder="········" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="ReplaceMasterPassword">
+                        Подтвердить
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseReplaceModal">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Модальное окно подтверждения очистки БД -->
+    @if (showDeleteModal)
+    {
+        <div class="modal-overlay" @onclick="CloseDeleteModal">
+            <div class="modal-container" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h2>Очистить базу данных</h2>
+                </div>
+                <div class="modal-body">
+                    <p>Вы уверены? Все сохранённые пароли, карты и заметки будут безвозвратно удалены.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" style="background: #d32f2f;" @onclick="DeleteDatabase">
+                        Удалить всё
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseDeleteModal">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Состояния модальных окон
+    private bool showReplaceModal = false;
+    private bool showDeleteModal = false;
+
+    // Поля формы смены пароля
+    private string currentPassword = "";
+    private string newPassword = "";
+    private string confirmPassword = "";
+
+    // Выбранное значение таймера (в секундах)
+    private string selectedTimeout = "60"; // По умолчанию 1 минута
+
+    // Методы смены пароля
+    private void OpenReplaceModal()
+    {
+        showReplaceModal = true;
+    }
+
+    private void CloseReplaceModal()
+    {
+        showReplaceModal = false;
+        currentPassword = "";
+        newPassword = "";
+        confirmPassword = "";
+    }
+
+    private void ReplaceMasterPassword()
+    {
+        // Смена пароля
+        Console.WriteLine($"Смена пароля: текущий={currentPassword}, новый={newPassword}, подтверждение={confirmPassword}");
+        CloseReplaceModal();
+    }
+
+    // Методы таймера
+    private void OnTimeoutChanged(ChangeEventArgs e)
+    {
+        SetTimeLogout();
+    }
+
+    private void SetTimeLogout()
+    {
+        Console.WriteLine($"Таймер автоблокировки установлен на {selectedTimeout} секунд");
+        // Установка таймера
+    }
+
+    // Методы очистки БД
+    private void OpenDeleteModal()
+    {
+        showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+    private void DeleteDatabase()
+    {
+        Console.WriteLine("База данных очищена");
+        //  Очистка БД
+        CloseDeleteModal();
+    }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    // Метод перенаправления на форму отправки
+    private void SendUserToForm()
+    {
+        Console.WriteLine("Перенаправление на форму отправки данных");
+        Navigation.NavigateTo("/send");
+    }
+
+
+}
+
+<style>
+    .appbar
+    {
+        text-align:center;
+    }
+</style>
+

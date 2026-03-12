@@ -2,9 +2,51 @@
 using System.IO;
 using System.Linq;
 using SkiaSharp;
+
 public class ServiceImageGenerator
 {
-    private static byte[] GenerateServiceImage(string serviceName, int width = 200, int height = 200) //
+    // Публичный метод для сохранения иконки
+    public static void SaveServiceImage(string serviceName, string filePath, int width = 200, int height = 200)
+    {
+        byte[] imageBytes = GenerateServiceImage(serviceName, width, height);
+        File.WriteAllBytes(filePath, imageBytes);
+    }
+
+    // Публичный метод для получения пути к иконке (для UI)
+    public static string GetServiceIconPath(string serviceName)
+    {
+        if (string.IsNullOrWhiteSpace(serviceName))
+            serviceName = "default";
+
+        string iconsDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot", "service-icons");
+        Directory.CreateDirectory(iconsDirectory);
+
+        string fileName = $"{SanitizeFileName(serviceName)}.png";
+        string relativePath = $"/service-icons/{fileName}";
+        string fullPath = Path.Combine(iconsDirectory, fileName);
+
+        if (!File.Exists(fullPath))
+        {
+            SaveServiceImage(serviceName, fullPath);
+        }
+
+        return relativePath;
+    }
+
+    // Публичный метод для получения иконки и цветов
+    public static (string IconPath, string Color1, string Color2) GetServiceIconWithColors(string serviceName)
+    {
+        var (hash1, hash2) = GenerateTwoHashes(serviceName);
+        SKColor color1 = HashToSkColor(hash1);
+        SKColor color2 = HashToSkColor(hash2);
+
+        string iconPath = GetServiceIconPath(serviceName);
+        
+        return (iconPath, ColorToHex(color1), ColorToHex(color2));
+    }
+
+    // Приватные методы (были публичными, теперь приватные)
+    private static byte[] GenerateServiceImage(string serviceName, int width = 200, int height = 200)
     {
         if (string.IsNullOrWhiteSpace(serviceName))
             serviceName = "?";
@@ -13,50 +55,45 @@ public class ServiceImageGenerator
 
         var (hash1, hash2) = GenerateTwoHashes(serviceName);
 
-        SKColor color1 = HashToSkColor(hash1); //SKcolor - 32-битное значение цвета ARGB
+        SKColor color1 = HashToSkColor(hash1);
         SKColor color2 = HashToSkColor(hash2);
 
-        using (var surface = SKSurface.Create(new SKImageInfo(width, height))) // SKImageInfo описывает технические параметры изображения
+        using (var surface = SKSurface.Create(new SKImageInfo(width, height)))
         {
             var canvas = surface.Canvas;
 
             using (var shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, 0), // SKPoint представляет собой упорядоченную пару (X, Y) координат в двумерном пространстве
+                new SKPoint(0, 0),
                 new SKPoint(width, height), new[] { color1, color2 }, new float[] { 0, 1 }, SKShaderTileMode.Clamp))
             using (var paint = new SKPaint { Shader = shader })
             {
-                canvas.DrawRect(new SKRect(0, 0, width, height), paint); // SKRect хранит набор из четырех чисел с плавающей запятой, представляющих верхний левый и нижний правый углы прямоугольника.
+                canvas.DrawRect(new SKRect(0, 0, width, height), paint);
             }
 
             DrawTextCentered(canvas, displayText, width, height);
 
             using (var image = surface.Snapshot())
             using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
-            using (var stream = new MemoryStream()) // MemoryStream использует оперативную память в качестве хранилища вместо физического файла на диске
+            using (var stream = new MemoryStream())
             {
                 data.SaveTo(stream);
                 return stream.ToArray();
             }
         }
-    } // создает изображение с инициалами и градиентом
-
-    public static void SaveServiceImage(string serviceName, string filePath, int width = 200, int height = 200)
-    {
-        byte[] imageBytes = GenerateServiceImage(serviceName, width, height);
-        File.WriteAllBytes(filePath, imageBytes);
-    } // сохранение в файл
+    }
 
     private static string GetInitials(string text)
     {
         string[] strings = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (strings.Length == 0)
-            throw new ArgumentException("Название должно содержать символы, передаваемая строка не может быть пустой");
+            return "?";
+            
         return (strings.Length < 2) 
             ? strings[0][0].ToString().ToUpper() 
-            : strings[0][0].ToString().ToUpper()+ strings[1][0].ToString().ToUpper();
+            : strings[0][0].ToString().ToUpper() + strings[1][0].ToString().ToUpper();
     }
-       
-    private static (int Hash1, int Hash2) GenerateTwoHashes(string input) 
+
+    private static (int Hash1, int Hash2) GenerateTwoHashes(string input)
     {
         if (string.IsNullOrEmpty(input))
             input = "default";
@@ -75,7 +112,7 @@ public class ServiceImageGenerator
         hash2 = hash2 ^ (hash2 >> 16);
 
         return (Math.Abs(hash1), Math.Abs(hash2));
-    } // Генерирует два разных хеша из строки для цветов градиента
+    }
 
     private static SKColor HashToSkColor(int hash)
     {
@@ -88,12 +125,12 @@ public class ServiceImageGenerator
         b = EnsureVibrantColor(b);
 
         return new SKColor((byte)r, (byte)g, (byte)b);
-    }  // Преобразует хеш в цвет
+    }
 
     private static string ColorToHex(SKColor color)
     {
         return $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
-    }  // Конвертирует цвет в HEX строку
+    }
 
     private static int EnsureVibrantColor(int component)
     {
@@ -110,7 +147,7 @@ public class ServiceImageGenerator
         }
 
         return Math.Min(255, Math.Max(100, component));
-    } // Делает цвет ярким и насыщенным
+    }
 
     private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
     {
@@ -129,18 +166,15 @@ public class ServiceImageGenerator
 
             canvas.DrawText(text, x, y, SKTextAlign.Left, font, textPaint);
         }
-    } // Рисует текст
+    }
 
-    private static (byte[] ImageBytes, SKColor Color1, SKColor Color2, string Hex1, string Hex2) GenerateWithColors(string serviceName, int width = 200, int height = 200)
+    private static string SanitizeFileName(string fileName)
     {
-        var (hash1, hash2) = GenerateTwoHashes(serviceName);
-        SKColor color1 = HashToSkColor(hash1);
-        SKColor color2 = HashToSkColor(hash2);
-
-        byte[] imageBytes = GenerateServiceImage(serviceName, width, height);
-
-        return (imageBytes, color1, color2, ColorToHex(color1), ColorToHex(color2));
-    } // Возвращает и картинку, и цвета
+        var invalidChars = Path.GetInvalidFileNameChars();
+        foreach (char c in invalidChars)
+        {
+            fileName = fileName.Replace(c, '_');
+        }
+        return fileName;
+    }
 }
-
-

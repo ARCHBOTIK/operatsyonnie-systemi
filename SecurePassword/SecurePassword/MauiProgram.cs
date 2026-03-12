@@ -52,6 +52,26 @@ namespace SecurePassword
             }
         });
 #endif
+            // keyManager
+            builder.Services.AddSingleton<keyManager>(sp =>
+                new keyManager(
+                    Path.Combine(FileSystem.AppDataDirectory, "keys.dat")));
+
+            // Репозитории
+            builder.Services.AddSingleton<SecureRepository<PasswordEntry>>(sp =>
+                new SecureRepository<PasswordEntry>(
+                    Path.Combine(FileSystem.AppDataDirectory, "passwords.dat"),
+                    sp.GetRequiredService<keyManager>()));
+
+            builder.Services.AddSingleton<SecureRepository<CardEntry>>(sp =>
+                new SecureRepository<CardEntry>(
+                    Path.Combine(FileSystem.AppDataDirectory, "cards.dat"),
+                    sp.GetRequiredService<keyManager>()));
+
+            builder.Services.AddSingleton<SecureRepository<NoteEntry>>(sp =>
+                new SecureRepository<NoteEntry>(
+                    Path.Combine(FileSystem.AppDataDirectory, "notes.dat"),
+                    sp.GetRequiredService<keyManager>()));
 
             return builder.Build();
         }

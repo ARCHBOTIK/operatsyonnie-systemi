@@ -12,20 +12,22 @@
 </head>
 <body>
     <div id="app">Loading...</div>
+
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+
     <script>
-        window.bpFocus = (id) => {
+        window.bpFocus = function (id) {
             const el = document.getElementById(id);
             if (!el) return;
-            el.focus();
-            // поставить курсор в конец
-            const v = el.value ?? "";
-            if (typeof el.setSelectionRange === "function") {
-                el.setSelectionRange(v.length, v.length);
+
+            const input = el;
+            input.focus();
+
+            const v = input.value ?? "";
+            if (typeof input.setSelectionRange === "function") {
+                input.setSelectionRange(v.length, v.length);
             }
         };
     </script>
 </body>
-
-
 </html>

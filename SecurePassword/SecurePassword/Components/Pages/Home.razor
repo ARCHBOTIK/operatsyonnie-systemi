@@ -193,78 +193,33 @@
                         <span class="row-title">Логины</span>
                     </div>
                     <div>
-                        <span class="row-right">4</span>
-                        <span> @(expandedIndex == 0 ? "▼" : "▶")</span>
+                        <span class="row-right">@PasswordRepository.getAll().Count()</span>
+                        <span> @(expandedIndex == 0 && PasswordRepository.getAll().Count()!=0 ? "▼" : "▶")</span>
                     </div>
                 </div>
                 
                 @if (expandedIndex == 0)
                 {
                     <div>
-                        <div class="divider"></div>
-                        <!-- Яндекс -->
-                        <div class="row">
-                            <div class="row-left">
-                                <span class="brand">
-                                    <img src="passwords/yandex.png" alt="Яндекс" width="40" height="40" />
-                                </span>
-                                <div class="row-text">
-                                    <div class="row-title">Яндекс</div>
-                                    <div class="row-sub">ivan.ivanov@mail.ru</div>
+                        @foreach(var i in PasswordRepository.getAll())
+                        {
+                            <div class="divider"></div>
+                            <!-- Вывод полей из БД паролей -->
+                            <div class="row">
+                                <div class="row-left">
+                                    <span class="brand">
+                                        <img src=@ServiceImageGenerator.GetServiceIconPath(i.ServiceName) alt=@i.Title width="40" height="40" />
+                                    </span>
+                                    <div class="row-text">
+                                        <div class="row-title">@i.Title</div>
+                                        <div class="row-sub">@i.Login</div>
+                                    </div>
                                 </div>
+                                <button class="kebab" aria-label="Действия">
+                                    <span></span><span></span><span></span>
+                                </button>
                             </div>
-                            <button class="kebab" aria-label="Действия">
-                                <span></span><span></span><span></span>
-                            </button>
-                        </div>
-                        <div class="divider"></div>
-                        <!-- Google -->
-                        <div class="row">
-                            <div class="row-left">
-                                <span class="brand">
-                                    <img src="passwords/google.webp" alt="Google" width="40" height="40" />
-                                </span>
-                                <div class="row-text">
-                                    <div class="row-title">Google</div>
-                                    <div class="row-sub">i.ivanov@mail.ru</div>
-                                </div>
-                            </div>
-                            <button class="kebab" aria-label="Действия">
-                                <span></span><span></span><span></span>
-                            </button>
-                        </div>
-                        <div class="divider"></div>
-                        <!-- GitHub -->
-                        <div class="row">
-                            <div class="row-left">
-                                <span class="brand">
-                                    <img src="passwords/github.jpg" alt="GitHub" width="40" height="40" />
-                                </span>
-                                <div class="row-text">
-                                    <div class="row-title">GitHub</div>
-                                    <div class="row-sub">i.ivanov@mail.ru</div>
-                                </div>
-                            </div>
-                            <button class="kebab" aria-label="Действия">
-                                <span></span><span></span><span></span>
-                            </button>
-                        </div>
-                        <div class="divider"></div>
-                        <!-- ВКонтакте -->
-                        <div class="row">
-                            <div class="row-left">
-                                <span class="brand">
-                                    <img src="passwords/vk.jpg" alt="ВКонтакте" width="40" height="40" />
-                                </span>
-                                <div class="row-text">
-                                    <div class="row-title">ВКонтакте</div>
-                                    <div class="row-sub">ivan.ivanov@mail.ru</div>
-                                </div>
-                            </div>
-                            <button class="kebab" aria-label="Действия">
-                                <span></span><span></span><span></span>
-                            </button>
-                        </div>
+                        }
                     </div>
                 }
             </section>
@@ -279,30 +234,32 @@
                         <span class="row-title">Карты</span>
                     </div>
                     <div>
-                        <span class="row-right">1</span>
-                        <span> @(expandedIndex == 1 ? "▼" : "▶")</span>
+                        <span class="row-right">@CardRepository.getAll().Count()</span>
+                        <span> @(expandedIndex == 1 && CardRepository.getAll().Count() != 0 ? "▼" : "▶")</span>
                     </div>
                 </div>
                 
                 @if (expandedIndex == 1)
                 {
                     <div>
-                        <div class="divider"></div>
-                        <!-- Только СберБанк -->
-                        <div class="row">
-                            <div class="row-left">
-                                <span class="brand">
-                                    <img src="passwords/sber.jpg" alt="СберБанк" width="40" height="40" />
-                                </span>
-                                <div class="row-text">
-                                    <div class="row-title">СберБанк</div>
-                                    <div class="row-sub">i.ivanov@mail.ru</div>
+                        @foreach (var i in CardRepository.getAll())
+                        {
+                            <div class="divider"></div>
+                            <div class="row">
+                                <div class="row-left">
+                                    <span class="brand">
+                                        <img src="passwords/sber.jpg" alt="СберБанк" width="40" height="40" />
+                                    </span>
+                                    <div class="row-text">
+                                        <div class="row-title">СберБанк</div>
+                                        <div class="row-sub">i.ivanov@mail.ru</div>
+                                    </div>
                                 </div>
+                                <button class="kebab" aria-label="Действия">
+                                    <span></span><span></span><span></span>
+                                </button>
                             </div>
-                            <button class="kebab" aria-label="Действия">
-                                <span></span><span></span><span></span>
-                            </button>
-                        </div>
+                        }
                     </div>
                 }
             </section>
@@ -319,18 +276,21 @@
                         <span class="row-title">Защищённая заметка</span>
                     </div>
                     <div>
-                        <span class="row-right">0</span>
-                        <span> @(expandedIndex == 2 ? "▼" : "▶")</span>
+                        <span class="row-right">@NoteRepository.getAll().Count()</span>
+                        <span> @(expandedIndex == 2 && NoteRepository.getAll().Count() != 0 ? "▼" : "▶")</span>
                     </div>
                 </div>
                 
                 @if (expandedIndex == 2)
                 {
                     <div>
-                        <div class="divider"></div>
-                        <div class="row">
-                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
-                        </div>
+                        @foreach (var i in NoteRepository.getAll())
+                        {
+                            <div class="divider"></div>
+                            <div class="row">
+                                <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                            </div>
+                        }
                     </div>
                 }
             </section>
@@ -345,6 +305,19 @@
 </html>
 
 @code {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private SecureRepository<PasswordEntry> PasswordRepository { get; set; }
+    [Inject] private SecureRepository<CardEntry> CardRepository { get; set; }
+    [Inject] private SecureRepository<NoteEntry> NoteRepository { get; set; }
+
+
+    private List<PasswordEntry> passwords = new();
+    private List<CardEntry> cards = new();
+    private List<NoteEntry> notes = new();
+
+    private enum CardField { Number, Holder, Exp, Cvv }
+    private CardField _activeField = CardField.Number;
+
     private enum PageType
     {
         Safe,
@@ -352,6 +325,26 @@
         Generator,
         Settings
     }
+
+    private enum ItemType { Password, Card, Note }
+    private ItemType selectedType = ItemType.Password;
+
+    // Поля для форм
+    private string title = "";
+    private string login = "";
+    private string password = "";
+    // Поля для карт
+    private string cardNumber = "";
+    private string cardHolder = "";
+    private string expiryDate = "";
+    private string cvv = "";
+    private string cardTitle = "";
+    // Поля для заметок
+    private string noteTitle = "";
+    private string noteContent = "";
+
+    private int expandedIndex = 0; // 0-логины, 1-карты, 2-заметки
+    private bool showAddForm = false;
 
     private PageType currentPage = PageType.Safe;
 
@@ -367,15 +360,29 @@
         };
     }
 
+    protected override void OnInitialized()
+    {
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        try
+        {
+            passwords = PasswordRepository.getAll().ToList();
+            cards = CardRepository.getAll().ToList();
+            notes = NoteRepository.getAll().ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+    }
+
     private void NavigateTo(PageType page)
     {
         currentPage = page;
     }
-
-    private enum CardField { Number, Holder, Exp, Cvv }
-    private CardField _activeField = CardField.Number;
-
-    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private async Task FocusField(CardField f)
     {
@@ -436,8 +443,6 @@
         };
     }
 
-    private int expandedIndex = 0; // 0-логины, 1-карты, 2-заметки
-
     private void ToggleCategory(int index)
     {
         if (expandedIndex == index)
@@ -446,23 +451,6 @@
             expandedIndex = index; // разворачиваем выбранную
     }
 
-    // Код для формы
-
-    private enum ItemType { Password, Card, Note }
-    private ItemType selectedType = ItemType.Password;
-
-    private string title = "";
-    private string login = "";
-    private string password = "";
-    private string cardNumber = "";
-    private string cardHolder = "";
-    private string expiryDate = "";
-    private string cvv = "";
-    private string noteTitle = "";
-    private string noteContent = "";
-
-    private bool showAddForm = false;
-
     private void SetFormState()
     {
         
@@ -470,30 +458,9 @@
         selectedType = ItemType.Password;
     }
 
-    private void SaveItem()
+    
+    private void ClearForm()
     {
-        Console.WriteLine($"Сохранение {selectedType}:");
-
-        switch (selectedType)
-        {
-            case ItemType.Password:
-                Console.WriteLine($"  Название: {title}");
-                Console.WriteLine($"  Логин: {login}");
-                Console.WriteLine($"  Пароль: {password}");
-                break;
-            case ItemType.Card:
-                Console.WriteLine($"  Название: {title}");
-                Console.WriteLine($"  Номер: {cardNumber}");
-                Console.WriteLine($"  Владелец: {cardHolder}");
-                Console.WriteLine($"  Срок: {expiryDate}");
-                Console.WriteLine($"  CVV: {cvv}");
-                break;
-            case ItemType.Note:
-                Console.WriteLine($"  Название заметки: {noteTitle}");
-                Console.WriteLine($"  Содержание: {noteContent}");
-                break;
-        }
-
         title = "";
         login = "";
         password = "";
@@ -503,7 +470,69 @@
         cvv = "";
         noteTitle = "";
         noteContent = "";
+    }
 
-        showAddForm = false;
+    private int GetNextId<T>(List<T> items) where T : IHasID
+    {
+        return items.Any() ? items.Max(x => x.Id) + 1 : 1;
+    }
+
+    private async Task SaveItem()
+    {
+        try
+        {
+            switch (selectedType)
+            {
+                case ItemType.Password:
+                    var newPassword = new PasswordEntry
+                    {
+                        Id = GetNextId(passwords),
+                        Title = title,
+                        Login = login,
+                        Password = password
+                    };
+                    
+                    PasswordRepository.Add(newPassword);
+                    PasswordRepository.Save();
+                    passwords = PasswordRepository.getAll().ToList();
+                    break;
+
+                case ItemType.Card:
+                    var newCard = new CardEntry
+                    {
+                        Id = GetNextId(cards),
+                        Title = cardTitle,
+                        CardNumber = cardNumber.Replace(" ", ""),
+                        CardHolder = cardHolder,
+                        ExpiryDate = expiryDate,
+                        Cvv = cvv
+                    };
+                    
+                    CardRepository.Add(newCard);
+                    CardRepository.Save();
+                    cards = CardRepository.getAll().ToList();
+                    break;
+
+                case ItemType.Note:
+                    var newNote = new NoteEntry
+                    {
+                        Id = GetNextId(notes),
+                        Title = noteTitle,
+                        Content = noteContent
+                    };
+                    
+                    NoteRepository.Add(newNote);
+                    NoteRepository.Save();
+                    notes = NoteRepository.getAll().ToList();
+                    break;
+            }
+
+            ClearForm();
+            showAddForm = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving item: {ex.Message}");
+        }
     }
 }
