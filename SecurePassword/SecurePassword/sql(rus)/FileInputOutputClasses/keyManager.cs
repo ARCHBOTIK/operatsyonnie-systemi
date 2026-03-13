@@ -4,67 +4,75 @@ using SecurePassword;
 using SQLite;
 namespace SecurePassword;
 
-public class keyManager //Класс для работы с файлом, где хранятся как раз те самые соль, кек, дек
+public class keyManager //РљР»Р°СЃСЃ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ С„Р°Р№Р»РѕРј, РіРґРµ С…СЂР°РЅСЏС‚СЃСЏ РєР°Рє СЂР°Р· С‚Рµ СЃР°РјС‹Рµ СЃРѕР»СЊ, РєРµРє, РґРµРє
 {
     private readonly string _keyFilePath;
     private byte[] _salt;
     private byte[] _encryptedDek;
     private byte[] _dek;
-    OSType _systemType = 0; //Я ума не приложу как узнать тип системы))
+    OSType _systemType = 0; //РЇ СѓРјР° РЅРµ РїСЂРёР»РѕР¶Сѓ РєР°Рє СѓР·РЅР°С‚СЊ С‚РёРї СЃРёСЃС‚РµРјС‹))
 
     public keyManager(string keyFilePath)
     {
         _keyFilePath = keyFilePath;
     }
 
-    public void CreateKeyFile(string password) //Создать файл
+    public void CreateKeyFile(string password) //РЎРѕР·РґР°С‚СЊ С„Р°Р№Р»
     {
-        _dek = EncryptionFunctions.GenerateDEK(32); //Генерируем ДЕК
-        _salt = EncryptionFunctions.GenerateSalt(16); //Генерируем СОЛЬ
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, _systemType); //Получаем из пароля КЕК
+        _dek = EncryptionFunctions.GenerateDEK(32); //Р“РµРЅРµСЂРёСЂСѓРµРј Р”Р•Рљ
+        _salt = EncryptionFunctions.GenerateSalt(16); //Р“РµРЅРµСЂРёСЂСѓРµРј РЎРћР›Р¬
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, _systemType); //РџРѕР»СѓС‡Р°РµРј РёР· РїР°СЂРѕР»СЏ РљР•Рљ
         byte[] nonce = new byte[12];
         byte[] tag = new byte[16];
-        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //Шифруем ДЕК
-        SaveKeyFile(); //Сохраняем файл
+        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //РЁРёС„СЂСѓРµРј Р”Р•Рљ
+        SaveKeyFile(); //РЎРѕС…СЂР°РЅСЏРµРј С„Р°Р№Р»
     }
 
-    public void LoadKeyFile(string password) //Загрузить файл
+    public void LoadKeyFile(string password) //Р—Р°РіСЂСѓР·РёС‚СЊ С„Р°Р№Р»
     {
-        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath)); //Читаем файл с помозью вспомогательного класса
+        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath)); //Р§РёС‚Р°РµРј С„Р°Р№Р» СЃ РїРѕРјРѕР·СЊСЋ РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅРѕРіРѕ РєР»Р°СЃСЃР°
         using (var ms = new MemoryStream(keyFileBytes))
-        using (var br = new BinaryReader(ms)) //Это для работы с двоичными данными
+        using (var br = new BinaryReader(ms)) //Р­С‚Рѕ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РґРІРѕРёС‡РЅС‹РјРё РґР°РЅРЅС‹РјРё
         {
-            _salt = br.ReadBytes(16); //Читаем соль
-            _encryptedDek = br.ReadBytes(60); //Читаем зашифрованный ДЕК
+            _salt = br.ReadBytes(16); //Р§РёС‚Р°РµРј СЃРѕР»СЊ
+            _encryptedDek = br.ReadBytes(60); //Р§РёС‚Р°РµРј Р·Р°С€РёС„СЂРѕРІР°РЅРЅС‹Р№ Р”Р•Рљ
         }
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, 0); //Восстанавливаем КЕК
-        _dek = EncryptionFunctions.DecryptDEK(kek, _encryptedDek); //Расшифровка ДЕКа
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, 0); //Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РљР•Рљ
+        _dek = EncryptionFunctions.DecryptDEK(kek, _encryptedDek); //Р Р°СЃС€РёС„СЂРѕРІРєР° Р”Р•РљР°
     }
 
-    private void SaveKeyFile() //Сохранить файл
+    private void SaveKeyFile() //РЎРѕС…СЂР°РЅРёС‚СЊ С„Р°Р№Р»
     {
         using (var ms = new MemoryStream())
-        using (var bw = new BinaryWriter(ms)) //Ну это для работы с потоком двоичных данных
+        using (var bw = new BinaryWriter(ms)) //РќСѓ СЌС‚Рѕ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РїРѕС‚РѕРєРѕРј РґРІРѕРёС‡РЅС‹С… РґР°РЅРЅС‹С…
         {
-            bw.Write(_salt); //Записываем соль
-            bw.Write(_encryptedDek); //Записываем зашифрованный ДЕК. Если всё-таки надо, добавлю запись параметров к аргону
-            FileWorker.writeFile(ms.ToArray(), Path.GetFileName(_keyFilePath)); //Записываем это всё в файл
+            bw.Write(_salt); //Р—Р°РїРёСЃС‹РІР°РµРј СЃРѕР»СЊ
+            bw.Write(_encryptedDek); //Р—Р°РїРёСЃС‹РІР°РµРј Р·Р°С€РёС„СЂРѕРІР°РЅРЅС‹Р№ Р”Р•Рљ. Р•СЃР»Рё РІСЃС‘-С‚Р°РєРё РЅР°РґРѕ, РґРѕР±Р°РІР»СЋ Р·Р°РїРёСЃСЊ РїР°СЂР°РјРµС‚СЂРѕРІ Рє Р°СЂРіРѕРЅСѓ
+            FileWorker.writeFile(ms.ToArray(), Path.GetFileName(_keyFilePath)); //Р—Р°РїРёСЃС‹РІР°РµРј СЌС‚Рѕ РІСЃС‘ РІ С„Р°Р№Р»
         }
     }
 
-    public byte[] GetDEK() //Получаение ДЕК из кеша
+    public byte[] GetDEK() //РџРѕР»СѓС‡Р°РµРЅРёРµ Р”Р•Рљ РёР· РєРµС€Р°
     {
         if (_dek == null) throw new InvalidOperationException("DEK was not loaded. Call Load() method.");
         return _dek;
     }
 
-    public void ChangePassword(string newPassword) //Смена пароля (если не будем добавлять функцию смены мастер-пароля, может пригодиться для ротации. Нет - удалю)
+    public void ChangePassword(string newPassword) //РЎРјРµРЅР° РїР°СЂРѕР»СЏ (РµСЃР»Рё РЅРµ Р±СѓРґРµРј РґРѕР±Р°РІР»СЏС‚СЊ С„СѓРЅРєС†РёСЋ СЃРјРµРЅС‹ РјР°СЃС‚РµСЂ-РїР°СЂРѕР»СЏ, РјРѕР¶РµС‚ РїСЂРёРіРѕРґРёС‚СЊСЃСЏ РґР»СЏ СЂРѕС‚Р°С†РёРё. РќРµС‚ - СѓРґР°Р»СЋ)
     {
         if (_dek == null) throw new InvalidOperationException("DEK was not loaded.");
-        _salt = EncryptionFunctions.GenerateSalt(); //Создаем новую соль
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(newPassword, _salt, _systemType); //Создаем новый KEK
+        _salt = EncryptionFunctions.GenerateSalt(); //РЎРѕР·РґР°РµРј РЅРѕРІСѓСЋ СЃРѕР»СЊ
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(newPassword, _salt, _systemType); //РЎРѕР·РґР°РµРј РЅРѕРІС‹Р№ KEK
         byte[] nonce; byte[] tag;
-        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //Шифруем старый DEK новым KEK
-        SaveKeyFile(); //Сохраняем файл с данными
+        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //РЁРёС„СЂСѓРµРј СЃС‚Р°СЂС‹Р№ DEK РЅРѕРІС‹Рј KEK
+        SaveKeyFile(); //РЎРѕС…СЂР°РЅСЏРµРј С„Р°Р№Р» СЃ РґР°РЅРЅС‹РјРё
+    }
+    public void replaceMasterPassword(string oldPassword, string newPassword)
+    {
+        // Р Р°СЃС€РёС„СЂРѕРІС‹РІР°РЅРёРµ DEK СЃС‚Р°СЂС‹Рј РјР°СЃС‚РµСЂ-РїР°СЂРѕР»РµРј
+        LoadKeyFile(oldPassword);
+
+        // РџРµСЂРµС€РёС„СЂРѕРІС‹РІР°РЅРёРµ DEK РЅРѕРІС‹Рј РјР°СЃС‚РµСЂ-РїР°СЂРѕР»РµРј
+        ChangePassword(newPassword);
     }
 }
