@@ -5,10 +5,10 @@ using System.Security.Cryptography;
 
 namespace SecurePassword;
 
-public class SecureRepository<T> where T : IHasID //Работа с файлами с шифрованием
+public class SecureRepository<T> where T : IHasID //Р Р°Р±РѕС‚Р° СЃ С„Р°Р№Р»Р°РјРё СЃ С€РёС„СЂРѕРІР°РЅРёРµРј
 {
     private readonly string _fileName;
-    private readonly keyManager _keyManager; //Файлик с данными для шифрования
+    private readonly keyManager _keyManager; //Р¤Р°Р№Р»РёРє СЃ РґР°РЅРЅС‹РјРё РґР»СЏ С€РёС„СЂРѕРІР°РЅРёСЏ
     private List<T> _items;
 
     public SecureRepository(string filename, keyManager keymanager)
@@ -19,68 +19,85 @@ public class SecureRepository<T> where T : IHasID //Работа с файлами с шифровани
         Load();
     }
 
-    private void Load() //Функция загрузки файла с данными
+    private void Load() //Р¤СѓРЅРєС†РёСЏ Р·Р°РіСЂСѓР·РєРё С„Р°Р№Р»Р° СЃ РґР°РЅРЅС‹РјРё
     {
-        byte[] fileBytes; //Массив с байтами - сериализованные данные
+        byte[] fileBytes; //РњР°СЃСЃРёРІ СЃ Р±Р°Р№С‚Р°РјРё - СЃРµСЂРёР°Р»РёР·РѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ
         try
         {
-            fileBytes = FileWorker.readFile(_fileName); //Читаем сериализованные шифрованные данные
+            fileBytes = FileWorker.readFile(_fileName); //Р§РёС‚Р°РµРј СЃРµСЂРёР°Р»РёР·РѕРІР°РЅРЅС‹Рµ С€РёС„СЂРѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ
         }
         catch (FileNotFoundException)
         {
-            _items = new List<T>(); //Не нашли файл - опустошили массив данных и вышли из загрузки
+            _items = new List<T>(); //РќРµ РЅР°С€Р»Рё С„Р°Р№Р» - РѕРїСѓСЃС‚РѕС€РёР»Рё РјР°СЃСЃРёРІ РґР°РЅРЅС‹С… Рё РІС‹С€Р»Рё РёР· Р·Р°РіСЂСѓР·РєРё
             return;
         }
-        byte[] dek = _keyManager.GetDEK(); //Считали ДЕК из кеша
+        byte[] dek = _keyManager.GetDEK(); //РЎС‡РёС‚Р°Р»Рё Р”Р•Рљ РёР· РєРµС€Р°
         try
         {
-            byte[] plaintext = EncryptionFunctions.DecryptData(dek, fileBytes); //Расшифровали сериализованные данные
-            _items = JsonSerializer.Deserialize<List<T>>(plaintext) ?? new List<T>(); //Десериализовали данные
+            byte[] plaintext = EncryptionFunctions.DecryptData(dek, fileBytes); //Р Р°СЃС€РёС„СЂРѕРІР°Р»Рё СЃРµСЂРёР°Р»РёР·РѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ
+            _items = JsonSerializer.Deserialize<List<T>>(plaintext) ?? new List<T>(); //Р”РµСЃРµСЂРёР°Р»РёР·РѕРІР°Р»Рё РґР°РЅРЅС‹Рµ
         }
-        catch (CryptographicException) //Ошибки криптографического характера
+        catch (CryptographicException) //РћС€РёР±РєРё РєСЂРёРїС‚РѕРіСЂР°С„РёС‡РµСЃРєРѕРіРѕ С…Р°СЂР°РєС‚РµСЂР°
         {
             throw new InvalidOperationException($"Data decryption error. Either file {_fileName} is corrupted or using wrong data encryption key.");
         }
-        catch (JsonException) //Ошибки с десереализацией
+        catch (JsonException) //РћС€РёР±РєРё СЃ РґРµСЃРµСЂРµР°Р»РёР·Р°С†РёРµР№
         {
             throw new InvalidOperationException($"Deserialization error in file {_fileName}!");
         }
     }
 
-    public void Save() //Сохранение файла
+    public void Save() //РЎРѕС…СЂР°РЅРµРЅРёРµ С„Р°Р№Р»Р°
     {
-        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(_items); //Сериализуем данные в байты
-        byte[] dek = _keyManager.GetDEK(); //Читаем ДЕК
-        byte[] encryptedData = EncryptionFunctions.EncryptData(dek, plaintext); //Шифруем ДЕКом сериализованные данные
-        FileWorker.writeFile(encryptedData, _fileName); //Записываем шифрованные сериализованные данные в файл
+        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(_items); //РЎРµСЂРёР°Р»РёР·СѓРµРј РґР°РЅРЅС‹Рµ РІ Р±Р°Р№С‚С‹
+        byte[] dek = _keyManager.GetDEK(); //Р§РёС‚Р°РµРј Р”Р•Рљ
+        byte[] encryptedData = EncryptionFunctions.EncryptData(dek, plaintext); //РЁРёС„СЂСѓРµРј Р”Р•РљРѕРј СЃРµСЂРёР°Р»РёР·РѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ
+        FileWorker.writeFile(encryptedData, _fileName); //Р—Р°РїРёСЃС‹РІР°РµРј С€РёС„СЂРѕРІР°РЅРЅС‹Рµ СЃРµСЂРёР°Р»РёР·РѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ РІ С„Р°Р№Р»
     }
 
-    public T GetItemById(int id) => _items.FirstOrDefault(x => x.Id == id); //Получить элемент по айди (Логику могу поменять если не нравится)
+    public T GetItemById(int id) => _items.FirstOrDefault(x => x.Id == id); //РџРѕР»СѓС‡РёС‚СЊ СЌР»РµРјРµРЅС‚ РїРѕ Р°Р№РґРё (Р›РѕРіРёРєСѓ РјРѕРіСѓ РїРѕРјРµРЅСЏС‚СЊ РµСЃР»Рё РЅРµ РЅСЂР°РІРёС‚СЃСЏ)
 
-    public IEnumerable<T> getAll() => _items; //Получить массив данных
+    public IEnumerable<T> getAll() => _items; //РџРѕР»СѓС‡РёС‚СЊ РјР°СЃСЃРёРІ РґР°РЅРЅС‹С…
 
-    public void Add(T newItem) //Добавить по айди (если айди не занят)
+    public void Add(T newItem) //Р”РѕР±Р°РІРёС‚СЊ РїРѕ Р°Р№РґРё (РµСЃР»Рё Р°Р№РґРё РЅРµ Р·Р°РЅСЏС‚)
     {
-        if (_items.Any(x => x.Id == newItem.Id)) throw new InvalidOperationException($"Element with ID = {newItem.Id} exists already!"); //Выброс исключений если есть элемент с таким ID
-        _items.Add(newItem); //Используем метод Add для List
+        if (_items.Any(x => x.Id == newItem.Id)) throw new InvalidOperationException($"Element with ID = {newItem.Id} exists already!"); //Р’С‹Р±СЂРѕСЃ РёСЃРєР»СЋС‡РµРЅРёР№ РµСЃР»Рё РµСЃС‚СЊ СЌР»РµРјРµРЅС‚ СЃ С‚Р°РєРёРј ID
+        _items.Add(newItem); //РСЃРїРѕР»СЊР·СѓРµРј РјРµС‚РѕРґ Add РґР»СЏ List
     }
 
-    public bool Remove(int id) //Удалить по айди
+    public bool Remove(int id) //РЈРґР°Р»РёС‚СЊ РїРѕ Р°Р№РґРё
     {
-        var item = GetItemById(id); //Берём элемент по айди
-        if (item != null) //Если нашёлся такой элемент
+        var item = GetItemById(id); //Р‘РµСЂС‘Рј СЌР»РµРјРµРЅС‚ РїРѕ Р°Р№РґРё
+        if (item != null) //Р•СЃР»Рё РЅР°С€С‘Р»СЃСЏ С‚Р°РєРѕР№ СЌР»РµРјРµРЅС‚
         {
-            _items.Remove(item); //Удаляем
-            return true; //Показываем вызывающему коду, что нашли такой элемент и удалили
+            _items.Remove(item); //РЈРґР°Р»СЏРµРј
+            return true; //РџРѕРєР°Р·С‹РІР°РµРј РІС‹Р·С‹РІР°СЋС‰РµРјСѓ РєРѕРґСѓ, С‡С‚Рѕ РЅР°С€Р»Рё С‚Р°РєРѕР№ СЌР»РµРјРµРЅС‚ Рё СѓРґР°Р»РёР»Рё
         }
-        return false; //Иначе показываем вызывающему коду, что не нашли такой
+        return false; //РРЅР°С‡Рµ РїРѕРєР°Р·С‹РІР°РµРј РІС‹Р·С‹РІР°СЋС‰РµРјСѓ РєРѕРґСѓ, С‡С‚Рѕ РЅРµ РЅР°С€Р»Рё С‚Р°РєРѕР№
     }
 
-    public void Update(T newItem) //Функция для замены существующего объекта с конкретным ID
+    public void Update(T newItem) //Р¤СѓРЅРєС†РёСЏ РґР»СЏ Р·Р°РјРµРЅС‹ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ РѕР±СЉРµРєС‚Р° СЃ РєРѕРЅРєСЂРµС‚РЅС‹Рј ID
     {
         var oldItem = GetItemById(newItem.Id);
         if (oldItem == null) throw new KeyNotFoundException($"Element with ID = {newItem.Id} not found!");
-        _items.Remove(oldItem); //Методы List<T>
+        _items.Remove(oldItem); //РњРµС‚РѕРґС‹ List<T>
         _items.Add(newItem);
+    }
+    public void DeleteDatabase()
+    {
+        try
+        {
+            // РЈРґР°Р»СЏРµРј С„Р°Р№Р»
+            if (File.Exists(_fileName))
+            {
+                File.Delete(_fileName);
+            }
+            // РћС‡РёС‰Р°РµРј РєСЌС€
+            _items.Clear();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to delete database file {_fileName}.", ex);
+        }
     }
 }
