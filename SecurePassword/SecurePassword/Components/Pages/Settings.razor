@@ -22,28 +22,38 @@
             </div>
         </section>
 
-        <!-- Таймер автоблокировки -->
-        <div class="section-label">БЕЗОПАСНОСТЬ</div>
-        <section class="card">
-            <div class="row">
-                    <span class="ico">
-                        <svg viewBox="0 0 24 ">
-                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                        </svg>
-                    </span>
-                    <span class="row-title">Автоблокировка</span>
-
-                <select class="form-control timeout-select"  @bind="selectedTimeout">
-                    <option value="0">Никогда</option>
-                    <option value="30">30 секунд</option>
-                    <option value="60">1 минута</option>
-                    <option value="120">2 минуты</option>
-                    <option value="300">5 минут</option>
-                    <option value="600">10 минут</option>
-                </select>
+<!-- Таймер автоблокировки -->
+<div class="section-label">БЕЗОПАСНОСТЬ</div>
+<section class="card">
+    <div class="row timeout-row">
+        <div class="row-left">
+            <span class="ico">
+                <svg viewBox="0 0 24 24">
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                </svg>
+            </span>
+            <span class="row-title">Блокировка</span>
+        </div>
+        
+        <div class="custom-select" @onclick="ToggleDropdown">
+            <div class="select-selected">
+                @GetSelectedText()
             </div>
-        </section>
-
+            @if (showDropdown)
+            {
+                <div class="select-items">
+                    @foreach (var option in timeoutOptions)
+                    {
+                        <div class="select-item @(selectedTimeout == option.Value ? "selected" : "")" 
+                             @onclick="() => SelectOption(option.Value)">
+                            @option.Text
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>
         <!-- Очистка БД -->
         <section class="card">
             <div class="row" @onclick="OpenDeleteModal">
@@ -205,6 +215,40 @@
         Navigation.NavigateTo("/send");
     }
 
+    private bool showDropdown = false;
+
+private List<TimeoutOption> timeoutOptions = new List<TimeoutOption>
+{
+    new TimeoutOption { Value = "0", Text = "Никогда" },
+    new TimeoutOption { Value = "30", Text = "30 сек" },
+    new TimeoutOption { Value = "60", Text = "1 мин" },
+    new TimeoutOption { Value = "120", Text = "2 мин" },
+    new TimeoutOption { Value = "300", Text = "5 мин" },
+    new TimeoutOption { Value = "600", Text = "10 мин" }
+};
+
+private class TimeoutOption
+{
+    public string Value { get; set; }
+    public string Text { get; set; }
+}
+
+private void ToggleDropdown()
+{
+    showDropdown = !showDropdown;
+}
+
+private void SelectOption(string value)
+{
+    selectedTimeout = value;
+    showDropdown = false;
+}
+
+private string GetSelectedText()
+{
+    var option = timeoutOptions.FirstOrDefault(o => o.Value == selectedTimeout);
+    return option?.Text ?? "1 мин";
+}
 
 }
 
@@ -213,5 +257,114 @@
     {
         text-align:center;
     }
-</style>
 
+   /* Кастомный выпадающий список */
+.custom-select {
+    position: relative;
+    width: 90px;
+    cursor: pointer;
+    z-index: 1000;
+    flex-shrink: 0; 
+    margin-left: auto; 
+}
+
+.select-selected {
+    background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1));
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 30px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.select-items {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    right: 0;
+    background: radial-gradient(circle at 15% 20%, rgba(255,255,255,.8), transparent 28%), 
+                radial-gradient(circle at 85% 15%, rgba(120,255,220,.22), transparent 24%), 
+                radial-gradient(circle at 70% 75%, rgba(120,190,255,.20), transparent 26%), 
+                linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5);
+    z-index: 10000;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.select-item {
+    padding: 6px 16px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    margin: 3px 6px;
+    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.select-item:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(25, 163, 140, 0.3);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.select-item.selected {
+    background: var(--label);
+    color: white;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.select-items::-webkit-scrollbar {
+    width: 6px;
+}
+
+.select-items::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.select-items::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.select-items::-webkit-scrollbar-thumb:hover {
+    background: var(--label);
+}
+
+section.card:has(.custom-select) {
+    overflow: visible !important;
+    z-index: 100;
+}
+
+.timeout-row {
+    position: relative;
+    z-index: 200;
+}
+</style>
