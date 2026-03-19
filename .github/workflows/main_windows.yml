@@ -51,7 +51,7 @@ jobs:
             --self-contained true `
             --no-restore `
             -p:PublishReadyToRun=false `
-            -o ".\artifacts\publish"
+            -o ".\artifacts\releases"
             
       - name: Create release if missing
         shell: pwsh
@@ -63,7 +63,7 @@ jobs:
             gh release create $env:GITHUB_REF_NAME `
               --repo "ARCHBOTIK/SecurePassword_Releases" `
               --title $env:GITHUB_REF_NAME `
-              --notes "Android release $env:GITHUB_REF_NAME"
+              --notes "Windows release $env:GITHUB_REF_NAME"
           }
 
       - name: Upload EXE to GitHub Release
