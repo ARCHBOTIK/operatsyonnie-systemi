@@ -1,0 +1,94 @@
+name: Release Android
+
+on:
+  push:
+    tags:
+      - "version_android*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-pack-upload:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: dotnet info
+        shell: pwsh
+        run: |
+          dotnet --list-sdks
+          dotnet --info
+
+      - name: Install MAUI workloads
+        shell: pwsh
+        run: dotnet workload install maui maui-android
+
+      - name: Build Android APK (signed)
+        shell: pwsh
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if (-not $env:ANDROID_KEYSTORE_BASE64) {
+            throw "ANDROID_KEYSTORE_BASE64 is empty"
+          }
+
+          [System.IO.File]::WriteAllBytes(
+            "app.keystore",
+            [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
+          )
+
+          dotnet publish ".\OurGO\OurGO\OurGO.csproj" `
+            -c Release `
+            -f net10.0-android `
+            -p:JavaSdkDirectory="$env:JAVA_HOME" `
+            -p:AndroidSigningKeyStore=app.keystore `
+            -p:AndroidSigningKeyAlias=$env:ANDROID_KEY_ALIAS `
+            -p:AndroidSigningKeyPass=$env:ANDROID_KEY_PASSWORD `
+            -p:AndroidSigningStorePass=$env:ANDROID_KEYSTORE_PASSWORD `
+            -o ".\artifacts\publish\android"
+
+      - name: Collect Android artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ".\artifacts\releases\android" -Force
+          Copy-Item ".\artifacts\publish\android\*.apk" ".\artifacts\releases\android\" -ErrorAction Stop
+          Copy-Item ".\artifacts\publish\android\*.aab" ".\artifacts\releases\android\" -ErrorAction SilentlyContinue
+          Get-ChildItem ".\artifacts\releases\android"
+
+      - name: Create release if missing
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.ANDROID_TOKEN }}
+        run: |
+          gh release view $env:GITHUB_REF_NAME --repo "Hillariot/OurGO_Android" 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:GITHUB_REF_NAME `
+              --repo "ARCHBOTIK/SecurePassword_Releases" `
+              --title $env:GITHUB_REF_NAME `
+              --notes "Android release $env:GITHUB_REF_NAME"
+          }
+
+      - name: Upload APK/AAB to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.ANDROID_TOKEN }}
+        run: |
+          gh release upload $env:GITHUB_REF_NAME .\artifacts\releases\android\* `
+            --clobber `
+            --repo "ARCHBOTIK/SecurePassword_Releases"
