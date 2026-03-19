@@ -29,7 +29,7 @@ jobs:
       # ---------- Install all MAUI workloads ----------
       - name: Restore MAUI workloads (all platforms)
         shell: pwsh
-        run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst maui-tizen\
+        run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst
 
       # ---------- UI (MAUI) ----------
       - name: Restore UI (Windows only, win-x64)
