@@ -1,0 +1,72 @@
+name: Release Windows
+on:
+  push:
+    tags:
+      - "windows_v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-pack-upload:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: dotnet info
+        shell: pwsh
+        run: |
+          dotnet --list-sdks
+          dotnet --info
+
+      # ---------- Install all MAUI workloads ----------
+      - name: Restore MAUI workloads (all platforms)
+        shell: pwsh
+        run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst maui-tizen
+
+      - name: Install Velopack CLI
+        shell: pwsh
+        run: dotnet tool update -g vpk
+
+      # ---------- UI (MAUI) ----------
+      - name: Restore UI (Windows only, win-x64)
+        shell: pwsh
+        run: |
+          dotnet msbuild ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
+            /t:Restore `
+            /p:TargetFramework=net10.0-windows10.0.19041.0 `
+            /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true
+
+      - name: Publish UI (Windows only, win-x64)
+        shell: pwsh
+        run: |
+          dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
+            -c Release `
+            -f net10.0-windows10.0.19041.0 `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:PublishReadyToRun=false `
+            -o ".\artifacts\publish"
+
+      # ---------- UPLOAD ----------
+      - name: Upload to GitHub Releases (Hillariot/BarbarisProxy)
+        shell: pwsh
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          vpk upload github `
+            --repoUrl "https://github.com/ARCHBOTIK/SecurePassword_Releases" `
+            --outputDir ".\artifacts\releases" `
+            --channel win `
+            --tag $env:GITHUB_REF_NAME `
+            --publish `
+            --token $env:RELEASE_TOKEN
