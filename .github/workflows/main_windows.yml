@@ -71,6 +71,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
-          gh release upload $env:GITHUB_REF_NAME .\artifacts\releases\* `
+          $exe = Get-ChildItem ".\artifacts\releases" -Filter *.exe -File | Select-Object -First 1
+
+          if (-not $exe) {
+            Write-Error "EXE file not found in .\artifacts\releases"
+            exit 1
+          }
+
+          gh release upload $env:GITHUB_REF_NAME $exe.FullName `
             --clobber `
             --repo "ARCHBOTIK/SecurePassword_Releases"
