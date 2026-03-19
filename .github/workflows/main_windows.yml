@@ -71,6 +71,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
-          gh release upload $env:GITHUB_REF_NAME .\artifacts\releases `
+          gh release upload $env:GITHUB_REF_NAME .\artifacts\releases\* `
             --clobber `
             --repo "ARCHBOTIK/SecurePassword_Releases"
