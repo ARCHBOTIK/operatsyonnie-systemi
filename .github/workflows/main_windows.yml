@@ -29,11 +29,7 @@ jobs:
       # ---------- Install all MAUI workloads ----------
       - name: Restore MAUI workloads (all platforms)
         shell: pwsh
-        run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst maui-tizen
-
-      - name: Install Velopack CLI
-        shell: pwsh
-        run: dotnet tool update -g vpk
+        run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst maui-tizen\
 
       # ---------- UI (MAUI) ----------
       - name: Restore UI (Windows only, win-x64)
@@ -56,17 +52,25 @@ jobs:
             --no-restore `
             -p:PublishReadyToRun=false `
             -o ".\artifacts\publish"
-
-      # ---------- UPLOAD ----------
-      - name: Upload to GitHub Releases (Hillariot/BarbarisProxy)
+            
+      - name: Create release if missing
         shell: pwsh
         env:
-          RELEASE_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
-          vpk upload github `
-            --repoUrl "https://github.com/ARCHBOTIK/SecurePassword_Releases" `
-            --outputDir ".\artifacts\releases" `
-            --channel win `
-            --tag $env:GITHUB_REF_NAME `
-            --publish `
-            --token $env:RELEASE_TOKEN
+          gh release view $env:GITHUB_REF_NAME --repo "ARCHBOTIK/SecurePassword_Releases" 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:GITHUB_REF_NAME `
+              --repo "ARCHBOTIK/SecurePassword_Releases" `
+              --title $env:GITHUB_REF_NAME `
+              --notes "Android release $env:GITHUB_REF_NAME"
+          }
+
+      - name: Upload EXE to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          gh release upload $env:GITHUB_REF_NAME .\artifacts\releases\* `
+            --clobber `
+            --repo "ARCHBOTIK/SecurePassword_Releases"
