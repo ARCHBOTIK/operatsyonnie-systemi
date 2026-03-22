@@ -30,7 +30,8 @@
     box-sizing: border-box;
 }
 
-html, body {
+html, body, #app {
+    width: 100%;
     height: 100%;
     margin: 0;
 }
@@ -45,12 +46,13 @@ body {
 
 /* “Экран телефона” */
 .screen {
-    height: 100dvh;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    background: transparent;
 }
 
 .glass {
@@ -166,9 +168,8 @@ body {
 .without-folders-list {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-
-    max-height: calc(100dvh - 74px - var(--nav-h) - 120px);
-
+    min-height: 0;
+    max-height: none;
 }
 
 .appbar-title {
@@ -182,10 +183,10 @@ body {
 /* Content area leaves room for bottom nav */
 .content {
     flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px var(--pad) calc(var(--nav-h) + 20px);
-    -webkit-overflow-scrolling: touch;
 }
 
 /* Section label */
@@ -395,7 +396,7 @@ body {
 
 .modal-container {
     width: min(620px, 100%);
-    max-height: min(84dvh, 900px);
+    max-height: calc(100% - 32px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -765,18 +766,113 @@ textarea {
 }
 
 @media (max-width: 380px) {
-    .bottom-nav {
-        width: 95%;
-        padding: 8px 6px;
+    :root {
+        --pad: 10px;
+        --gap: 8px;
+        --radius: 14px;
+        --radius-lg: 18px;
+        --nav-h: 64px;
     }
 
+    .appbar {
+        height: 64px;
+        padding: 0 8px;
+    }
+
+    .appbar-title {
+        font-size: 17px;
+    }
+
+    .icon-button {
+        width: 36px;
+        height: 36px;
+    }
+
+        .icon-button img,
+        .icon-button svg,
+        .appbar img,
+        .ico img,
+        .nav-ico img,
+        .fab img {
+            width: 20px;
+            height: 20px;
+        }
+
+    .content {
+        padding: 8px 10px calc(var(--nav-h) + 16px);
+    }
+
+    .row {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .row-title {
+        font-size: 14px;
+    }
+
+    .row-sub,
+    .row-right,
     .nav-text {
-        font-size: 10px;
+        font-size: 12px;
     }
 
-    .nav-ico img {
-        width: 22px;
-        height: 22px;
+    .brand {
+        width: 36px;
+        height: 36px;
+        font-size: 12px;
+    }
+
+    .fab {
+        width: 50px;
+        height: 50px;
+        right: 12px;
+        bottom: calc(var(--nav-h) + 12px);
+    }
+
+    .modal-overlay {
+        padding: 10px;
+    }
+
+    .modal-container {
+        width: 100%;
+        max-height: calc(100% - 20px);
+        border-radius: 20px;
+    }
+}
+
+@media (max-width: 380px) {
+    .modal-footer {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .type-selector {
+        grid-template-columns: 1fr;
+    }
+
+        .type-selector button {
+            justify-content: flex-start;
+        }
+
+    .card-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .card-meta {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 

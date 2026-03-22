@@ -182,3 +182,39 @@
 .content {
     padding-bottom: calc(var(--nav-h) + 20px);
 }
+
+@media (max-width: 380px) {
+    .generator-container {
+        gap: 10px;
+    }
+
+    .password-display-area,
+    .options-section,
+    .password-strength {
+        padding: 10px;
+    }
+
+    .password-display {
+        font-size: 15px;
+        letter-spacing: 0.4px;
+        padding: 10px;
+    }
+
+    .btn-generate {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .checkbox-label {
+        font-size: 13px;
+        gap: 8px;
+    }
+
+    .strength-text {
+        font-size: 13px;
+    }
+
+    .strength-details {
+        font-size: 11px;
+    }
+}

@@ -7,6 +7,8 @@ using Microsoft.UI;
 using Microsoft.Maui.Handlers;
 using WinRT.Interop;
 using Windows.Graphics;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 
 #endif
 
@@ -31,27 +33,6 @@ namespace SecurePassword
     		builder.Logging.AddDebug();
 #endif
 
-#if WINDOWS
-        // Выполнится, когда WindowHandler создастся (т.е. окно уже реально существует)
-        WindowHandler.Mapper.AppendToMapping("PhoneSize", (handler, view) =>
-        {
-            const int W = 400;
-            const int H = 800;
-
-            var window = handler.PlatformView; // Microsoft.UI.Xaml.Window
-            var hwnd = WindowNative.GetWindowHandle(window);
-            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-
-            appWindow.Resize(new SizeInt32(W, H));
-
-            if (appWindow.Presenter is OverlappedPresenter presenter)
-            {
-                presenter.IsResizable = false;
-                presenter.IsMaximizable = false;
-            }
-        });
-#endif
             // keyManager
             builder.Services.AddSingleton<keyManager>(sp =>
                 new keyManager(
