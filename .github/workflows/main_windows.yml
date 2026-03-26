@@ -45,13 +45,14 @@ jobs:
         shell: pwsh
         run: |
           dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
-            -c Release `
-            -f net10.0-windows10.0.19041.0 `
-            -r win-x64 `
-            --self-contained true `
-            --no-restore `
-            -p:PublishReadyToRun=false `
-            -o ".\artifacts\releases"
+          -c Release `
+          -f net10.0-windows10.0.19041.0 `
+          -r win-x64 `
+          --self-contained true `
+          --no-restore `
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -o ".\artifacts\releases"
             
       - name: Create release if missing
         shell: pwsh
