@@ -18,7 +18,7 @@ public class PasswordGenerator: IPasswordGenerator
     {
 
         if (!useLowercase && !useUppercase && !useDigits && !useSpecial) 
-            throw new ArgumentException("Должен быть выбран хотя бы один тип символов");
+            throw new ArgumentException("Должен быть выбран\n хотя бы один тип символов");
 
         StringBuilder charPool = new StringBuilder();
 

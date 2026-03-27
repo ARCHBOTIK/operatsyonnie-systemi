@@ -10,14 +10,16 @@ namespace SecurePassword
 {
     public partial class App : Application
     {
-        public App()
+        private readonly MasterPasswordPage _masterPasswordPage;
+        public App(MasterPasswordPage masterPasswordPage)
         {
             InitializeComponent();
+            _masterPasswordPage = masterPasswordPage;
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            var window = new Window(new MainPage())
+            var window = new Window(_masterPasswordPage)
             {
                 Title = "VaultMech"
             };

@@ -35,7 +35,7 @@
                 <!-- Цифры -->
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeDigits" />
+                        <input type="checkbox" @bind="includeDigits" @onclick="setSymbolsType" />
                         <span class="checkbox-text">Цифры (0-9)</span>
                     </label>
                 </div>
@@ -43,14 +43,14 @@
                 <!-- Буквы латинского алфавита (2 галочки) -->
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeLowercase" />
+                        <input type="checkbox" @bind="includeLowercase" @onclick="setSymbolsType" />
                         <span class="checkbox-text">Строчные буквы (a-z)</span>
                     </label>
                 </div>
 
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeUppercase" />
+                        <input type="checkbox" @bind="includeUppercase" @onclick="setSymbolsType" />
                         <span class="checkbox-text">Прописные буквы (A-Z)</span>
                     </label>
                 </div>
@@ -58,24 +58,28 @@
                 <!-- Специальные символы -->
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeSpecial" />
+                        <input type="checkbox" @bind="includeSpecial" @onclick="setSymbolsType" />
                         <span class="checkbox-text">Специальные символы (!&#64;#$%^&*)</span>
                     </label>
                 </div>
             </div>
 
             <!-- Информация о силе пароля -->
-            <div class="password-strength">
-                <h3>Сила пароля</h3>
-                <div class="strength-meter">
-                    <div class="strength-bar @GetStrengthClass()"
-                         style="width: @GetStrengthPercentage()%;"></div>
+            @if (generatedPassword != "Нажмите кнопку для генерации" && generatedPassword != "Должен быть выбран хотя бы один тип символов")
+            {
+                <div class="password-strength">
+                    <h3>Сила пароля</h3>
+                    <div class="strength-meter">
+                        <div class="strength-bar @GetStrengthClass()"
+                             style="width: @GetStrengthPercentage()%;"></div>
+                    </div>
+                    <div class="strength-text">@GetStrengthText()</div>
+                    <div class="strength-details">
+                        <small>Активных опций: @GetActiveOptionsCount() из 4</small>
+                    </div>
                 </div>
-                <div class="strength-text">@GetStrengthText()</div>
-                <div class="strength-details">
-                    <small>Активных опций: @GetActiveOptionsCount() из 4</small>
-                </div>
-            </div>
+            }
+
         </div>
     </main>
 
@@ -125,6 +129,11 @@
     {
         int percentage = GetActiveOptionsCount();
         return percentage*25;
+    }
+
+    private void setSymbolsType()
+    {
+        generatedPassword = "Нажмите кнопку для генерации";
     }
 
     // Получение текстового описания силы пароля

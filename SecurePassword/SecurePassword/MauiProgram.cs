@@ -38,6 +38,8 @@ namespace SecurePassword
                 new keyManager(
                     Path.Combine(FileSystem.AppDataDirectory, "keys.dat")));
 
+            builder.Services.AddSingleton<MasterPasswordService>();
+
             // Репозитории
             builder.Services.AddSingleton<SecureRepository<PasswordEntry>>(sp =>
                 new SecureRepository<PasswordEntry>(
@@ -53,6 +55,9 @@ namespace SecurePassword
                 new SecureRepository<NoteEntry>(
                     Path.Combine(FileSystem.AppDataDirectory, "notes.dat"),
                     sp.GetRequiredService<keyManager>()));
+
+            builder.Services.AddSingleton<MainPage>();
+            builder.Services.AddSingleton<MasterPasswordPage>();
 
             return builder.Build();
         }
