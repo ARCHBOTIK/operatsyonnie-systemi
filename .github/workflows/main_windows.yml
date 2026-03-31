@@ -1,4 +1,5 @@
 name: Release Windows
+
 on:
   push:
     tags:
@@ -26,27 +27,50 @@ jobs:
           dotnet --list-sdks
           dotnet --info
 
-      # ---------- Install all MAUI workloads ----------
-      - name: Restore MAUI workloads (all platforms)
+      # ---------- Install MAUI workloads ----------
+      - name: Restore MAUI workloads
         shell: pwsh
         run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst
 
-      # ---------- UI (MAUI) ----------
-      - name: Restore UI (Windows only, win-x64)
+      # ---------- Restore ----------
+      - name: Restore UI (Windows)
         shell: pwsh
         run: |
           dotnet msbuild ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             /t:Restore `
             /p:TargetFramework=net10.0-windows10.0.19041.0 `
-            /p:RuntimeIdentifier=win-x64 `
-            /p:SelfContained=true `
-            /p:PublishReadyToRun=false
+            /p:RuntimeIdentifier=win-x64
 
-      - name: Publish UI (Windows only, win-x64)
+      # ---------- Publish (framework-dependent, smaller size) ----------
+      - name: Publish UI (framework-dependent)
         shell: pwsh
         run: |
-          dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:IncludeNativeLibrariesForSelfExtract=true -o ".\artifacts\releases"
-            
+          dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
+            -c Release `
+            -f net10.0-windows10.0.19041.0 `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishReadyToRun=false `
+            -o ".\artifacts\publish"
+
+      # ---------- Install Velopack ----------
+      - name: Install Velopack CLI
+        shell: pwsh
+        run: dotnet tool install --global vpk
+
+      # ---------- Pack with Velopack ----------
+      - name: Pack with Velopack
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.Replace("windows_v","")
+
+          vpk pack `
+            --packId SecurePassword `
+            --packVersion $version `
+            --packDir ".\artifacts\publish" `
+            --outputDir ".\artifacts\velopack"
+
+      # ---------- Create release if missing ----------
       - name: Create release if missing
         shell: pwsh
         env:
@@ -60,18 +84,21 @@ jobs:
               --notes "Windows release $env:GITHUB_REF_NAME"
           }
 
-      - name: Upload EXE to GitHub Release
+      # ---------- Upload Velopack artifacts ----------
+      - name: Upload Velopack artifacts
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
-          $exe = Get-ChildItem ".\artifacts\releases" -Filter *.exe -File | Select-Object -First 1
+          $files = Get-ChildItem ".\artifacts\velopack" -File
 
-          if (-not $exe) {
-            Write-Error "EXE file not found in .\artifacts\releases"
+          if (-not $files) {
+            Write-Error "No Velopack artifacts found"
             exit 1
           }
 
-          gh release upload $env:GITHUB_REF_NAME $exe.FullName `
-            --clobber `
-            --repo "ARCHBOTIK/SecurePassword_Releases"
+          foreach ($file in $files) {
+            gh release upload $env:GITHUB_REF_NAME $file.FullName `
+              --clobber `
+              --repo "ARCHBOTIK/SecurePassword_Releases"
+          }
