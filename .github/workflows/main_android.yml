@@ -3,7 +3,7 @@ name: Release Android
 on:
   push:
     tags:
-      - "version_android*.*.*"
+      - "android_v*.*.*"
 
 permissions:
   contents: read
@@ -20,6 +20,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
@@ -76,7 +77,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ANDROID_TOKEN }}
         run: |
-          gh release view $env:GITHUB_REF_NAME --repo "Hillariot/OurGO_Android" 2>$null
+          gh release view $env:GITHUB_REF_NAME --repo "ARCHBOTIK/SecurePassword_Releases" 2>$null
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:GITHUB_REF_NAME `
               --repo "ARCHBOTIK/SecurePassword_Releases" `
