@@ -54,7 +54,7 @@ jobs:
             [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
           )
 
-          dotnet publish ".\OurGO\OurGO\OurGO.csproj" `
+          dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             -c Release `
             -f net10.0-android `
             -p:JavaSdkDirectory="$env:JAVA_HOME" `
