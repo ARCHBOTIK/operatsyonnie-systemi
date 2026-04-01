@@ -75,7 +75,8 @@ jobs:
             --packId SecurePassword `
             --packVersion $version `
             --packDir ".\artifacts\publish" `
-            --outputDir ".\artifacts\velopack"
+            --outputDir ".\artifacts\velopack" `
+            --mainExe "SecurePassword.exe"
 
       # ---------------- Create release if missing ----------------
       - name: Create release if missing
