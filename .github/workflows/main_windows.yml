@@ -13,13 +13,15 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # ---------------- Checkout ----------------
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      # ---------------- Setup .NET Preview ----------------
+      - name: Setup .NET 10 Preview
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: "10.0.0-preview.7"
 
       - name: dotnet info
         shell: pwsh
@@ -27,22 +29,24 @@ jobs:
           dotnet --list-sdks
           dotnet --info
 
-      # ---------- Install MAUI workloads ----------
-      - name: Restore MAUI workloads
+      # ---------------- Install MAUI workloads ----------------
+      - name: Install MAUI workloads
         shell: pwsh
-        run: dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst
+        run: |
+          dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst
 
-      # ---------- Restore ----------
+      # ---------------- Restore ----------------
       - name: Restore UI (Windows)
         shell: pwsh
         run: |
           dotnet msbuild ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             /t:Restore `
             /p:TargetFramework=net10.0-windows10.0.19041.0 `
-            /p:RuntimeIdentifier=win-x64
+            /p:RuntimeIdentifier=win-x64 `
+            /p:SelfContained=true
 
-      # ---------- Publish (framework-dependent, smaller size) ----------
-      - name: Publish UI (framework-dependent)
+      # ---------------- Publish (self-contained, single-file) ----------------
+      - name: Publish UI (Windows self-contained)
         shell: pwsh
         run: |
           dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
@@ -51,26 +55,27 @@ jobs:
             -r win-x64 `
             --self-contained true `
             -p:PublishReadyToRun=false `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
             -o ".\artifacts\publish"
 
-      # ---------- Install Velopack ----------
+      # ---------------- Install Velopack CLI ----------------
       - name: Install Velopack CLI
         shell: pwsh
         run: dotnet tool install --global vpk
 
-      # ---------- Pack with Velopack ----------
+      # ---------------- Pack with Velopack ----------------
       - name: Pack with Velopack
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME.Replace("windows_v","")
-
           vpk pack `
             --packId SecurePassword `
             --packVersion $version `
             --packDir ".\artifacts\publish" `
             --outputDir ".\artifacts\velopack"
 
-      # ---------- Create release if missing ----------
+      # ---------------- Create release if missing ----------------
       - name: Create release if missing
         shell: pwsh
         env:
@@ -84,19 +89,17 @@ jobs:
               --notes "Windows release $env:GITHUB_REF_NAME"
           }
 
-      # ---------- Upload Velopack artifacts ----------
+      # ---------------- Upload Velopack artifacts ----------------
       - name: Upload Velopack artifacts
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
           $files = Get-ChildItem ".\artifacts\velopack" -File
-
           if (-not $files) {
             Write-Error "No Velopack artifacts found"
             exit 1
           }
-
           foreach ($file in $files) {
             gh release upload $env:GITHUB_REF_NAME $file.FullName `
               --clobber `
