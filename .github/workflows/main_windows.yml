@@ -43,7 +43,8 @@ jobs:
             /t:Restore `
             /p:TargetFramework=net10.0-windows10.0.19041.0 `
             /p:RuntimeIdentifier=win-x64 `
-            /p:SelfContained=true
+            /p:SelfContained=true `
+            /p:UseMonoRuntime=false
 
       # ---------------- Publish (self-contained, single-file) ----------------
       - name: Publish UI (Windows self-contained)
@@ -56,6 +57,7 @@ jobs:
             --self-contained true `
             -p:PublishReadyToRun=false `
             -p:PublishSingleFile=true `
+            -p:UseMonoRuntime=false `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -o ".\artifacts\publish"
 
