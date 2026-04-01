@@ -19,7 +19,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.0-preview.7"
+          dotnet-version: "10.0.x"
 
       - name: dotnet info
         shell: pwsh
@@ -49,7 +49,7 @@ jobs:
             -c Release `
             -f net10.0-windows10.0.19041.0 `
             -r win-x64 `
-            --self-contained false `
+            --self-contained true `
             -p:PublishReadyToRun=false `
             -o ".\artifacts\publish"
 
