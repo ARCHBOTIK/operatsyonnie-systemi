@@ -76,7 +76,7 @@ jobs:
             --packVersion $version `
             --packDir ".\artifacts\publish" `
             --outputDir ".\artifacts\velopack" `
-            --mainExe "VaultMech.exe"
+            --mainExe "VaultPass.exe"
 
       # ---------------- Create release if missing ----------------
       - name: Create release if missing
