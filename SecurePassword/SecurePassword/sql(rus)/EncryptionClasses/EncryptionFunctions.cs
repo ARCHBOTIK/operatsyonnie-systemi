@@ -59,7 +59,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         RandomNumberGenerator.Fill(nonce);
         byte[] ciphertext = new byte[dek.Length]; //Зашифрованный DEK
         tag = new byte[16]; //Тег аутентификации
-        using (var aesGcm = new AesGcm(kek, kek.Length))
+        using (var aesGcm = new AesGcm(kek, tag.Length))
         {
             aesGcm.Encrypt(nonce, dek, ciphertext, tag); //Применение самого алгоритма шифрования
         }
@@ -74,7 +74,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         byte[] ciphertext = new byte[encryptedDEK.Length - 12 - 16];
         UnpackAESGCMData(encryptedDEK, out nonce, out tag, out ciphertext); //Распаковка данных о зашифрованном DEK
         byte[] dek = new byte[encryptedDEK.Length - 12 - 16];
-        using (var aesGcm = new AesGcm(kek, kek.Length))
+        using (var aesGcm = new AesGcm(kek, tag.Length))
         {
             aesGcm.Decrypt(nonce, ciphertext, tag, dek); //Расшифровка с учётом полученных данных
         }
@@ -105,7 +105,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         byte[] dataNonce = RandomNumberGenerator.GetBytes(12);
         byte[] ciphertextData = new byte[plaintext.Length]; //Длина уже не обязательно 32 байта
         byte[] dataTag = new byte[16];
-        using (var aes = new AesGcm(dek, dek.Length))
+        using (var aes = new AesGcm(dek, dataTag.Length))
         {
             aes.Encrypt(dataNonce, plaintext, ciphertextData, dataTag);
         }
@@ -120,7 +120,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         byte[] ciphertext = new byte[encryptedData.Length - 12 - 16];
         UnpackAESGCMData(encryptedData, out nonce, out tag, out ciphertext);
         byte[] plaintext = new byte[ciphertext.Length];
-        using (var aes = new AesGcm(dek, dek.Length))
+        using (var aes = new AesGcm(dek, tag.Length))
         {
             aes.Decrypt(nonce, ciphertext, tag, plaintext);
         }

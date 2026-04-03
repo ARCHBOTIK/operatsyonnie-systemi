@@ -13,7 +13,7 @@
         <div class="generator-container">
             <!-- Текстовый блок с паролем -->
             <div class="password-display-area">
-                <div class="password-display" id="generatedPassword">@generatedPassword</div>
+                <div class="password-display" @onclick="CopyPassword" id="generatedPassword">@generatedPassword</div>
                 
                 <!-- Кнопка генерации -->
                 <button class="btn-generate" @onclick="_GeneratePassword">
@@ -29,7 +29,7 @@
                 <!-- Длина пароля -->
                 <div class="form-group">
                     <label for="passwordLength">Длина пароля:</label>
-                    <input type="number" id="passwordLength" class="form-control" @bind="passwordLength" min="4" max="32" />
+                    <input type="number" id="passwordLength" class="form-control" @bind="passwordLength" @bind:event="oninput" min="4" max="255" />
                 </div>
 
                 <!-- Цифры -->
@@ -79,6 +79,13 @@
                     </div>
                 </div>
             }
+            @if (copied)
+            {
+                <div class="copy-toast">
+                    <span class="copy-toast-icon">✓</span>
+                    <span class="copy-toast-text">Пароль скопирован</span>
+                </div>
+            }
 
         </div>
     </main>
@@ -89,12 +96,22 @@
     // Поле для отображения сгенерированного пароля
     private string generatedPassword = "Нажмите кнопку для генерации";
     // Длина пароля
-    private short passwordLength = 12;
+    private byte passwordLength = 12;
     // Набор галочек 
     private bool includeDigits = true;      // Цифры
     private bool includeLowercase = true;   // Строчные буквы
     private bool includeUppercase = true;   // Прописные буквы
     private bool includeSpecial = false;    // Специальные символы
+
+    // Копирование
+    private bool copied;
+
+    public int PasswordLength
+    {
+        get => passwordLength;
+        set => passwordLength = Math.Clamp((byte)value, (byte)4, (byte)255);
+    }
+
     // Кнопка генерации 
     private void _GeneratePassword()
     {
@@ -105,6 +122,23 @@
         catch (ArgumentException e)
         {
             generatedPassword = e.Message;
+        }
+    }
+
+    private async Task CopyPassword()
+    {
+        if (!string.IsNullOrEmpty(generatedPassword) &&
+            generatedPassword != "Нажмите кнопку для генерации" &&
+            generatedPassword != "Должен быть выбран хотя бы один тип символов")
+        {
+            await Clipboard.SetTextAsync(generatedPassword);
+            copied = true;
+            StateHasChanged();
+
+            await Task.Delay(1500);
+
+            copied = false;
+            StateHasChanged();
         }
     }
 

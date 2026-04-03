@@ -14,7 +14,7 @@ public class PasswordGenerator: IPasswordGenerator
     private const string SpecialChars = "!@#$%^&*()_-+=<>?";
     private const short PasswordLength = 15;
 
-    public static string GeneratePassword(bool useLowercase, bool useUppercase, bool useDigits, bool useSpecial, short passwordLength)
+    public static string GeneratePassword(bool useLowercase, bool useUppercase, bool useDigits, bool useSpecial, byte passwordLength)
     {
 
         if (!useLowercase && !useUppercase && !useDigits && !useSpecial) 

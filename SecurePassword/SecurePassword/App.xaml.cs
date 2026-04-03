@@ -21,7 +21,7 @@ namespace SecurePassword
         {
             var window = new Window(_masterPasswordPage)
             {
-                Title = "VaultMech"
+                Title = "VaultPass"
             };
 
 #if WINDOWS

@@ -1,214 +1,223 @@
 ﻿@page "/"
 
-<!doctype html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Мой сейф</title>
-    <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-    <div class="screen">
+<div class="screen">
 
-            <header class="appbar">
-                <div class="appbar-left">
-                    <button class="icon-button" @onclick="ToggleSort">
-                        <img src="icons/sort.svg" />
-                    </button>
-                </div>
+    <header class="appbar">
+        <div class="appbar-left">
+            <button class="icon-button" @onclick="ToggleSort">
+                <img src="icons/sort.svg" />
+            </button>
+        </div>
 
-                <div class="appbar-right">
-                    <img src="icons/search.svg" class="icon" />
-                </div>
-            </header>
+        <div class="appbar-right">
+            <img src="icons/search.svg" class="icon" />
+        </div>
+    </header>
 
-        <!-- Content -->
-        <main class="content">
-            <!-- ФОРМА ДОБАВЛЕНИЯ -->
-            @if (showAddForm)
-            {
-                <div class="modal-overlay" @onclick="SetFormState">
-                    <div class="modal-container" @onclick:stopPropagation="true">
-                        <div class="modal-header">
-                            <h2>Добавление нового элемента</h2>
+    <main class="content">
+        @if (showAddForm)
+        {
+            <div class="modal-overlay" @onclick="SetFormState">
+                <div class="modal-container" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h2>Добавление нового элемента</h2>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Тип элемента:</label>
+                            <div class="type-selector">
+                                <button class="@(selectedType == ItemType.Password ? "active" : "")"
+                                        @onclick="() => selectedType = ItemType.Password">
+                                    <img src="icons/login.png" alt="Пароль" />
+                                    <span>Пароль</span>
+                                </button>
+
+                                <button class="@(selectedType == ItemType.Card ? "active" : "")"
+                                        @onclick="() => selectedType = ItemType.Card">
+                                    <img src="icons/card.png" alt="Карта" />
+                                    <span>Карта</span>
+                                </button>
+
+                                <button class="@(selectedType == ItemType.Note ? "active" : "")"
+                                        @onclick="() => selectedType = ItemType.Note">
+                                    <img src="icons/secure_note.png" alt="Заметка" />
+                                    <span>Заметка</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label>Тип элемента:</label>
-                                <div class="type-selector">
-                                    <button class="@(selectedType == ItemType.Password ? "active" : "")" @onclick="() => selectedType = ItemType.Password">
-                                        <img src="icons/login.png" alt="Пароль" />
-                                        <span>Пароль</span>
-                                    </button>
-                                    <button class="@(selectedType == ItemType.Card ? "active" : "")" @onclick="() => selectedType = ItemType.Card">
-                                        <img src="icons/card.png" alt="Карта" />
-                                        <span>Карта</span>
-                                    </button>
-                                    <button class="@(selectedType == ItemType.Note ? "active" : "")" @onclick="() => selectedType = ItemType.Note">
-                                        <img src="icons/secure_note.png" alt="Заметка" />
-                                        <span>Заметка</span>
-                                    </button>
+                        @if (selectedType == ItemType.Password)
+                        {
+                            <div class="password-form">
+                                <div class="form-group">
+                                    <label for="passwordTitle">Название</label>
+                                    <input type="text" id="passwordTitle" class="form-control" @bind="title" placeholder="Название" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="login">Логин</label>
+                                    <input type="text" id="login" class="form-control" @bind="login" placeholder="ivan.ivanov@mail.ru" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="password">Пароль</label>
+                                    <input type="password" id="password" class="form-control" @bind="password" placeholder="········" maxlength="100" />
                                 </div>
                             </div>
+                        }
 
-                            @if (selectedType == ItemType.Password)
-                            {
-                                <div class="password-form">
-                                    <div class="form-group">
-                                        <label for="title">Название</label>
-                                        <input type="text" id="title" class="form-control" @bind="title" placeholder="Название" />
+                        @if (selectedType == ItemType.Card)
+                        {
+                            <div class="card-form">
+                                <div class="card-input"
+                                     tabindex="0"
+                                     @onclick="() => FocusField(CardField.Number)">
+
+                                    <div class="card-chip"></div>
+
+                                    <div class="card-line">
+                                        <div class="card-label">Номер</div>
+                                        <div class="card-value card-value-mono @(_activeField == CardField.Number ? "is-active" : "")">
+                                            @(string.IsNullOrWhiteSpace(cardNumber) ? "1234 5678 9012 3456" : cardNumber)
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="login">Логин</label>
-                                        <input type="text" id="login" class="form-control" @bind="login" placeholder="ivan.ivanov@mail.ru" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="password">Пароль</label>
-                                        <input type="password" id="password" class="form-control" @bind="password" placeholder="········" maxlength="100" />
+
+                                    <div class="card-grid">
+                                        <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Holder)">
+                                            <div class="card-label">Владелец</div>
+                                            <div class="card-value @(_activeField == CardField.Holder ? "is-active" : "")">
+                                                @(string.IsNullOrWhiteSpace(cardHolder) ? "IVAN IVANOV" : cardHolder.ToUpperInvariant())
+                                            </div>
+                                        </div>
+
+                                        <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Exp)">
+                                            <div class="card-label">Срок</div>
+                                            <div class="card-value card-value-mono @(_activeField == CardField.Exp ? "is-active" : "")">
+                                                @(string.IsNullOrWhiteSpace(expiryDate) ? "MM/YY" : expiryDate)
+                                            </div>
+                                        </div>
+
+                                        <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Cvv)">
+                                            <div class="card-label">CVV</div>
+                                            <div class="card-value card-value-mono @(_activeField == CardField.Cvv ? "is-active" : "")">
+                                                @(string.IsNullOrWhiteSpace(cvv) ? "•••" : new string('•', cvv.Length))
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            }
 
-                            @if (selectedType == ItemType.Card)
-                            {
-                                <div class="card-form">
+                                <div class="card-hidden-inputs">
+                                    <input id="cardNumberInput"
+                                           class="form-control"
+                                           inputmode="numeric"
+                                           autocomplete="cc-number"
+                                           maxlength="19"
+                                           value="@cardNumber"
+                                           @oninput="OnCardNumberInput" />
 
-                                    <!-- CARD INPUT SURFACE -->
-                                    <div class="card-input"
-                                         tabindex="0"
-                                         @onclick="() => FocusField(CardField.Number)">
+                                    <input id="cardHolderInput"
+                                           class="form-control"
+                                           autocomplete="cc-name"
+                                           value="@cardHolder"
+                                           @oninput="OnCardHolderInput" />
 
-                                        <div class="card-chip"></div>
-
-                                        <div class="card-line">
-                                            <div class="card-label">Номер</div>
-                                            <div class="card-value card-value-mono @( _activeField == CardField.Number ? "is-active" : "" )">
-                                                @(string.IsNullOrWhiteSpace(cardNumber) ? "1234 5678 9012 3456" : cardNumber)
-                                            </div>
-                                        </div>
-
-                                        <div class="card-grid">
-                                            <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Holder)">
-                                                <div class="card-label">Владелец</div>
-                                                <div class="card-value @( _activeField == CardField.Holder ? "is-active" : "" )">
-                                                    @(string.IsNullOrWhiteSpace(cardHolder) ? "IVAN IVANOV" : cardHolder.ToUpperInvariant())
-                                                </div>
-                                            </div>
-
-                                            <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Exp)">
-                                                <div class="card-label">Срок</div>
-                                                <div class="card-value card-value-mono @( _activeField == CardField.Exp ? "is-active" : "" )">
-                                                    @(string.IsNullOrWhiteSpace(expiryDate) ? "MM/YY" : expiryDate)
-                                                </div>
-                                            </div>
-
-                                            <div class="card-line" @onclick:stopPropagation="true" @onclick="() => FocusField(CardField.Cvv)">
-                                                <div class="card-label">CVV</div>
-                                                <div class="card-value card-value-mono @( _activeField == CardField.Cvv ? "is-active" : "" )">
-                                                    @(string.IsNullOrWhiteSpace(cvv) ? "•••" : new string('•', cvv.Length))
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Минимальные поля (можно оставить, можно спрятать визуально) -->
-                                    <div class="card-hidden-inputs">
-                                        <input id="cardNumberInput"
+                                    <div class="form-row">
+                                        <input id="expiryInput"
                                                class="form-control"
                                                inputmode="numeric"
-                                               autocomplete="cc-number"
-                                               maxlength="19"
-                                               value="@cardNumber"
-                                               @oninput="OnCardNumberInput" />
+                                               autocomplete="cc-exp"
+                                               maxlength="5"
+                                               value="@expiryDate"
+                                               @oninput="OnExpiryInput" />
 
-                                        <input id="cardHolderInput"
+                                        <input id="cvvInput"
                                                class="form-control"
-                                               autocomplete="cc-name"
-                                               value="@cardHolder"
-                                               @oninput="OnCardHolderInput" />
-
-                                        <div class="form-row">
-                                            <input id="expiryInput"
-                                                   class="form-control"
-                                                   inputmode="numeric"
-                                                   autocomplete="cc-exp"
-                                                   maxlength="5"
-                                                   value="@expiryDate"
-                                                   @oninput="OnExpiryInput" />
-
-                                            <input id="cvvInput"
-                                                   class="form-control"
-                                                   inputmode="numeric"
-                                                   autocomplete="cc-csc"
-                                                   maxlength="3"
-                                                   value="@cvv"
-                                                   @oninput="OnCvvInput" />
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="title">Название карты</label>
-                                        <input type="text" id="title" class="form-control" @bind="title" placeholder="Например: Зарплатная" />
+                                               inputmode="numeric"
+                                               autocomplete="cc-csc"
+                                               maxlength="3"
+                                               value="@cvv"
+                                               @oninput="OnCvvInput" />
                                     </div>
                                 </div>
-                            }
 
-                            @if (selectedType == ItemType.Note)
-                            {
-                                <div class="note-form">
-                                    <div class="form-group">
-                                        <label for="noteTitle">Название заметки</label>
-                                        <input type="text" id="noteTitle" class="form-control" @bind="noteTitle" placeholder="Важные мысли" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="noteContent">Содержание</label>
-                                        <textarea id="noteContent" class="form-control note-textarea" @bind="noteContent" rows="8" placeholder="Введите текст заметки..."></textarea>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="cardTitle">Название карты</label>
+                                    <input type="text" id="cardTitle" class="form-control" @bind="cardTitle" placeholder="Например: Зарплатная" />
                                 </div>
-                            }
-                        </div>
+                            </div>
+                        }
 
-                        <div class="modal-footer">
-                            <button class="btn btn-primary" @onclick="SaveItem">
-                                <img src="icons/plus.png" alt="Сохранить" />
-                                <span>Сохранить</span>
-                            </button>
-                            <button class="btn btn-secondary" @onclick="SetFormState">
-                                Отмена
-                            </button>
-                        </div>
+                        @if (selectedType == ItemType.Note)
+                        {
+                            <div class="note-form">
+                                <div class="form-group">
+                                    <label for="noteTitle">Название заметки</label>
+                                    <input type="text" id="noteTitle" class="form-control" @bind="noteTitle" placeholder="Важные мысли" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="noteContent">Содержание</label>
+                                    <textarea id="noteContent"
+                                              class="form-control note-textarea"
+                                              @bind="noteContent"
+                                              rows="8"
+                                              placeholder="Введите текст заметки..."></textarea>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" @onclick="SaveItem">
+                            <img src="icons/plus.png" alt="Сохранить" />
+                            <span>Сохранить</span>
+                        </button>
+
+                        <button class="btn btn-secondary" @onclick="SetFormState">
+                            Отмена
+                        </button>
                     </div>
                 </div>
-            }
+            </div>
+        }
 
-            <!-- Логины -->
-            <section class="card">
-                <div class="row" @onclick="() => ToggleCategory(0)">
-                    <div class="row-left">
-                        <span class="ico">
-                            <img src="icons/login.png" alt="Логины" />
-                        </span>
-                        <span class="row-title">Логины</span>
-                    </div>
-                    <div>
-                        <span class="row-right">@PasswordRepository.getAll().Count()</span>
-                        <span> @(expandedIndex == 0 && PasswordRepository.getAll().Count()!=0 ? "▼" : "▶")</span>
-                    </div>
+        <section class="card">
+            <div class="row" @onclick="() => ToggleCategory(0)">
+                <div class="row-left">
+                    <span class="ico">
+                        <img src="icons/login.png" alt="Логины" />
+                    </span>
+                    <span class="row-title">Логины</span>
                 </div>
-                
-                @if (expandedIndex == 0)
-                {
-                    <div>
-                        @foreach(var i in PasswordRepository.getAll())
+                <div>
+                    <span class="row-right">@passwords.Count</span>
+                    <span>@(expandedIndex == 0 && passwords.Count != 0 ? "▼" : "▶")</span>
+                </div>
+            </div>
+
+            @if (expandedIndex == 0)
+            {
+                <div>
+                    @if (passwords.Count == 0)
+                    {
+                        <div class="divider"></div>
+                        <div class="row">
+                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var i in passwords)
                         {
                             <div class="divider"></div>
-                            <!-- Вывод полей из БД паролей -->
                             <div class="row">
                                 <div class="row-left">
                                     <span class="brand">
-                                        <img src=@ServiceImageGenerator.GetServiceIconPath(i.ServiceName) alt=@i.Title width="40" height="40" />
+                                        <img src="@ServiceImageGenerator.GetServiceIconPath(i.ServiceName)"
+                                             alt="@i.Title"
+                                             width="40"
+                                             height="40" />
                                     </span>
                                     <div class="row-text">
                                         <div class="row-title">@i.Title</div>
@@ -220,39 +229,48 @@
                                 </button>
                             </div>
                         }
-                    </div>
-                }
-            </section>
-
-            <!-- Карты (только СберБанк) -->
-            <section class="card">
-                <div class="row" @onclick="() => ToggleCategory(1)">
-                    <div class="row-left">
-                        <span class="ico">
-                            <img src="icons/card.png" alt="Карты" />
-                        </span>
-                        <span class="row-title">Карты</span>
-                    </div>
-                    <div>
-                        <span class="row-right">@CardRepository.getAll().Count()</span>
-                        <span> @(expandedIndex == 1 && CardRepository.getAll().Count() != 0 ? "▼" : "▶")</span>
-                    </div>
+                    }
                 </div>
-                
-                @if (expandedIndex == 1)
-                {
-                    <div>
-                        @foreach (var i in CardRepository.getAll())
+            }
+        </section>
+
+        <section class="card">
+            <div class="row" @onclick="() => ToggleCategory(1)">
+                <div class="row-left">
+                    <span class="ico">
+                        <img src="icons/card.png" alt="Карты" />
+                    </span>
+                    <span class="row-title">Карты</span>
+                </div>
+                <div>
+                    <span class="row-right">@cards.Count</span>
+                    <span>@(expandedIndex == 1 && cards.Count != 0 ? "▼" : "▶")</span>
+                </div>
+            </div>
+
+            @if (expandedIndex == 1)
+            {
+                <div>
+                    @if (cards.Count == 0)
+                    {
+                        <div class="divider"></div>
+                        <div class="row">
+                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var i in cards)
                         {
                             <div class="divider"></div>
                             <div class="row">
                                 <div class="row-left">
                                     <span class="brand">
-                                        <img src=@ServiceImageGenerator.GetServiceIconPath(i.BankName) alt=@i.Title width="40" height="40" />
+                                        <img src="icons/card.png" alt="@i.Title" width="40" height="40" />
                                     </span>
                                     <div class="row-text">
-                                        <div class="row-title">СберБанк</div>
-                                        <div class="row-sub">i.ivanov@mail.ru</div>
+                                        <div class="row-title">@i.Title</div>
+                                        <div class="row-sub">@MaskCardNumber(i.CardNumber)</div>
                                     </div>
                                 </div>
                                 <button class="kebab" aria-label="Действия">
@@ -260,56 +278,71 @@
                                 </button>
                             </div>
                         }
-                    </div>
-                }
-            </section>
-
-         
-
-            <!-- Защищённая заметка -->
-            <section class="card">
-                <div class="row" @onclick="() => ToggleCategory(2)">
-                    <div class="row-left">
-                        <span class="ico">
-                            <img src="icons/note.png" alt="Защищённая заметка" />
-                        </span>
-                        <span class="row-title">Защищённая заметка</span>
-                    </div>
-                    <div>
-                        <span class="row-right">@NoteRepository.getAll().Count()</span>
-                        <span> @(expandedIndex == 2 && NoteRepository.getAll().Count() != 0 ? "▼" : "▶")</span>
-                    </div>
+                    }
                 </div>
-                
-                @if (expandedIndex == 2)
-                {
-                    <div>
-                        @foreach (var i in NoteRepository.getAll())
+            }
+        </section>
+
+        <section class="card">
+            <div class="row" @onclick="() => ToggleCategory(2)">
+                <div class="row-left">
+                    <span class="ico">
+                        <img src="icons/note.png" alt="Защищённые заметки" />
+                    </span>
+                    <span class="row-title">Защищённые заметки</span>
+                </div>
+                <div>
+                    <span class="row-right">@notes.Count</span>
+                    <span>@(expandedIndex == 2 && notes.Count != 0 ? "▼" : "▶")</span>
+                </div>
+            </div>
+
+            @if (expandedIndex == 2)
+            {
+                <div>
+                    @if (notes.Count == 0)
+                    {
+                        <div class="divider"></div>
+                        <div class="row">
+                            <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var i in notes)
                         {
                             <div class="divider"></div>
                             <div class="row">
-                                <span style="margin: 0 auto; color: #999;">Нет данных</span>
+                                <div class="row-left">
+                                    <span class="brand">
+                                        <img src="icons/note.png" alt="@i.Title" width="40" height="40" />
+                                    </span>
+                                    <div class="row-text">
+                                        <div class="row-title">@i.Title</div>
+                                        <div class="row-sub">@GetNotePreview(i.Content)</div>
+                                    </div>
+                                </div>
+                                <button class="kebab" aria-label="Действия">
+                                    <span></span><span></span><span></span>
+                                </button>
                             </div>
                         }
-                    </div>
-                }
-            </section>
+                    }
+                </div>
+            }
+        </section>
 
-            <!-- Floating action button -->
-            <button class="fab" aria-label="Добавить" @onclick="SetFormState">
-                <img src="icons/plus.png" alt="Добавить" />
-            </button>
-        </main>
-    </div>
-</body>
-</html>
+        <button class="fab" aria-label="Добавить" @onclick="SetFormState">
+            <img src="icons/plus.png" alt="Добавить" />
+        </button>
+    </main>
+</div>
 
 @code {
     [Inject] private IJSRuntime JS { get; set; } = default!;
-    [Inject] private SecureRepository<PasswordEntry> PasswordRepository { get; set; }
-    [Inject] private SecureRepository<CardEntry> CardRepository { get; set; }
-    [Inject] private SecureRepository<NoteEntry> NoteRepository { get; set; }
-
+    [Inject] private SecureRepository<PasswordEntry> PasswordRepository { get; set; } = default!;
+    [Inject] private SecureRepository<CardEntry> CardRepository { get; set; } = default!;
+    [Inject] private SecureRepository<NoteEntry> NoteRepository { get; set; } = default!;
 
     private List<PasswordEntry> passwords = new();
     private List<CardEntry> cards = new();
@@ -326,39 +359,32 @@
         Settings
     }
 
-    private enum ItemType { Password, Card, Note }
+    private enum ItemType
+    {
+        Password,
+        Card,
+        Note
+    }
+
     private ItemType selectedType = ItemType.Password;
 
-    // Поля для форм
     private string title = "";
     private string login = "";
     private string password = "";
-    // Поля для карт
+
     private string cardNumber = "";
     private string cardHolder = "";
     private string expiryDate = "";
     private string cvv = "";
     private string cardTitle = "";
-    // Поля для заметок
+
     private string noteTitle = "";
     private string noteContent = "";
 
-    private int expandedIndex = 0; // 0-логины, 1-карты, 2-заметки
+    private int expandedIndex = 0;
     private bool showAddForm = false;
 
     private PageType currentPage = PageType.Safe;
-
-    private string GetPageTitle()
-    {
-        return currentPage switch
-        {
-            PageType.Safe => "Мой сейф",
-            PageType.Send => "Отправка",
-            PageType.Generator => "Генератор",
-            PageType.Settings => "Настройки",
-            _ => "Мой сейф"
-        };
-    }
 
     protected override void OnInitialized()
     {
@@ -384,6 +410,18 @@
         currentPage = page;
     }
 
+    private string GetPageTitle()
+    {
+        return currentPage switch
+        {
+            PageType.Safe => "Мой сейф",
+            PageType.Send => "Отправка",
+            PageType.Generator => "Генератор",
+            PageType.Settings => "Настройки",
+            _ => "Мой сейф"
+        };
+    }
+
     private async Task FocusField(CardField f)
     {
         _activeField = f;
@@ -400,41 +438,48 @@
         await JS.InvokeVoidAsync("bpFocus", id);
     }
 
-    private void ToggleSort() { } //логика сортировки
-
+    private void ToggleSort()
+    {
+    }
 
     private void OnCardNumberInput(ChangeEventArgs e)
     {
         var raw = e.Value?.ToString() ?? "";
         var digits = new string(raw.Where(char.IsDigit).ToArray());
-        if (digits.Length > 16) digits = digits[..16];
 
-        cardNumber = string.Join(" ", Enumerable.Range(0, (digits.Length + 3) / 4)
-            .Select(i => digits.Skip(i * 4).Take(4))
-            .Where(g => g.Any())
-            .Select(g => new string(g.ToArray())));
+        if (digits.Length > 16)
+            digits = digits[..16];
+
+        cardNumber = string.Join(" ",
+            Enumerable.Range(0, (digits.Length + 3) / 4)
+                .Select(i => digits.Skip(i * 4).Take(4))
+                .Where(g => g.Any())
+                .Select(g => new string(g.ToArray())));
     }
 
     private void OnCardHolderInput(ChangeEventArgs e)
     {
-        var raw = e.Value?.ToString() ?? "";
-        // Можно оставить любые символы, но часто делают латиницу + пробел
-        cardHolder = raw.Trim();
+        cardHolder = (e.Value?.ToString() ?? "").Trim();
     }
 
     private void OnCvvInput(ChangeEventArgs e)
     {
         var raw = e.Value?.ToString() ?? "";
         var digits = new string(raw.Where(char.IsDigit).ToArray());
-        if (digits.Length > 3) digits = digits[..3];
+
+        if (digits.Length > 3)
+            digits = digits[..3];
+
         cvv = digits;
     }
 
     private void OnExpiryInput(ChangeEventArgs e)
     {
-        var raw = (e.Value?.ToString() ?? "");
+        var raw = e.Value?.ToString() ?? "";
         var digits = new string(raw.Where(char.IsDigit).ToArray());
-        if (digits.Length > 4) digits = digits[..4];
+
+        if (digits.Length > 4)
+            digits = digits[..4];
 
         expiryDate = digits.Length switch
         {
@@ -446,35 +491,65 @@
     private void ToggleCategory(int index)
     {
         if (expandedIndex == index)
-            expandedIndex = -1; // сворачиваем
+            expandedIndex = -1;
         else
-            expandedIndex = index; // разворачиваем выбранную
+            expandedIndex = index;
     }
 
     private void SetFormState()
     {
-        
-        showAddForm = showAddForm?false:true;
+        showAddForm = !showAddForm;
+
+        if (!showAddForm)
+            ClearForm();
+
         selectedType = ItemType.Password;
     }
 
-    
     private void ClearForm()
     {
         title = "";
         login = "";
         password = "";
+
         cardNumber = "";
         cardHolder = "";
         expiryDate = "";
         cvv = "";
+        cardTitle = "";
+
         noteTitle = "";
         noteContent = "";
+
+        _activeField = CardField.Number;
     }
 
     private int GetNextId<T>(List<T> items) where T : IHasID
     {
         return items.Any() ? items.Max(x => x.Id) + 1 : 1;
+    }
+
+    private string MaskCardNumber(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "Номер карты не указан";
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+
+        if (digits.Length < 4)
+            return "••••";
+
+        var last4 = digits[^4..];
+        return $"•••• •••• •••• {last4}";
+    }
+
+    private string GetNotePreview(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "Пустая заметка";
+
+        var text = content.Replace("\r", " ").Replace("\n", " ").Trim();
+        return text.Length > 50 ? text[..50] + "..." : text;
     }
 
     private async Task SaveItem()
@@ -491,10 +566,9 @@
                         Login = login,
                         Password = password
                     };
-                    
+
                     PasswordRepository.Add(newPassword);
                     PasswordRepository.Save();
-                    passwords = PasswordRepository.getAll().ToList();
                     break;
 
                 case ItemType.Card:
@@ -507,10 +581,9 @@
                         ExpiryDate = expiryDate,
                         Cvv = cvv
                     };
-                    
+
                     CardRepository.Add(newCard);
                     CardRepository.Save();
-                    cards = CardRepository.getAll().ToList();
                     break;
 
                 case ItemType.Note:
@@ -520,13 +593,13 @@
                         Title = noteTitle,
                         Content = noteContent
                     };
-                    
+
                     NoteRepository.Add(newNote);
                     NoteRepository.Save();
-                    notes = NoteRepository.getAll().ToList();
                     break;
             }
 
+            LoadData();
             ClearForm();
             showAddForm = false;
         }
@@ -534,5 +607,7 @@
         {
             Console.WriteLine($"Error saving item: {ex.Message}");
         }
+
+        await Task.CompletedTask;
     }
 }
