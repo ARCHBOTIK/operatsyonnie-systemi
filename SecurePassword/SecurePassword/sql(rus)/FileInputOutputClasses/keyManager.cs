@@ -21,7 +21,11 @@ public class keyManager //Класс для работы с файлом, где
     {
         _dek = EncryptionFunctions.GenerateDEK(32); //Генерируем ДЕК
         _salt = EncryptionFunctions.GenerateSalt(16); //Генерируем СОЛЬ
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, _systemType); //Получаем из пароля КЕК
+#if WINDOWS
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, 0); //Восстанавливаем КЕК
+#elif ANDROID
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, OSType.Android); //Восстанавливаем КЕК
+#endif
         byte[] nonce = new byte[12];
         byte[] tag = new byte[16];
         _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //Шифруем ДЕК
