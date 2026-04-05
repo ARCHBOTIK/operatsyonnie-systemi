@@ -37,7 +37,14 @@ public class keyManager //Класс для работы с файлом, где
             _salt = br.ReadBytes(16); //Читаем соль
             _encryptedDek = br.ReadBytes(60); //Читаем зашифрованный ДЕК
         }
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+#if WINDOWS
         byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, 0); //Восстанавливаем КЕК
+#elif ANDROID
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, OSType.Android); //Восстанавливаем КЕК
+#endif 
+        sw.Stop();
+        System.Diagnostics.Debug.WriteLine($"ARGON2 ONLY = {sw.ElapsedMilliseconds} ms");
         _dek = EncryptionFunctions.DecryptDEK(kek, _encryptedDek); //Расшифровка ДЕКа
     }
 

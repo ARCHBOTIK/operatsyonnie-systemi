@@ -38,7 +38,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         return type switch
         {
             OSType.Windows => new ArgonParameters(262144, 3, 3), //Для виндоус испольуем 256 Мб, 3 итерации, 3 степень параллелизма
-            OSType.Android => new ArgonParameters(32768, 5, 1), //Для андроид испольуем 32 Мб, 5 итераций, 1 степень параллелизма
+            OSType.Android => new ArgonParameters(2048, 2, 1), //Для андроид испольуем 8 Мб, 2 итераций, 1 степень параллелизма
             _ => throw new ArgumentOutOfRangeException() //Исключение, если выпало что-то другое
         };
     }

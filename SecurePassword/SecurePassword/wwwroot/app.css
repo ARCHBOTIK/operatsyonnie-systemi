@@ -14,6 +14,12 @@ h1:focus {
     color: #e50000;
 }
 
+#app {
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding-top: max(32px, env(safe-area-inset-top));
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
