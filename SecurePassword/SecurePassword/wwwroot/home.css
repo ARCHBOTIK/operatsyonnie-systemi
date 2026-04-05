@@ -30,7 +30,7 @@
     box-sizing: border-box;
 }
 
-html, body {
+html, body, #app {
     width: 100%;
     height: 100%;
     margin: 0;
@@ -44,7 +44,7 @@ body {
     background: radial-gradient(circle at 15% 20%, rgba(255,255,255,.8), transparent 28%), radial-gradient(circle at 85% 15%, rgba(120,255,220,.22), transparent 24%), radial-gradient(circle at 70% 75%, rgba(120,190,255,.20), transparent 26%), linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
 }
 
-/* “Экран телефона” */
+/* вЂњГќГЄГ°Г Г­ ГІГҐГ«ГҐГґГ®Г­Г вЂќ */
 .screen {
     width: 100%;
     height: 100%;
@@ -296,7 +296,7 @@ body {
 .brand-y {
     background: #e53935;
 }
-/* Яндекс */
+/* ГџГ­Г¤ГҐГЄГ± */
 .brand-vk {
     background: #1976d2;
 }
@@ -304,11 +304,11 @@ body {
 .brand-sb {
     background: #2e7d32;
 }
-/* Сбер */
+/* Г‘ГЎГҐГ° */
 .brand-g {
     background: #ffb300;
 }
-/* Google (условно) */
+/* Google (ГіГ±Г«Г®ГўГ­Г®) */
 .brand-gh {
     background: #111;
 }
@@ -380,7 +380,7 @@ body {
 }
 
 
-/* ===== Модальное окно (в стиле твоих карточек) ===== */
+/* ===== ГЊГ®Г¤Г Г«ГјГ­Г®ГҐ Г®ГЄГ­Г® (Гў Г±ГІГЁГ«ГҐ ГІГўГ®ГЁГµ ГЄГ Г°ГІГ®Г·ГҐГЄ) ===== */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -699,7 +699,7 @@ body {
     text-underline-offset: 4px;
 }
 
-/* Скрываем инпуты визуально, но оставляем доступными */
+/* Г‘ГЄГ°Г»ГўГ ГҐГ¬ ГЁГ­ГЇГіГІГ» ГўГЁГ§ГіГ Г«ГјГ­Г®, Г­Г® Г®Г±ГІГ ГўГ«ГїГҐГ¬ Г¤Г®Г±ГІГіГЇГ­Г»Г¬ГЁ */
 .card-hidden-inputs {
     margin-top: 10px;
     display: grid;
@@ -732,7 +732,7 @@ body {
         }
 
 
-/* Запрет выделения для всех элементов интерфейса */
+/* Г‡Г ГЇГ°ГҐГІ ГўГ»Г¤ГҐГ«ГҐГ­ГЁГї Г¤Г«Гї ГўГ±ГҐГµ ГЅГ«ГҐГ¬ГҐГ­ГІГ®Гў ГЁГ­ГІГҐГ°ГґГҐГ©Г±Г  */
 .appbar,
 .appbar *,
 .content,
@@ -751,12 +751,12 @@ body {
 .search-button,
 .search-button * {
     user-select: none;
-    -webkit-user-select: none; /* для Safari */
-    -moz-user-select: none; /* для Firefox */
-    -ms-user-select: none; /* для IE/Edge */
+    -webkit-user-select: none; /* Г¤Г«Гї Safari */
+    -moz-user-select: none; /* Г¤Г«Гї Firefox */
+    -ms-user-select: none; /* Г¤Г«Гї IE/Edge */
 }
 
-/* Разрешить выделение только в полях ввода (если они есть) */
+/* ГђГ Г§Г°ГҐГёГЁГІГј ГўГ»Г¤ГҐГ«ГҐГ­ГЁГҐ ГІГ®Г«ГјГЄГ® Гў ГЇГ®Г«ГїГµ ГўГўГ®Г¤Г  (ГҐГ±Г«ГЁ Г®Г­ГЁ ГҐГ±ГІГј) */
 input,
 textarea {
     user-select: text;
