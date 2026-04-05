@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+#if WINDOWS
 using Velopack;
+#endif
 
 #if WINDOWS
 using System.Runtime.InteropServices;
@@ -19,7 +21,9 @@ namespace SecurePassword
     {
         public static MauiApp CreateMauiApp()
         {
+#if WINDOWS
             VelopackApp.Build().Run();
+#endif
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
