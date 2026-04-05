@@ -3,6 +3,30 @@
   "WorkspaceRootPath": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\wwwroot\\app.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\wwwroot\\app.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\mainpage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\mainpage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\wwwroot\\home.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\wwwroot\\home.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\platforms\\android\\mainapplication.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\platforms\\android\\mainapplication.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\platforms\\android\\mainactivity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\platforms\\android\\mainactivity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|c:\\users\\pc\\desktop\\webapplication1\\operatsyonnie-systemi\\securepassword\\securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{F80097DA-F5C2-26CA-9AB4-2EA21B385961}|SecurePassword\\SecurePassword.csproj|solutionrelative:securepassword\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -34,7 +58,85 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "home.css",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\wwwroot\\home.css",
+              "RelativeDocumentMoniker": "SecurePassword\\wwwroot\\home.css",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\wwwroot\\home.css",
+              "RelativeToolTip": "SecurePassword\\wwwroot\\home.css",
+              "ViewState": "AgIAACAAAAAAAAAAAAAAACAAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2026-04-05T11:38:30.12Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "app.css",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\wwwroot\\app.css",
+              "RelativeDocumentMoniker": "SecurePassword\\wwwroot\\app.css",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\wwwroot\\app.css",
+              "RelativeToolTip": "SecurePassword\\wwwroot\\app.css",
+              "ViewState": "AgIAABwAAAAAAAAAAAAawC4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2026-04-05T11:33:33.067Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "index.html",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\wwwroot\\index.html",
+              "RelativeDocumentMoniker": "SecurePassword\\wwwroot\\index.html",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\wwwroot\\index.html",
+              "RelativeToolTip": "SecurePassword\\wwwroot\\index.html",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-04-05T11:32:05.667Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MainApplication.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Platforms\\Android\\MainApplication.cs",
+              "RelativeDocumentMoniker": "SecurePassword\\Platforms\\Android\\MainApplication.cs",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Platforms\\Android\\MainApplication.cs",
+              "RelativeToolTip": "SecurePassword\\Platforms\\Android\\MainApplication.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T11:31:04.934Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MainActivity.cs",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Platforms\\Android\\MainActivity.cs",
+              "RelativeDocumentMoniker": "SecurePassword\\Platforms\\Android\\MainActivity.cs",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Platforms\\Android\\MainActivity.cs",
+              "RelativeToolTip": "SecurePassword\\Platforms\\Android\\MainActivity.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T11:30:27.934Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "MainPage.xaml",
+              "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\MainPage.xaml",
+              "RelativeDocumentMoniker": "SecurePassword\\MainPage.xaml",
+              "ToolTip": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\MainPage.xaml",
+              "RelativeToolTip": "SecurePassword\\MainPage.xaml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-04-05T11:29:50.914Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
               "Title": "App.xaml.cs",
               "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\App.xaml.cs",
               "RelativeDocumentMoniker": "SecurePassword\\App.xaml.cs",
@@ -46,7 +148,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 6,
               "Title": "Home.razor",
               "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Components\\Pages\\Home.razor",
               "RelativeDocumentMoniker": "SecurePassword\\Components\\Pages\\Home.razor",
@@ -59,7 +161,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 8,
               "Title": "Component1.razor",
               "DocumentMoniker": "C:\\Users\\PC\\Desktop\\WebApplication1\\operatsyonnie-systemi\\SecurePassword\\SecurePassword\\Frontend(Max)\\Component1.razor",
               "RelativeDocumentMoniker": "SecurePassword\\Frontend(Max)\\Component1.razor",
