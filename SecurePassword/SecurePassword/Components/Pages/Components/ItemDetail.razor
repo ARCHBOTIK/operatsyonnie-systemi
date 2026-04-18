@@ -1,0 +1,474 @@
+@inject IJSRuntime JS
+
+<div class="detail-overlay" @onclick="OnClose">
+    <div class="detail-container" @onclick:stopPropagation="true">
+        <div class="detail-header">
+            <div class="detail-icon">
+                <img src="@GetIconPath()" alt="@GetItemTypeName()" />
+            </div>
+            <h2>@GetTitle()</h2>
+            <button class="close-button" @onclick="OnClose">
+                <img src="icons/close.svg" alt="Закрыть" />
+            </button>
+        </div>
+
+        <div class="detail-body">
+            @if (DetailType == "password" && PasswordData != null)
+            {
+                <div class="detail-section">
+                    <div class="detail-field">
+                        <label>Название</label>
+                        <div class="field-value">@PasswordData.Title</div>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Логин</label>
+                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(PasswordData.Login))">
+                            @PasswordData.Login
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                        </div>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Пароль</label>
+                        <div class="field-value password-field">
+                            <span class="@(showPassword ? "" : "password-hidden")">
+                                @(showPassword ? PasswordData.Password : "••••••••")
+                            </span>
+                            <button class="icon-button-small" @onclick="TogglePasswordVisibility">
+                                <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" alt="Показать/скрыть" />
+                            </button>
+                            <button class="icon-button-small" @onclick="@(() => CopyToClipboard(PasswordData.Password))">
+                                <img src="icons/copy.svg" alt="Копировать" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (DetailType == "card" && CardData != null)
+            {
+                <div class="detail-section">
+                    <div class="card-preview-large">
+                        <div class="card-chip-large"></div>
+                        <div class="card-number-large">@FormatCardNumber(CardData.CardNumber)</div>
+                        <div class="card-meta-large">
+                            <div>
+                                <label>Владелец</label>
+                                <div>@CardData.CardHolder.ToUpperInvariant()</div>
+                            </div>
+                            <div>
+                                <label>Срок</label>
+                                <div>@CardData.ExpiryDate</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Название карты</label>
+                        <div class="field-value">@CardData.Title</div>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Номер карты</label>
+                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardNumber))">
+                            @FormatCardNumber(CardData.CardNumber)
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                        </div>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Владелец</label>
+                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardHolder))">
+                            @CardData.CardHolder.ToUpperInvariant()
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-field">
+                            <label>Срок действия</label>
+                            <div class="field-value">@CardData.ExpiryDate</div>
+                        </div>
+
+                        <div class="detail-field">
+                            <label>CVV</label>
+                            <div class="field-value password-field">
+                                <span class="@(showCvv ? "" : "password-hidden")">
+                                    @(showCvv ? CardData.Cvv : "•••")
+                                </span>
+                                <button class="icon-button-small" @onclick="ToggleCvvVisibility">
+                                    <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" alt="Показать/скрыть" />
+                                </button>
+                                <button class="icon-button-small" @onclick="@(() => CopyToClipboard(CardData.Cvv))">
+                                    <img src="icons/copy.svg" alt="Копировать" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (DetailType == "note" && NoteData != null)
+            {
+                <div class="detail-section">
+                    <div class="detail-field">
+                        <label>Название заметки</label>
+                        <div class="field-value">@NoteData.Title</div>
+                    </div>
+
+                    <div class="detail-field">
+                        <label>Содержание</label>
+                        <div class="field-value note-content">@NoteData.Content</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="detail-footer">
+            <button class="btn btn-secondary" @onclick="OnEdit">
+                <img src="icons/edit.svg" alt="Редактировать" />
+                <span>Редактировать</span>
+            </button>
+            <button class="btn btn-danger" @onclick="OnDelete">
+                <img src="icons/delete.svg" alt="Удалить" />
+                <span>Удалить</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .detail-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(10, 18, 24, .22);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .detail-container {
+        width: min(500px, 100%);
+        max-height: calc(100% - 32px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,.18));
+        border: 1px solid rgba(255,255,255,.30);
+        border-radius: 28px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 24px 60px rgba(15,23,32,.16);
+        backdrop-filter: blur(28px) saturate(160%);
+        -webkit-backdrop-filter: blur(28px) saturate(160%);
+    }
+
+    .detail-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255,255,255,.18);
+    }
+
+    .detail-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .detail-icon img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .detail-header h2 {
+        flex: 1;
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .close-button {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: rgba(255,255,255,.1);
+        border-radius: 999px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease;
+    }
+
+    .close-button:hover {
+        background: rgba(255,255,255,.2);
+    }
+
+    .close-button img {
+        width: 20px;
+        height: 20px;
+        opacity: 0.7;
+    }
+
+    .detail-body {
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .detail-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .detail-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .detail-field label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .field-value {
+        padding: 12px 16px;
+        background: rgba(255,255,255,.15);
+        border: 1px solid rgba(255,255,255,.15);
+        border-radius: 12px;
+        font-size: 15px;
+        word-break: break-word;
+    }
+
+    .field-value.copyable {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .field-value.copyable:hover {
+        background: rgba(255,255,255,.25);
+    }
+
+    .copy-icon {
+        width: 18px;
+        height: 18px;
+        opacity: 0.5;
+        transition: opacity 0.2s ease;
+    }
+
+    .field-value.copyable:hover .copy-icon {
+        opacity: 1;
+    }
+
+    .password-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .password-field span {
+        flex: 1;
+    }
+
+    .password-hidden {
+        font-family: monospace;
+        letter-spacing: 2px;
+    }
+
+    .icon-button-small {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: rgba(255,255,255,.15);
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease;
+    }
+
+    .icon-button-small:hover {
+        background: rgba(255,255,255,.25);
+    }
+
+    .icon-button-small img {
+        width: 16px;
+        height: 16px;
+        opacity: 0.7;
+    }
+
+    .detail-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .note-content {
+        min-height: 120px;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        line-height: 1.5;
+    }
+
+    .card-preview-large {
+        padding: 24px;
+        background: linear-gradient(135deg, #111 0%, #2b2b2b 55%, #0f3b16 100%);
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 16px;
+    }
+
+    .card-chip-large {
+        width: 50px;
+        height: 40px;
+        background: linear-gradient(135deg, #f5d27a, #caa24c);
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .card-number-large {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        font-family: monospace;
+        margin-bottom: 20px;
+    }
+
+    .card-meta-large {
+        display: flex;
+        gap: 30px;
+    }
+
+    .card-meta-large label {
+        font-size: 10px;
+        opacity: 0.7;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .card-meta-large div {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .detail-footer {
+        display: flex;
+        gap: 12px;
+        padding: 20px;
+        border-top: 1px solid rgba(255,255,255,.18);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #ff4757, #ff6b81);
+        color: white;
+        border: 1px solid rgba(255,255,255,.2);
+    }
+
+    .btn-danger:hover {
+        filter: brightness(1.1);
+    }
+
+    @@media (max-width: 480px) {
+        .detail-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .detail-footer {
+            flex-direction: column;
+        }
+        
+        .detail-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string DetailType { get; set; } = "password";
+    [Parameter] public PasswordEntry? PasswordData { get; set; }
+    [Parameter] public CardEntry? CardData { get; set; }
+    [Parameter] public NoteEntry? NoteData { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+
+    private bool showPassword = false;
+    private bool showCvv = false;
+
+    private string GetIconPath()
+    {
+        return DetailType switch
+        {
+            "password" => "icons/login.png",
+            "card" => "icons/card.svg",
+            "note" => "icons/note.png",
+            _ => "icons/file.png"
+        };
+    }
+
+    private string GetItemTypeName()
+    {
+        return DetailType switch
+        {
+            "password" => "Пароль",
+            "card" => "Карта",
+            "note" => "Заметка",
+            _ => "Элемент"
+        };
+    }
+
+    private string GetTitle()
+    {
+        return DetailType switch
+        {
+            "password" => PasswordData?.Title ?? "",
+            "card" => CardData?.Title ?? "",
+            "note" => NoteData?.Title ?? "",
+            _ => ""
+        };
+    }
+
+    private string FormatCardNumber(string? number)
+    {
+        if (string.IsNullOrWhiteSpace(number))
+            return "•••• •••• •••• ••••";
+        
+        var digits = new string(number.Where(char.IsDigit).ToArray());
+        if (digits.Length < 16)
+            return number ?? "";
+        
+        return string.Join(" ", Enumerable.Range(0, 4).Select(i => digits.Substring(i * 4, 4)));
+    }
+
+    private void TogglePasswordVisibility() => showPassword = !showPassword;
+    private void ToggleCvvVisibility() => showCvv = !showCvv;
+
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+            // Игнорируем ошибки копирования
+        }
+    }
+}
