@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: dotnet workload install maui maui-android
 
-      - name: Build Android APK (signed)
+      - name: Build Android (smallest release)
         shell: pwsh
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -58,6 +58,17 @@ jobs:
             -c Release `
             -f net10.0-android `
             -p:JavaSdkDirectory="$env:JAVA_HOME" `
+            -p:RuntimeIdentifier=android-arm64 `
+            -p:AndroidPackageFormats=apk `
+            -p:PublishTrimmed=true `
+            -p:TrimMode=Full `
+            -p:RunAOTCompilation=false `
+            -p:AndroidEnableProfiledAot=false `
+            -p:AndroidStripNativeLibraries=true `
+            -p:AndroidLinkTool=r8 `
+            -p:InvariantGlobalization=true `
+            -p:InvariantTimezone=true `
+            -p:SatelliteResourceLanguages=ru-RU;en-US `
             -p:AndroidSigningKeyStore=app.keystore `
             -p:AndroidSigningKeyAlias=$env:ANDROID_KEY_ALIAS `
             -p:AndroidSigningKeyPass=$env:ANDROID_KEY_PASSWORD `
