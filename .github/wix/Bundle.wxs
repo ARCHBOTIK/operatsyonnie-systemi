@@ -30,6 +30,7 @@
           SourceFile="$(var.VelopackSetupExe)"
           Name="SecurePasswordSetup.exe"
           PerMachine="no"
+          Permanent="yes"
           Vital="yes"
           Compressed="yes"
           InstallArguments="--silent" />
