@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
 
       - name: dotnet info
         shell: pwsh
@@ -35,15 +35,13 @@ jobs:
 
       - name: Install MAUI workloads
         shell: pwsh
-        run: dotnet workload install maui maui-android
+        run: |
+          dotnet workload install maui maui-android
 
-      - name: Build Android (smallest release)
+      - name: Create keystore file
         shell: pwsh
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if (-not $env:ANDROID_KEYSTORE_BASE64) {
             throw "ANDROID_KEYSTORE_BASE64 is empty"
@@ -54,22 +52,18 @@ jobs:
             [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
           )
 
-      - name: Build Android APK (signed)
+          if (-not (Test-Path ".\app.keystore")) {
+            throw "app.keystore was not created"
+          }
+
+      - name: Publish Android APK
         shell: pwsh
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if (-not $env:ANDROID_KEYSTORE_BASE64) {
-            throw "ANDROID_KEYSTORE_BASE64 is empty"
-          }
-
-          [System.IO.File]::WriteAllBytes(
-            "app.keystore",
-            [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
-          )
+          New-Item -ItemType Directory -Path ".\artifacts\publish\android" -Force | Out-Null
 
           dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             -c Release `
@@ -77,15 +71,13 @@ jobs:
             -p:JavaSdkDirectory="$env:JAVA_HOME" `
             -p:RuntimeIdentifier=android-arm64 `
             -p:AndroidPackageFormats=apk `
-            -p:PublishTrimmed=true `
-            -p:TrimMode=full `
             -p:RunAOTCompilation=false `
             -p:AndroidEnableProfiledAot=false `
             -p:AndroidStripNativeLibraries=true `
             -p:AndroidLinkTool=r8 `
             -p:InvariantGlobalization=true `
             -p:InvariantTimezone=true `
-            -p:SatelliteResourceLanguages="ru-RU;en-US" `
+            "-p:SatelliteResourceLanguages=ru-RU;en-US" `
             -p:AndroidSigningKeyStore=app.keystore `
             -p:AndroidSigningKeyAlias=$env:ANDROID_KEY_ALIAS `
             -p:AndroidSigningKeyPass=$env:ANDROID_KEY_PASSWORD `
@@ -95,9 +87,8 @@ jobs:
       - name: Collect Android artifacts
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path ".\artifacts\releases\android" -Force
+          New-Item -ItemType Directory -Path ".\artifacts\releases\android" -Force | Out-Null
           Copy-Item ".\artifacts\publish\android\*.apk" ".\artifacts\releases\android\" -ErrorAction Stop
-          Copy-Item ".\artifacts\publish\android\*.aab" ".\artifacts\releases\android\" -ErrorAction SilentlyContinue
           Get-ChildItem ".\artifacts\releases\android"
 
       - name: Create release if missing
@@ -113,7 +104,7 @@ jobs:
               --notes "Android release $env:GITHUB_REF_NAME"
           }
 
-      - name: Upload APK/AAB to GitHub Release
+      - name: Upload APK to GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.ANDROID_TOKEN }}
