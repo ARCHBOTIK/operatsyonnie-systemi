@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ---------------- Setup .NET Preview ----------------
+      # ---------------- Setup .NET ----------------
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -29,25 +29,25 @@ jobs:
           dotnet --list-sdks
           dotnet --info
 
-      # ---------------- Install MAUI workloads ----------------
+      # ---------------- Install only required workloads ----------------
       - name: Install MAUI workloads
         shell: pwsh
         run: |
-          dotnet workload install maui maui-windows maui-android maui-ios maui-maccatalyst
+          dotnet workload install maui maui-windows
 
       # ---------------- Restore ----------------
-      - name: Restore UI (Windows)
+      - name: Restore Windows app
         shell: pwsh
         run: |
           dotnet msbuild ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             /t:Restore `
             /p:TargetFramework=net10.0-windows10.0.19041.0 `
-            /p:RuntimeIdentifier=win-x64 `
-            /p:SelfContained=true `
-            /p:UseMonoRuntime=false
+            /p:RuntimeIdentifierOverride=win-x64 `
+            /p:WindowsPackageType=None `
+            /p:WindowsAppSDKSelfContained=true
 
-      # ---------------- Publish (self-contained, single-file) ----------------
-      - name: Publish UI (Windows self-contained)
+      # ---------------- Publish (unpackaged + self-contained) ----------------
+      - name: Publish Windows app
         shell: pwsh
         run: |
           dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
@@ -55,11 +55,18 @@ jobs:
             -f net10.0-windows10.0.19041.0 `
             -r win-x64 `
             --self-contained true `
+            -p:RuntimeIdentifierOverride=win-x64 `
+            -p:WindowsPackageType=None `
+            -p:WindowsAppSDKSelfContained=true `
             -p:PublishReadyToRun=false `
-            -p:PublishSingleFile=true `
-            -p:UseMonoRuntime=false `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
             -o ".\artifacts\publish"
+
+      # ---------------- Optional cleanup ----------------
+      - name: Remove debug symbols and xml docs
+        shell: pwsh
+        run: |
+          Get-ChildItem ".\artifacts\publish" -Recurse -Include *.pdb, *.xml |
+            Remove-Item -Force -ErrorAction SilentlyContinue
 
       # ---------------- Install Velopack CLI ----------------
       - name: Install Velopack CLI
@@ -70,7 +77,7 @@ jobs:
       - name: Pack with Velopack
         shell: pwsh
         run: |
-          $version = $env:GITHUB_REF_NAME.Replace("windows_v","")
+          $version = $env:GITHUB_REF_NAME.Replace("windows_v", "")
           vpk pack `
             --packId SecurePassword `
             --packVersion $version `
@@ -103,6 +110,7 @@ jobs:
             Write-Error "No Velopack artifacts found"
             exit 1
           }
+
           foreach ($file in $files) {
             gh release upload $env:GITHUB_REF_NAME $file.FullName `
               --clobber `
