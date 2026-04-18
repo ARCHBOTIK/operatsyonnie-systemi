@@ -77,7 +77,7 @@ jobs:
             -p:AndroidLinkTool=r8 `
             -p:InvariantGlobalization=true `
             -p:InvariantTimezone=true `
-            "-p:SatelliteResourceLanguages=ru-RU;en-US" `
+            -p:SatelliteResourceLanguages=ru-RU%3Ben-US `
             -p:AndroidSigningKeyStore=app.keystore `
             -p:AndroidSigningKeyAlias=$env:ANDROID_KEY_ALIAS `
             -p:AndroidSigningKeyPass=$env:ANDROID_KEY_PASSWORD `
