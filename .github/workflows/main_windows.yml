@@ -17,8 +17,8 @@ jobs:
       TFM: net10.0-windows10.0.19041.0
       RID: win-x64
 
-      # Текущий stable Windows App SDK x64 installer из официальной страницы downloads.
-      # При желании закрепи на ту же major/minor версию, что и в твоём Microsoft.WindowsAppSDK package.
+      # Windows App SDK Runtime x64 installer.
+      # При желании зафиксируй под ту же major/minor ветку, что у тебя в Microsoft.WindowsAppSDK.
       WINAPPSDK_INSTALLER_URL: https://download.microsoft.com/download/e28b236e-e201-409d-b045-f303907c5226/WindowsAppRuntimeInstall-x64.exe
 
     steps:
@@ -81,7 +81,6 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path ".\artifacts\velopack" -Force | Out-Null
-
           $version = $env:GITHUB_REF_NAME.Replace("windows_v", "")
 
           vpk pack `
@@ -92,15 +91,23 @@ jobs:
             --mainExe "VaultPass.exe" `
             --framework "net10.0-x64-desktop,webview2"
 
-      - name: Find Velopack Setup.exe
+      - name: Find Velopack setup exe
         id: findsetup
         shell: pwsh
         run: |
-          $setup = Get-ChildItem ".\artifacts\velopack" -Filter "Setup.exe" -File -Recurse | Select-Object -First 1
+          Write-Host "Velopack output:"
+          Get-ChildItem ".\artifacts\velopack" -Recurse | Select-Object FullName
+
+          $setup = Get-ChildItem ".\artifacts\velopack" -File -Recurse |
+            Where-Object { $_.Name -like "*Setup.exe" } |
+            Sort-Object Name |
+            Select-Object -First 1
+
           if (-not $setup) {
-            throw "Velopack Setup.exe not found"
+            throw "Velopack setup exe not found in artifacts\velopack"
           }
 
+          Write-Host "Found setup: $($setup.FullName)"
           "setup_path=$($setup.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Download Windows App SDK Runtime installer
@@ -116,20 +123,67 @@ jobs:
             throw "Windows App SDK installer download failed"
           }
 
-      - name: Install WiX Toolset CLI
+      - name: Create WiX bundle source
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ".\.github\wix" -Force | Out-Null
+
+          @'
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle
+      Name="SecurePassword"
+      Manufacturer="ARCHBOTIK"
+      Version="$(var.BundleVersion)"
+      UpgradeCode="7C8A7D90-8D53-4F1D-93BE-5D6489B2B271">
+
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="hyperlinkLicense"
+          LicenseUrl="https://github.com/ARCHBOTIK/SecurePassword_Releases" />
+    </BootstrapperApplication>
+
+    <Chain>
+      <ExePackage
+          Id="WindowsAppRuntime"
+          SourceFile="$(var.WindowsAppRuntimeInstaller)"
+          Name="WindowsAppRuntimeInstall-x64.exe"
+          PerMachine="yes"
+          Permanent="yes"
+          Vital="yes"
+          Compressed="yes"
+          InstallArguments="--quiet"
+          RepairArguments="--quiet --force" />
+
+      <ExePackage
+          Id="SecurePasswordVelopack"
+          SourceFile="$(var.VelopackSetupExe)"
+          Name="SecurePasswordSetup.exe"
+          PerMachine="no"
+          Vital="yes"
+          Compressed="yes"
+          InstallArguments="--silent"
+          RepairArguments="--silent" />
+    </Chain>
+  </Bundle>
+</Wix>
+'@ | Set-Content ".\.github\wix\Bundle.wxs" -Encoding UTF8
+
+      - name: Install WiX CLI and bootstrapper extension
         shell: pwsh
         run: |
           dotnet tool install --global wix
+          wix extension add -g WixToolset.BootstrapperApplications.wixext
 
-      - name: Build single bundle installer (WiX Burn)
+      - name: Build final single installer (WiX Burn)
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path ".\artifacts\bundle" -Force | Out-Null
-
           $version = $env:GITHUB_REF_NAME.Replace("windows_v", "")
 
           wix build ".\.github\wix\Bundle.wxs" `
-            -ext WixToolset.Bal.wixext `
+            -ext WixToolset.BootstrapperApplications.wixext `
             -d BundleVersion=$version `
             -d WindowsAppRuntimeInstaller="$(Resolve-Path '.\artifacts\prereqs\WindowsAppRuntimeInstall-x64.exe')" `
             -d VelopackSetupExe="${{ steps.findsetup.outputs.setup_path }}" `
