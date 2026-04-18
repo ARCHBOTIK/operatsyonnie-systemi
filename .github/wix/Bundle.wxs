@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+
+  <Bundle
+      Name="SecurePassword"
+      Manufacturer="ARCHBOTIK"
+      Version="$(var.BundleVersion)"
+      UpgradeCode="7C8A7D90-8D53-4F1D-93BE-5D6489B2B271">
+
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="hyperlinkLicense"
+          LicenseUrl="https://github.com/ARCHBOTIK/SecurePassword_Releases" />
+    </BootstrapperApplication>
+
+    <Chain>
+      <!-- Windows App SDK Runtime installer -->
+      <ExePackage
+          Id="WindowsAppRuntime"
+          SourceFile="$(var.WindowsAppRuntimeInstaller)"
+          Name="WindowsAppRuntimeInstall-x64.exe"
+          PerMachine="yes"
+          Permanent="yes"
+          Vital="yes"
+          Compressed="yes"
+          InstallArguments="--quiet"
+          RepairArguments="--quiet --force" />
+
+      <!-- Velopack installer for the app itself -->
+      <ExePackage
+          Id="SecurePasswordVelopack"
+          SourceFile="$(var.VelopackSetupExe)"
+          Name="SecurePasswordSetup.exe"
+          PerMachine="no"
+          Vital="yes"
+          Compressed="yes"
+          InstallArguments="--silent"
+          RepairArguments="--silent" />
+    </Chain>
+
+  </Bundle>
+</Wix>
