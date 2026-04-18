@@ -16,9 +16,6 @@ jobs:
       PROJECT_PATH: .\SecurePassword\SecurePassword\SecurePassword.csproj
       TFM: net10.0-windows10.0.19041.0
       RID: win-x64
-
-      # Windows App SDK Runtime x64 installer.
-      # При желании зафиксируй под ту же major/minor ветку, что у тебя в Microsoft.WindowsAppSDK.
       WINAPPSDK_INSTALLER_URL: https://download.microsoft.com/download/e28b236e-e201-409d-b045-f303907c5226/WindowsAppRuntimeInstall-x64.exe
 
     steps:
@@ -81,6 +78,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path ".\artifacts\velopack" -Force | Out-Null
+
           $version = $env:GITHUB_REF_NAME.Replace("windows_v", "")
 
           vpk pack `
@@ -123,54 +121,7 @@ jobs:
             throw "Windows App SDK installer download failed"
           }
 
-      - name: Create WiX bundle source
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path ".\.github\wix" -Force | Out-Null
-
-          @'
-<?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
-  <Bundle
-      Name="SecurePassword"
-      Manufacturer="ARCHBOTIK"
-      Version="$(var.BundleVersion)"
-      UpgradeCode="7C8A7D90-8D53-4F1D-93BE-5D6489B2B271">
-
-    <BootstrapperApplication>
-      <bal:WixStandardBootstrapperApplication
-          Theme="hyperlinkLicense"
-          LicenseUrl="https://github.com/ARCHBOTIK/SecurePassword_Releases" />
-    </BootstrapperApplication>
-
-    <Chain>
-      <ExePackage
-          Id="WindowsAppRuntime"
-          SourceFile="$(var.WindowsAppRuntimeInstaller)"
-          Name="WindowsAppRuntimeInstall-x64.exe"
-          PerMachine="yes"
-          Permanent="yes"
-          Vital="yes"
-          Compressed="yes"
-          InstallArguments="--quiet"
-          RepairArguments="--quiet --force" />
-
-      <ExePackage
-          Id="SecurePasswordVelopack"
-          SourceFile="$(var.VelopackSetupExe)"
-          Name="SecurePasswordSetup.exe"
-          PerMachine="no"
-          Vital="yes"
-          Compressed="yes"
-          InstallArguments="--silent"
-          RepairArguments="--silent" />
-    </Chain>
-  </Bundle>
-</Wix>
-'@ | Set-Content ".\.github\wix\Bundle.wxs" -Encoding UTF8
-
-      - name: Install WiX CLI and bootstrapper extension
+      - name: Install WiX CLI and extension
         shell: pwsh
         run: |
           dotnet tool install --global wix
@@ -180,13 +131,17 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path ".\artifacts\bundle" -Force | Out-Null
+
           $version = $env:GITHUB_REF_NAME.Replace("windows_v", "")
+
+          $runtimePath = (Resolve-Path ".\artifacts\prereqs\WindowsAppRuntimeInstall-x64.exe").Path
+          $setupPath = "${{ steps.findsetup.outputs.setup_path }}"
 
           wix build ".\.github\wix\Bundle.wxs" `
             -ext WixToolset.BootstrapperApplications.wixext `
             -d BundleVersion=$version `
-            -d WindowsAppRuntimeInstaller="$(Resolve-Path '.\artifacts\prereqs\WindowsAppRuntimeInstall-x64.exe')" `
-            -d VelopackSetupExe="${{ steps.findsetup.outputs.setup_path }}" `
+            -d WindowsAppRuntimeInstaller="$runtimePath" `
+            -d VelopackSetupExe="$setupPath" `
             -o ".\artifacts\bundle\SecurePassword-Setup.exe"
 
       - name: Create release if missing
