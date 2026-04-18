@@ -15,7 +15,6 @@
     </BootstrapperApplication>
 
     <Chain>
-      <!-- Windows App SDK Runtime installer -->
       <ExePackage
           Id="WindowsAppRuntime"
           SourceFile="$(var.WindowsAppRuntimeInstaller)"
@@ -24,10 +23,8 @@
           Permanent="yes"
           Vital="yes"
           Compressed="yes"
-          InstallArguments="--quiet"
-          RepairArguments="--quiet --force" />
+          InstallArguments="--quiet" />
 
-      <!-- Velopack installer for the app itself -->
       <ExePackage
           Id="SecurePasswordVelopack"
           SourceFile="$(var.VelopackSetupExe)"
@@ -35,8 +32,7 @@
           PerMachine="no"
           Vital="yes"
           Compressed="yes"
-          InstallArguments="--silent"
-          RepairArguments="--silent" />
+          InstallArguments="--silent" />
     </Chain>
 
   </Bundle>
