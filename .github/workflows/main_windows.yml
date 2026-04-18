@@ -13,11 +13,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # ---------------- Checkout ----------------
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ---------------- Setup .NET ----------------
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -29,13 +27,11 @@ jobs:
           dotnet --list-sdks
           dotnet --info
 
-      # ---------------- Install only required workloads ----------------
       - name: Install MAUI workloads
         shell: pwsh
         run: |
           dotnet workload install maui maui-windows
 
-      # ---------------- Restore ----------------
       - name: Restore Windows app
         shell: pwsh
         run: |
@@ -46,14 +42,14 @@ jobs:
             /p:WindowsPackageType=None `
             /p:WindowsAppSDKSelfContained=true
 
-      # ---------------- Publish (unpackaged + self-contained) ----------------
       - name: Publish Windows app
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Path ".\artifacts\publish" -Force | Out-Null
+
           dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             -c Release `
             -f net10.0-windows10.0.19041.0 `
-            -r win-x64 `
             --self-contained true `
             -p:RuntimeIdentifierOverride=win-x64 `
             -p:WindowsPackageType=None `
@@ -61,23 +57,24 @@ jobs:
             -p:PublishReadyToRun=false `
             -o ".\artifacts\publish"
 
-      # ---------------- Optional cleanup ----------------
       - name: Remove debug symbols and xml docs
         shell: pwsh
         run: |
           Get-ChildItem ".\artifacts\publish" -Recurse -Include *.pdb, *.xml |
             Remove-Item -Force -ErrorAction SilentlyContinue
 
-      # ---------------- Install Velopack CLI ----------------
       - name: Install Velopack CLI
         shell: pwsh
-        run: dotnet tool install --global vpk
+        run: |
+          dotnet tool install --global vpk
 
-      # ---------------- Pack with Velopack ----------------
       - name: Pack with Velopack
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Path ".\artifacts\velopack" -Force | Out-Null
+
           $version = $env:GITHUB_REF_NAME.Replace("windows_v", "")
+
           vpk pack `
             --packId SecurePassword `
             --packVersion $version `
@@ -85,7 +82,6 @@ jobs:
             --outputDir ".\artifacts\velopack" `
             --mainExe "VaultPass.exe"
 
-      # ---------------- Create release if missing ----------------
       - name: Create release if missing
         shell: pwsh
         env:
@@ -99,7 +95,6 @@ jobs:
               --notes "Windows release $env:GITHUB_REF_NAME"
           }
 
-      # ---------------- Upload Velopack artifacts ----------------
       - name: Upload Velopack artifacts
         shell: pwsh
         env:
