@@ -54,6 +54,23 @@ jobs:
             [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
           )
 
+      - name: Build Android APK (signed)
+        shell: pwsh
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if (-not $env:ANDROID_KEYSTORE_BASE64) {
+            throw "ANDROID_KEYSTORE_BASE64 is empty"
+          }
+
+          [System.IO.File]::WriteAllBytes(
+            "app.keystore",
+            [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64)
+          )
+
           dotnet publish ".\SecurePassword\SecurePassword\SecurePassword.csproj" `
             -c Release `
             -f net10.0-android `
@@ -61,14 +78,14 @@ jobs:
             -p:RuntimeIdentifier=android-arm64 `
             -p:AndroidPackageFormats=apk `
             -p:PublishTrimmed=true `
-            -p:TrimMode=Full `
+            -p:TrimMode=full `
             -p:RunAOTCompilation=false `
             -p:AndroidEnableProfiledAot=false `
             -p:AndroidStripNativeLibraries=true `
             -p:AndroidLinkTool=r8 `
             -p:InvariantGlobalization=true `
             -p:InvariantTimezone=true `
-            -p:SatelliteResourceLanguages=ru-RU;en-US `
+            -p:SatelliteResourceLanguages="ru-RU;en-US" `
             -p:AndroidSigningKeyStore=app.keystore `
             -p:AndroidSigningKeyAlias=$env:ANDROID_KEY_ALIAS `
             -p:AndroidSigningKeyPass=$env:ANDROID_KEY_PASSWORD `
