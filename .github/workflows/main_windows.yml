@@ -125,7 +125,7 @@ jobs:
         shell: pwsh
         run: |
           dotnet tool install --global wix
-          wix extension add -g WixToolset.BootstrapperApplications.wixext
+          wix -acceptEula wix7 extension add -g WixToolset.BootstrapperApplications.wixext
 
       - name: Build final single installer (WiX Burn)
         shell: pwsh
@@ -137,7 +137,7 @@ jobs:
           $runtimePath = (Resolve-Path ".\artifacts\prereqs\WindowsAppRuntimeInstall-x64.exe").Path
           $setupPath = "${{ steps.findsetup.outputs.setup_path }}"
 
-          wix build ".\.github\wix\Bundle.wxs" `
+          wix -acceptEula wix7 build ".\.github\wix\Bundle.wxs" `
             -ext WixToolset.BootstrapperApplications.wixext `
             -d BundleVersion=$version `
             -d WindowsAppRuntimeInstaller="$runtimePath" `
