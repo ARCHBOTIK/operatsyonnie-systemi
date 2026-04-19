@@ -177,6 +177,39 @@ namespace SecurePassword
             }
         }
 
+        // Сорттровка с ключом
+        public List<T> SortRecord<T>(
+            string filename,
+            Func<T, object> keySelector,
+            bool ascending = true
+        ) where T : class, IHasID, new()
+        {
+            try
+            {
+                var records = GetAllRecords<T>(filename);
+
+                return ascending
+                    ? records.OrderBy(keySelector).ToList()
+                    : records.OrderByDescending(keySelector).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при сортировке: {ex.Message}");
+                return new List<T>();
+            }
+        }
+
+        //фильтрация (поиск с множественными совпадениями)
+        public void FilterRecord<T>(
+            string filename,
+            Func<T, bool> predicate
+        ) where T : class, IHasID, new()
+        {
+            var records = processor.GetAllRecords<T>(filename);
+            var filtered = records.Where(predicate).ToList();
+        
+            dataGridView1.DataSource = filtered;
+        }
         // Сохранить все изменения
         public void SaveAllChanges()
         {
