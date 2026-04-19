@@ -177,7 +177,7 @@ namespace SecurePassword
             }
         }
 
-        // Сорттровка с ключом
+        // Сортировка с ключом
         public List<T> SortRecord<T>(
             string filename,
             Func<T, object> keySelector,
@@ -199,17 +199,6 @@ namespace SecurePassword
             }
         }
 
-        //фильтрация (поиск с множественными совпадениями)
-        public void FilterRecord<T>(
-            string filename,
-            Func<T, bool> predicate
-        ) where T : class, IHasID, new()
-        {
-            var records = processor.GetAllRecords<T>(filename);
-            var filtered = records.Where(predicate).ToList();
-        
-            dataGridView1.DataSource = filtered;
-        }
         // Сохранить все изменения
         public void SaveAllChanges()
         {
