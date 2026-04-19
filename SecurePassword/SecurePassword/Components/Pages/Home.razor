@@ -3,8 +3,8 @@
 <div class="screen">
     <header class="appbar">
         <div class="appbar-left">
-            <button class="icon-button" @onclick="ToggleSort">
-                <img src="icons/sort.svg" />
+            <button class="icon-button" @onclick="ToggleSort" title="Сортировка">
+                <img src="@GetSortIcon()" />
             </button>
         </div>
 
@@ -33,11 +33,18 @@
     @if (!string.IsNullOrEmpty(searchQuery))
     {
         <div class="search-results-inline">
+            @if (!string.IsNullOrEmpty(searchQuery) && searchResults.Any())
+            {
+                <div class="sort-indicator">
+                    Сортировка: @(sortBy == "title" ? "по названию" : "по типу")
+                    @(sortDescending ? "▼" : "▲")
+                </div>
+            }
             <div class="search-header-inline">
                 <span>Найдено: @GetFilteredItemsCount()</span>
             </div>
             
-            <div class="search-filters-inline">
+            <div class="search-filters-inline"> 
                 <button class="filter-chip @(activeFilter == "all" ? "active" : "")" @onclick="@(() => SetFilter("all"))">
                     Все
                 </button>
@@ -53,29 +60,28 @@
             </div>
 
             <div class="search-results-list-inline">
-                @foreach (var item in GetFilteredItems())
-                {
-                    <div class="search-result-item-inline card" @onclick="@(() => SelectSearchResult(item))">
-                        <div class="row-left">
-                            <span class="ico">
-                                <img src="@GetItemIcon(item)" alt="@item.Type" />
-                            </span>
-                            <div class="row-text">
-                                <div class="row-title">@item.Title</div>
-                                <div class="row-sub">@item.Subtitle</div>
-                            </div>
+            @foreach (var item in GetFilteredItemsSorted())
+            {
+                <div class="search-result-item-inline card" @onclick="@(() => SelectSearchResult(item))">
+                    <div class="row-left">
+                        <span class="ico">
+                            <img src="@GetItemIcon(item)" alt="@item.Type" />
+                        </span>
+                        <div class="row-text">
+                            <div class="row-title">@item.Title</div>
+                            <div class="row-sub">@item.Subtitle</div>
                         </div>
-                        <div class="result-badge">@GetItemTypeName(item.Type)</div>
                     </div>
-                }
-                
-                @if (!GetFilteredItems().Any())
-                {
-                    <div class="no-results-inline">
-                        <p>Ничего не найдено</p>
-                    </div>
-                }
-            </div>
+                    <div class="result-badge">@GetItemTypeName(item.Type)</div>
+                </div>
+            }
+    
+            @if (!GetFilteredItems().Any())
+            {
+                <div class="no-results-inline">
+                    <p>Ничего не найдено</p>
+                </div>
+            }
         </div>
     }
     else
@@ -643,6 +649,14 @@
         background: linear-gradient(135deg, #ff4757, #ff6b81);
         color: white;
     }
+    .sort-indicator {
+        font-size: 11px;
+        padding: 4px 12px;
+        color: var(--muted);
+        text-align: right;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+        margin-bottom: 8px;
+    }
 </style>
 
 @code {
@@ -651,6 +665,7 @@
     [Inject] private SecureRepository<CardEntry> CardRepository { get; set; } = default!;
     [Inject] private SecureRepository<NoteEntry> NoteRepository { get; set; } = default!;
 
+    private List<SearchResult> searchResults = new();
     private List<PasswordEntry> passwords = new();
     private List<CardEntry> cards = new();
     private List<NoteEntry> notes = new();
@@ -768,11 +783,39 @@
     private void ClearSearch() => searchQuery = "";
     private void OnSearchKeyPress(KeyboardEventArgs e) { if (e.Key == "Escape") { isSearchExpanded = false; searchQuery = ""; } }
     private void SetFilter(string f) => activeFilter = f;
-    private List<SearchResult> GetFilteredItems() => new();
-    private int GetFilteredItemsCount() => 0;
+    private List<SearchResult> GetFilteredItems()
+    {
+        filterRecord();
+        return searchResults;
+    }
+    private int GetFilteredItemsCount()
+    {
+        return GetFilteredItems().Count;
+    }
     private string GetItemIcon(SearchResult i) => i.Type switch { "password" => "icons/login.png", "card" => "icons/card.svg", "note" => "icons/note.png", _ => "icons/file.png" };
     private string GetItemTypeName(string t) => t switch { "password" => "Пароль", "card" => "Карта", "note" => "Заметка", _ => t };
-    private void SelectSearchResult(SearchResult i) { searchQuery = ""; isSearchExpanded = false; }
+    private void SelectSearchResult(SearchResult item)
+    {
+        searchQuery = "";
+        isSearchExpanded = false;
+        activeFilter = "all";
+    
+        switch (item.Type)
+        {
+            case "password":
+                if (item.Data is PasswordEntry p)
+                    ShowPasswordDetail(p);
+                break;
+            case "card":
+                if (item.Data is CardEntry c)
+                    ShowCardDetail(c);
+                break;
+            case "note":
+                if (item.Data is NoteEntry n)
+                    ShowNoteDetail(n);
+                break;
+        }
+    }
 
     private async Task FocusField(CardField f) { 
         _activeField = f;
@@ -839,5 +882,110 @@
         }
         catch (Exception ex) { Console.WriteLine($"Error: {ex.Message}"); }
         await Task.CompletedTask;
+    }
+
+    private void filterRecord()
+    {
+        var allItems = new List<SearchResult>();
+    
+        foreach (var p in passwords)
+        {
+            allItems.Add(new SearchResult
+            {
+                Type = "password",
+                Title = p.Title,
+                Subtitle = p.Login,
+                Data = p
+            });
+        }
+    
+        foreach (var c in cards)
+        {
+            allItems.Add(new SearchResult
+            {
+                Type = "card",
+                Title = c.Title,
+                Subtitle = MaskCardNumber(c.CardNumber),
+                Data = c
+            });
+        }
+    
+        foreach (var n in notes)
+        {
+            allItems.Add(new SearchResult
+            {
+                Type = "note",
+                Title = n.Title,
+                Subtitle = GetNotePreview(n.Content),
+                Data = n
+            });
+        }
+    
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            string query = searchQuery.ToLowerInvariant();
+            allItems = allItems.Where(item => 
+                item.Title.ToLowerInvariant().Contains(query) || 
+                item.Subtitle.ToLowerInvariant().Contains(query)
+            ).ToList();
+        }
+    
+        if (activeFilter != "all")
+        {
+            allItems = allItems.Where(item => item.Type == activeFilter).ToList();
+        }
+    
+        allItems = allItems.OrderBy(item => item.Title).ToList();
+    
+        searchResults = allItems;
+    }
+    private string sortBy = "title"; // title, type, date
+private bool sortDescending = false;
+
+    private void ToggleSort()
+    {
+        if (sortBy == "title")
+        {
+            sortBy = "type";
+        }
+        else if (sortBy == "type")
+        {
+            sortBy = "title";
+            sortDescending = !sortDescending;
+        }
+    
+        filterRecord();
+        StateHasChanged();
+    }
+    private List<SearchResult> GetFilteredItemsSorted()
+    {
+        filterRecord();
+    
+        var results = searchResults.ToList();
+    
+        
+        switch (sortBy)
+        {
+            case "title":
+                results = sortDescending 
+                    ? results.OrderByDescending(x => x.Title).ToList()
+                    : results.OrderBy(x => x.Title).ToList();
+                break;
+            case "type":
+                results = sortDescending
+                    ? results.OrderByDescending(x => x.Type).ThenBy(x => x.Title).ToList()
+                    : results.OrderBy(x => x.Type).ThenBy(x => x.Title).ToList();
+                break;
+        }
+    
+        return results;
+    }
+
+    private string GetSortIcon()
+    {
+        if (sortBy == "title")
+            return sortDescending ? "icons/sort-desc.svg" : "icons/sort-asc.svg";
+        else
+            return "icons/sort-type.svg";
     }
 }
