@@ -1,24 +1,31 @@
-ScreenLockclass ScreenLock {
-private:
-    bool isLocked;
-    std::string password;
+public class ScreenLock
+{
+    private bool _isLocked;
+    private string _password;
 
-public:
-    ScreenLock(const std::string& pass) : password(pass), isLocked(false) {}
-
-    void lock() {
-        isLocked = true;
+    public ScreenLock(string password)
+    {
+        _password = password;
+        _isLocked = false;
     }
 
-    bool unlock(const std::string& input) {
-        if (input == password) {
-            isLocked = false;
+    public void Lock()
+    {
+        _isLocked = true;
+    }
+
+    public bool Unlock(string input)
+    {
+        if (input == _password)
+        {
+            _isLocked = false;
             return true;
         }
         return false;
     }
 
-    bool getStatus() const {
-        return isLocked;
+    public bool GetStatus()
+    {
+        return _isLocked;
     }
-};
+}
