@@ -102,7 +102,7 @@
                                 <div class="type-selector">
                                     <button class="@(selectedType == ItemType.Password ? "active" : "")"
                                             @onclick="@(() => selectedType = ItemType.Password)">
-                                        <img src="icons/login.png" alt="Пароль" />
+                                        <img src="icons/login.svg" alt="Пароль" />
                                         <span>Пароль</span>
                                     </button>
 
@@ -114,7 +114,7 @@
 
                                     <button class="@(selectedType == ItemType.Note ? "active" : "")"
                                             @onclick="@(() => selectedType = ItemType.Note)">
-                                        <img src="icons/secure_note.png" alt="Заметка" />
+                                        <img src="icons/secure_note.svg" alt="Заметка" />
                                         <span>Заметка</span>
                                     </button>
                                 </div>
@@ -214,7 +214,7 @@
 
                         <div class="modal-footer">
                             <button class="btn btn-primary" @onclick="SaveItem">
-                                <img src="icons/plus.png" alt="Сохранить" />
+                                <img src="icons/plus.svg" alt="Сохранить" />
                                 <span>Сохранить</span>
                             </button>
                             <button class="btn btn-secondary" @onclick="SetFormState">Отмена</button>
@@ -253,7 +253,7 @@
                                     <div class="field-value password-field">
                                         <span>@(showPassword ? detailPassword : "••••••••")</span>
                                         <button class="icon-button-small" @onclick="TogglePasswordVisibility">
-                                            <img src="@(showPassword ? "icons/eye.svg" : "icons/eye.svg")" />
+                                            <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" />
                                         </button>
                                     </div>
                                 </div>
@@ -282,7 +282,7 @@
                                         <div class="field-value password-field">
                                             <span>@(showCvv ? detailCvv : "•••")</span>
                                             <button class="icon-button-small" @onclick="ToggleCvvVisibility">
-                                                <img src="@(showCvv ? "icons/eye.svg" : "icons/eye.svg")" />
+                                                <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" />
                                             </button>
                                         </div>
                                     </div>
@@ -318,12 +318,12 @@
             <section class="card">
                 <div class="row" @onclick="@(() => ToggleCategory(0))">
                     <div class="row-left">
-                        <span class="ico"><img src="icons/login.png" alt="Логины" /></span>
+                        <span class="ico"><img src="icons/login.svg" alt="Логины" /></span>
                         <span class="row-title">Логины</span>
                     </div>
                     <div>
                         <span class="row-right">@passwords.Count</span>
-                        <span>@(expandedIndex == 0 && passwords.Count != 0 ? "▼" : "▶")</span>
+                        <span>@(expandedIndex == 0 ? "▼" : "▶")</span>
                     </div>
                 </div>
 
@@ -366,7 +366,7 @@
                     </div>
                     <div>
                         <span class="row-right">@cards.Count</span>
-                        <span>@(expandedIndex == 1 && cards.Count != 0 ? "▼" : "▶")</span>
+                        <span>@(expandedIndex == 1 ? "▼" : "▶")</span>
                     </div>
                 </div>
 
@@ -406,12 +406,12 @@
             <section class="card">
                 <div class="row" @onclick="@(() => ToggleCategory(2))">
                     <div class="row-left">
-                        <span class="ico"><img src="icons/note.png" alt="Защищённые заметки" /></span>
+                        <span class="ico"><img src="icons/note.svg" alt="Защищённые заметки" /></span>
                         <span class="row-title">Защищённые заметки</span>
                     </div>
                     <div>
                         <span class="row-right">@notes.Count</span>
-                        <span>@(expandedIndex == 2 && notes.Count != 0 ? "▼" : "▶")</span>
+                        <span>@(expandedIndex == 2 ? "▼" : "▶")</span>
                     </div>
                 </div>
 
@@ -431,7 +431,7 @@
 <div class="row">
     <div class="row-left" @onclick="@(() => ShowNoteDetail(i))">
         <span class="brand">
-            <img src="icons/note.png" alt="@i.Title" width="40" height="40" />
+            <img src="icons/note.svg" alt="@i.Title" width="40" height="40" />
         </span>
         <div class="row-text">
             <div class="row-title">@i.Title</div>
@@ -449,7 +449,7 @@
             </section>
 
             <button class="fab" @onclick="SetFormState">
-                <img src="icons/plus.png" alt="Добавить" />
+                <img src="icons/plus.svg" alt="Добавить" />
             </button>
         </main>
     }
@@ -752,7 +752,7 @@
     }
     private void TogglePasswordVisibility() => showPassword = !showPassword;
     private void ToggleCvvVisibility() => showCvv = !showCvv;
-    private string GetDetailIcon() => currentDetailType switch { "password" => "icons/login.png", "card" => "icons/card.svg", "note" => "icons/note.png", _ => "icons/file.png" };
+    private string GetDetailIcon() => currentDetailType switch { "password" => "icons/login.svg", "card" => "icons/card.svg", "note" => "icons/note.svg", _ => "icons/file.png" };
 
     private void EditItem() {
         Console.WriteLine($"Edit: {currentDetailType}"); 
@@ -791,7 +791,7 @@
     {
         return GetFilteredItems().Count;
     }
-    private string GetItemIcon(SearchResult i) => i.Type switch { "password" => "icons/login.png", "card" => "icons/card.svg", "note" => "icons/note.png", _ => "icons/file.png" };
+    private string GetItemIcon(SearchResult i) => i.Type switch { "password" => "icons/login.svg", "card" => "icons/card.svg", "note" => "icons/note.svg", _ => "icons/file.png" };
     private string GetItemTypeName(string t) => t switch { "password" => "Пароль", "card" => "Карта", "note" => "Заметка", _ => t };
     private void SelectSearchResult(SearchResult item)
     {

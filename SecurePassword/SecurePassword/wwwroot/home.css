@@ -339,7 +339,7 @@ body {
 .fab {
     position: absolute;
     right: 18px;
-    bottom: calc(var(--nav-h) + 18px);
+    bottom: calc(var(--nav-h) + 40px);
     width: 58px;
     height: 58px;
     border-radius: 999px;
