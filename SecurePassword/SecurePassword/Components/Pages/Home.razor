@@ -44,7 +44,7 @@
                 <span>Найдено: @GetFilteredItemsCount()</span>
             </div>
             
-            <div class="search-filters-inline"> 
+            <div class="search-filters-inline">
                 <button class="filter-chip @(activeFilter == "all" ? "active" : "")" @onclick="@(() => SetFilter("all"))">
                     Все
                 </button>
@@ -60,28 +60,29 @@
             </div>
 
             <div class="search-results-list-inline">
-            @foreach (var item in GetFilteredItemsSorted())
-            {
-                <div class="search-result-item-inline card" @onclick="@(() => SelectSearchResult(item))">
-                    <div class="row-left">
-                        <span class="ico">
-                            <img src="@GetItemIcon(item)" alt="@item.Type" />
-                        </span>
-                        <div class="row-text">
-                            <div class="row-title">@item.Title</div>
-                            <div class="row-sub">@item.Subtitle</div>
+                @foreach (var item in GetFilteredItemsSorted())
+                {
+                    <div class="search-result-item-inline card" @onclick="@(() => SelectSearchResult(item))">
+                        <div class="row-left">
+                            <span class="ico">
+                                <img src="@GetItemIcon(item)" alt="@item.Type" />
+                            </span>
+                            <div class="row-text">
+                                <div class="row-title">@item.Title</div>
+                                <div class="row-sub">@item.Subtitle</div>
+                            </div>
                         </div>
+                        <div class="result-badge">@GetItemTypeName(item.Type)</div>
                     </div>
-                    <div class="result-badge">@GetItemTypeName(item.Type)</div>
-                </div>
-            }
+                }
     
-            @if (!GetFilteredItems().Any())
-            {
-                <div class="no-results-inline">
-                    <p>Ничего не найдено</p>
-                </div>
-            }
+                @if (!GetFilteredItems().Any())
+                {
+                    <div class="no-results-inline">
+                        <p>Ничего не найдено</p>
+                    </div>
+                }
+            </div>
         </div>
     }
     else
@@ -328,7 +329,6 @@
 
                 @if (expandedIndex == 0)
                 {
-                    <div>
                         @if (passwords.Count == 0)
                         {
                             <div class="divider"></div>
@@ -339,23 +339,22 @@
                             @foreach (var i in passwords)
                             {
                                 <div class="divider"></div>
-<div class="row">
-    <div class="row-left" @onclick="@(() => ShowPasswordDetail(i))">
-        <span class="brand">
-            <img src="@ServiceImageGenerator.GetServiceIconPath(i.ServiceName)" alt="@i.Title" width="40" height="40" />
-        </span>
-        <div class="row-text">
-            <div class="row-title">@i.Title</div>
-            <div class="row-sub">@i.Login</div>
-        </div>
-    </div>
-    <button class="kebab" aria-label="Действия" @onclick="(() => ShowPasswordDetail(i))" @onclick:stopPropagation="true">
-        <span></span><span></span><span></span>
-    </button>
-</div>
+                                <div class="row">
+                                    <div class="row-left" @onclick="@(() => ShowPasswordDetail(i))">
+                                        <span class="brand">
+                                            <img src="@ServiceImageGenerator.GetServiceIconPath(i.ServiceName)" alt="@i.Title" width="40" height="40" />
+                                        </span>
+                                        <div class="row-text">
+                                            <div class="row-title">@i.Title</div>
+                                            <div class="row-sub">@i.Login</div>
+                                        </div>
+                                    </div>
+                                    <button class="kebab" aria-label="Действия" @onclick="(() => ShowPasswordDetail(i))" @onclick:stopPropagation="true">
+                                        <span></span><span></span><span></span>
+                                    </button>
+                                </div>
                             }
                         }
-                    </div>
                 }
             </section>
 
@@ -384,20 +383,20 @@
                             @foreach (var i in cards)
                             {
                                <div class="divider"></div>
-<div class="row">
-    <div class="row-left" @onclick="@(() => ShowCardDetail(i))">
-        <span class="brand">
-            <img src="icons/card.svg" alt="@i.Title" width="40" height="40" />
-        </span>
-        <div class="row-text">
-            <div class="row-title">@i.Title</div>
-            <div class="row-sub">@MaskCardNumber(i.CardNumber)</div>
-        </div>
-    </div>
-    <button class="kebab" aria-label="Действия" @onclick="(() => ShowCardDetail(i))" @onclick:stopPropagation="true">
-        <span></span><span></span><span></span>
-    </button>
-</div>
+                                <div class="row">
+                                    <div class="row-left" @onclick="@(() => ShowCardDetail(i))">
+                                        <span class="brand">
+                                            <img src="icons/card.svg" alt="@i.Title" width="40" height="40" />
+                                        </span>
+                                        <div class="row-text">
+                                            <div class="row-title">@i.Title</div>
+                                            <div class="row-sub">@MaskCardNumber(i.CardNumber)</div>
+                                        </div>
+                                    </div>
+                                    <button class="kebab" aria-label="Действия" @onclick="(() => ShowCardDetail(i))" @onclick:stopPropagation="true">
+                                        <span></span><span></span><span></span>
+                                    </button>
+                                </div>
                             }
                         }
                     </div>
@@ -822,7 +821,6 @@
         var id = f switch { CardField.Number => "cardNumberInput", CardField.Holder => "cardHolderInput", CardField.Exp => "expiryInput", CardField.Cvv => "cvvInput", _ => "cardNumberInput" };
         await JS.InvokeVoidAsync("bpFocus", id); 
     }
-    private void ToggleSort() { }
     private void OnCardNumberInput(ChangeEventArgs e) { 
         var r = e.Value?.ToString() ?? "";
         var d = new string(r.Where(char.IsDigit).ToArray());
