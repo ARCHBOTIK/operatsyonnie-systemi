@@ -93,7 +93,7 @@
                 <div class="modal-overlay" @onclick="SetFormState">
                     <div class="modal-container" @onclick:stopPropagation="true">
                         <div class="modal-header">
-                            <h2>Добавление нового элемента</h2>
+                            <h2>@(isEditMode ? "Редактирование элемента" : "Добавление нового элемента")</h2>
                         </div>
 
                         <div class="modal-body">
@@ -101,24 +101,32 @@
                                 <label>Тип элемента:</label>
                                 <div class="type-selector">
                                     <button class="@(selectedType == ItemType.Password ? "active" : "")"
-                                            @onclick="@(() => selectedType = ItemType.Password)">
+                                            disabled="@isEditMode"
+                                            @onclick="@(() => SelectType(ItemType.Password))">
                                         <img src="icons/login.png" alt="Пароль" />
                                         <span>Пароль</span>
                                     </button>
 
                                     <button class="@(selectedType == ItemType.Card ? "active" : "")"
-                                            @onclick="@(() => selectedType = ItemType.Card)">
+                                            disabled="@isEditMode"
+                                            @onclick="@(() => SelectType(ItemType.Card))">
                                         <img src="icons/card.svg" alt="Карта" />
                                         <span>Карта</span>
                                     </button>
 
                                     <button class="@(selectedType == ItemType.Note ? "active" : "")"
-                                            @onclick="@(() => selectedType = ItemType.Note)">
+                                            disabled="@isEditMode"
+                                            @onclick="@(() => SelectType(ItemType.Note))">
                                         <img src="icons/secure_note.png" alt="Заметка" />
                                         <span>Заметка</span>
                                     </button>
                                 </div>
                             </div>
+
+                            @if (!string.IsNullOrWhiteSpace(formError))
+                            {
+                                <div class="form-error">@formError</div>
+                            }
 
                             @if (selectedType == ItemType.Password)
                             {
@@ -215,7 +223,7 @@
                         <div class="modal-footer">
                             <button class="btn btn-primary" @onclick="SaveItem">
                                 <img src="icons/plus.png" alt="Сохранить" />
-                                <span>Сохранить</span>
+                                <span>@(isEditMode ? "Сохранить изменения" : "Сохранить")</span>
                             </button>
                             <button class="btn btn-secondary" @onclick="SetFormState">Отмена</button>
                         </div>
@@ -332,7 +340,7 @@
                         @if (passwords.Count == 0)
                         {
                             <div class="divider"></div>
-                            <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                            <div class="row"><span class="empty-state">Сохранённых логинов пока нет</span></div>
                         }
                         else
                         {
@@ -376,7 +384,7 @@
                         @if (cards.Count == 0)
                         {
                             <div class="divider"></div>
-                            <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                            <div class="row"><span class="empty-state">Сохранённых карт пока нет</span></div>
                         }
                         else
                         {
@@ -421,7 +429,7 @@
                         @if (notes.Count == 0)
                         {
                             <div class="divider"></div>
-                            <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                            <div class="row"><span class="empty-state">Защищённых заметок пока нет</span></div>
                         }
                         else
                         {
@@ -656,6 +664,23 @@
         border-bottom: 1px solid rgba(255,255,255,.1);
         margin-bottom: 8px;
     }
+
+    .form-error {
+        margin: 0 0 16px;
+        padding: 10px 12px;
+        border: 1px solid rgba(211, 47, 47, .28);
+        border-radius: 12px;
+        background: rgba(211, 47, 47, .09);
+        color: #b42318;
+        font-size: 13px;
+        line-height: 1.35;
+    }
+
+    .empty-state {
+        margin: 0 auto;
+        color: var(--muted);
+        font-size: 14px;
+    }
 </style>
 
 @code {
@@ -679,6 +704,9 @@
     private string noteTitle = "", noteContent = "";
     private int expandedIndex = 0;
     private bool showAddForm = false;
+    private bool isEditMode = false;
+    private int editingId = 0;
+    private string formError = "";
     
     private string searchQuery = "";
     private bool isSearchExpanded = false;
@@ -755,15 +783,43 @@
     private string GetDetailIcon() => currentDetailType switch { "password" => "icons/login.png", "card" => "icons/card.svg", "note" => "icons/note.png", _ => "icons/file.png" };
 
     private void EditItem() {
-        Console.WriteLine($"Edit: {currentDetailType}"); 
-        CloseDetail(); 
+        formError = "";
+        isEditMode = true;
+        showAddForm = true;
+        showDetail = false;
+
+        if (currentDetailType == "password" && selectedPassword != null)
+        {
+            selectedType = ItemType.Password;
+            editingId = selectedPassword.Id;
+            title = selectedPassword.Title;
+            login = selectedPassword.Login;
+            password = selectedPassword.Password;
+        }
+        else if (currentDetailType == "card" && selectedCard != null)
+        {
+            selectedType = ItemType.Card;
+            editingId = selectedCard.Id;
+            cardTitle = selectedCard.Title;
+            cardNumber = FormatCardNumberForInput(selectedCard.CardNumber);
+            cardHolder = selectedCard.CardHolder;
+            expiryDate = selectedCard.ExpiryDate;
+            cvv = selectedCard.Cvv;
+        }
+        else if (currentDetailType == "note" && selectedNote != null)
+        {
+            selectedType = ItemType.Note;
+            editingId = selectedNote.Id;
+            noteTitle = selectedNote.Title;
+            noteContent = selectedNote.Content;
+        }
     }
     
     private async Task DeleteItem()
     {
-        if (currentDetailType == "password" && selectedPassword != null) { passwords.Remove(selectedPassword); PasswordRepository.Save(); }
-        else if (currentDetailType == "card" && selectedCard != null) { cards.Remove(selectedCard); CardRepository.Save(); }
-        else if (currentDetailType == "note" && selectedNote != null) { notes.Remove(selectedNote); NoteRepository.Save(); }
+        if (currentDetailType == "password" && selectedPassword != null) { PasswordRepository.Remove(selectedPassword.Id); PasswordRepository.Save(); }
+        else if (currentDetailType == "card" && selectedCard != null) { CardRepository.Remove(selectedCard.Id); CardRepository.Save(); }
+        else if (currentDetailType == "note" && selectedNote != null) { NoteRepository.Remove(selectedNote.Id); NoteRepository.Save(); }
         CloseDetail(); 
         LoadData();
         await Task.CompletedTask;
@@ -840,12 +896,21 @@
         expiryDate = d.Length switch { <= 2 => d, _ => d[..2] + "/" + d[2..] }; 
     }
     private void ToggleCategory(int i) => expandedIndex = expandedIndex == i ? -1 : i;
+    private void SelectType(ItemType type)
+    {
+        if (isEditMode)
+            return;
+
+        selectedType = type;
+        formError = "";
+    }
+
     private void SetFormState() { 
         showAddForm = !showAddForm;
         if (!showAddForm) ClearForm(); 
-        else selectedType = ItemType.Password; 
+        else { selectedType = ItemType.Password; isEditMode = false; editingId = 0; formError = ""; }
     }
-    private void ClearForm() { title = login = password = cardNumber = cardHolder = expiryDate = cvv = cardTitle = noteTitle = noteContent = ""; }
+    private void ClearForm() { title = login = password = cardNumber = cardHolder = expiryDate = cvv = cardTitle = noteTitle = noteContent = ""; formError = ""; isEditMode = false; editingId = 0; }
     private string MaskCardNumber(string? v) { 
         if (string.IsNullOrWhiteSpace(v)) 
         return "Номер карты не указан"; 
@@ -860,19 +925,76 @@
     }
     private int GetNextId<T>(List<T> items) where T : IHasID => items.Any() ? items.Max(x => x.Id) + 1 : 1;
 
+    private string FormatCardNumberForInput(string? value)
+    {
+        var digits = new string((value ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 16) digits = digits[..16];
+        return string.Join(" ", Enumerable.Range(0, (digits.Length + 3) / 4).Select(i => digits.Skip(i * 4).Take(4)).Where(g => g.Any()).Select(g => new string(g.ToArray())));
+    }
+
+    private bool ValidateForm()
+    {
+        formError = "";
+
+        if (selectedType == ItemType.Password)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                formError = "Введите название записи.";
+            else if (string.IsNullOrWhiteSpace(login))
+                formError = "Введите логин.";
+            else if (string.IsNullOrWhiteSpace(password))
+                formError = "Введите пароль.";
+        }
+        else if (selectedType == ItemType.Card)
+        {
+            var digits = new string(cardNumber.Where(char.IsDigit).ToArray());
+            if (string.IsNullOrWhiteSpace(cardTitle))
+                formError = "Введите название карты.";
+            else if (digits.Length != 16)
+                formError = "Введите номер карты из 16 цифр.";
+            else if (string.IsNullOrWhiteSpace(cardHolder))
+                formError = "Введите имя владельца карты.";
+            else if (string.IsNullOrWhiteSpace(expiryDate))
+                formError = "Введите срок действия карты.";
+            else if (cvv.Length != 3)
+                formError = "Введите CVV из 3 цифр.";
+        }
+        else if (selectedType == ItemType.Note)
+        {
+            if (string.IsNullOrWhiteSpace(noteTitle))
+                formError = "Введите заголовок заметки.";
+            else if (string.IsNullOrWhiteSpace(noteContent))
+                formError = "Введите текст заметки.";
+        }
+
+        return string.IsNullOrWhiteSpace(formError);
+    }
+
     private async Task SaveItem()
     {
+        if (!ValidateForm())
+            return;
+
         try
         {
             switch (selectedType)
             {
-                case ItemType.Password: PasswordRepository.Add(new PasswordEntry {  Id = GetNextId(passwords), Title = title, Login = login, Password = password });
+                case ItemType.Password:
+                    var passwordEntry = new PasswordEntry { Id = isEditMode ? editingId : GetNextId(passwords), Title = title.Trim(), Login = login.Trim(), Password = password };
+                    if (isEditMode) PasswordRepository.Update(passwordEntry);
+                    else PasswordRepository.Add(passwordEntry);
                     PasswordRepository.Save(); 
                     break;
-                case ItemType.Card: CardRepository.Add(new CardEntry { Id = GetNextId(cards), Title = cardTitle, CardNumber = cardNumber.Replace(" ", ""), CardHolder = cardHolder, ExpiryDate = expiryDate, Cvv = cvv });
+                case ItemType.Card:
+                    var cardEntry = new CardEntry { Id = isEditMode ? editingId : GetNextId(cards), Title = cardTitle.Trim(), CardNumber = cardNumber.Replace(" ", ""), CardHolder = cardHolder.Trim(), ExpiryDate = expiryDate, Cvv = cvv };
+                    if (isEditMode) CardRepository.Update(cardEntry);
+                    else CardRepository.Add(cardEntry);
                     CardRepository.Save(); 
                     break;
-                case ItemType.Note: NoteRepository.Add(new NoteEntry { Id = GetNextId(notes), Title = noteTitle, Content = noteContent }); 
+                case ItemType.Note:
+                    var noteEntry = new NoteEntry { Id = isEditMode ? editingId : GetNextId(notes), Title = noteTitle.Trim(), Content = noteContent.Trim() };
+                    if (isEditMode) NoteRepository.Update(noteEntry);
+                    else NoteRepository.Add(noteEntry);
                     NoteRepository.Save(); 
                     break;
             }
@@ -981,9 +1103,6 @@ private bool sortDescending = false;
 
     private string GetSortIcon()
     {
-        if (sortBy == "title")
-            return sortDescending ? "icons/sort-desc.svg" : "icons/sort-asc.svg";
-        else
-            return "icons/sort-type.svg";
+        return "icons/sort.svg";
     }
 }
