@@ -1,5 +1,6 @@
 @using System.Timers
 @inject IJSRuntime JS
+@page "/syncauth"
 
 <!-- Если не авторизован - окно входа -->
 @if (!isAuthenticated)
@@ -7,8 +8,8 @@
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <h2>🔐 Вход в хранилище</h2>
-                <p class="subtitle">Введите мастер-пароль для доступа</p>
+                <h2>Демо-доступ к синхронизации</h2>
+                <p class="subtitle">Экран работает в демо-режиме. Реальная локальная синхронизация будет добавлена позже.</p>
             </div>
             
             <div class="form-group">
@@ -20,7 +21,7 @@
             @if (passwordError)
             {
                 <div class="error-message">
-                    <span>⚠️</span> Неверный мастер-пароль. Доступ заблокирован на 30 секунд.
+                    <span>⚠️</span> Неверный демо-пароль.
                 </div>
             }
             
@@ -36,13 +37,17 @@
         <div class="sync-auth-card">
             <div class="sync-auth-header">
                 <h2>Синхронизация данных</h2>
-                <p class="subtitle">Управление синхронизацией файлов</p>
+                <p class="subtitle">Демо-режим: обмен по локальной сети пока не выполняется</p>
             </div>
 
-            <!-- Кнопка синхронизации пользовательских файлов -->
+            <div class="demo-notice">
+                Функция находится в разработке. Ни один файл не отправляется и не принимается.
+            </div>
+
+            <!-- Кнопка демонстрации пользовательского сценария -->
             <button class="sync-button primary" @onclick="OpenSyncPasswordDialog">
                 <span class="sync-icon">🔄</span>
-                <span>Синхронизировать файлы</span>
+                <span>Открыть демо-сценарий</span>
             </button>
 
             <!-- Модальное окно ввода мастер-пароля перед синхронизацией -->
@@ -51,19 +56,19 @@
                 <div class="modal-overlay" @onclick="CloseSyncPasswordDialog">
                     <div class="modal-container" @onclick:stopPropagation="true">
                         <div class="modal-header">
-                            <h3>Подтверждение мастер-пароля</h3>
+                            <h3>Подтверждение демо-доступа</h3>
                             <button class="close-btn" @onclick="CloseSyncPasswordDialog">✕</button>
                         </div>
                         <div class="modal-body">
                             <div class="form-group">
-                                <label>Введите мастер-пароль</label>
+                                <label>Введите демо-пароль</label>
                                 <input type="password" class="form-control" @bind="syncPassword" 
                                        placeholder="Введите пароль" @onkeypress="OnSyncPasswordKeyPress" />
                             </div>
                             @if (syncPasswordError)
                             {
                                 <div class="error-message">
-                                    <span>⚠️</span> Неверный мастер-пароль.
+                                    <span>⚠️</span> Неверный демо-пароль.
                                 </div>
                             }
                         </div>
@@ -80,7 +85,7 @@
             {
                 <div class="sync-files-section">
                     <div class="section-header">
-                        <h3>Выберите файлы для синхронизации</h3>
+                        <h3>Выберите файлы для демо-сценария</h3>
                     </div>
 
                     <!-- Checkbox для выбора всех файлов -->
@@ -99,7 +104,7 @@
                         <label class="checkbox-label">
                             <input type="checkbox" @bind="selectedPasswords" />
                             <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">📁 Пароли (passwords.dat)</span>
+                            <span class="checkbox-text">Пароли (passwords.dat)</span>
                         </label>
                     </div>
 
@@ -107,7 +112,7 @@
                         <label class="checkbox-label">
                             <input type="checkbox" @bind="selectedCards" />
                             <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">💳 Банковские карты (cards.dat)</span>
+                            <span class="checkbox-text">Банковские карты (cards.dat)</span>
                         </label>
                     </div>
 
@@ -115,13 +120,13 @@
                         <label class="checkbox-label">
                             <input type="checkbox" @bind="selectedNotes" />
                             <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">📝 Заметки (notes.dat)</span>
+                            <span class="checkbox-text">Заметки (notes.dat)</span>
                         </label>
                     </div>
 
-                    <!-- Кнопка запуска синхронизации -->
+                    <!-- Кнопка запуска демо -->
                     <button class="sync-button success" @onclick="ShowWarning" disabled="@(!CanSync())">
-                        <span>🚀 Запустить синхронизацию</span>
+                        <span>Показать демо-статус</span>
                     </button>
                 </div>
             }
@@ -132,11 +137,11 @@
                 <div class="warning-box">
                     <div class="warning-icon">⚠️</div>
                     <div class="warning-text">
-                        <strong>Внимание!</strong>
-                        <p>Синхронизация данных будет производиться с заменой более старых записей</p>
+                        <strong>Демо-режим</strong>
+                        <p>Реальная синхронизация и замена данных не выполняются.</p>
                     </div>
                     <div class="warning-buttons">
-                        <button class="btn-warning-confirm" @onclick="StartSync">Продолжить</button>
+                        <button class="btn-warning-confirm" @onclick="StartSync">Показать демо</button>
                         <button class="btn-warning-cancel" @onclick="CancelWarning">Отмена</button>
                     </div>
                 </div>
@@ -147,14 +152,14 @@
             {
                 <div class="sync-progress">
                     <div class="progress-header">
-                        <span>Синхронизация...</span>
+                        <span>Демо-режим...</span>
                         <span class="progress-percent">@syncProgress%</span>
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill" style="width: @syncProgress%"></div>
                     </div>
                     <div class="progress-speed">
-                        Скорость: @syncSpeed MB/s
+                        Реальная передача файлов не выполняется
                     </div>
                 </div>
             }
@@ -185,7 +190,7 @@
     private bool isAuthenticated = false;
     private string masterPassword = "";
     
-    // Состояния для синхронизации
+    // Состояния демо-сценария
     private bool showSyncPasswordDialog = false;
     private bool syncPasswordError = false;
     private string syncPassword = "";
@@ -197,7 +202,7 @@
     private bool selectedCards = true;
     private bool selectedNotes = true;
     
-    // Синхронизация
+    // Демо синхронизации
     private bool showWarning = false;
     private bool isSyncing = false;
     private int syncProgress = 0;
@@ -205,7 +210,7 @@
     private Timer? syncTimer;
     private SyncResultModel? syncResult;
     
-    // Демо-пароль (
+    // Временный демо-пароль для макета экрана
     private const string ValidMasterPassword = "12345678";
 
     // Методы входа
@@ -220,15 +225,15 @@
 
     private void VerifyPassword()
     {
-        // Проверка длины пароля 
+        // Проверка длины демо-пароля
         if (masterPassword.Length < 8)
         {
             passwordError = true;
-            JS.InvokeVoidAsync("alert", "Мастер-пароль должен содержать минимум 8 символов!");
+            JS.InvokeVoidAsync("alert", "Демо-пароль должен содержать минимум 8 символов.");
             return;
         }
         
-        // Временная функция для проверки пароля
+        // Временная проверка для демо-экрана
         if (masterPassword == ValidMasterPassword)
         {
             isAuthenticated = true;
@@ -244,8 +249,8 @@
 
     private async void BlockScreen()
     {
-        // Блокировка экрана на 30 секунд при неверном пароле
-        await JS.InvokeVoidAsync("alert", "Неверный мастер-пароль! Доступ заблокирован на 30 секунд.");
+        // Демо-блокировка экрана на 30 секунд при неверном пароле
+        await JS.InvokeVoidAsync("alert", "Неверный демо-пароль. Доступ к демо-экрану заблокирован на 30 секунд.");
         
         // Блокируем кнопки
         await JS.InvokeVoidAsync("document.querySelectorAll('button').forEach(b => b.disabled = true)");
@@ -257,7 +262,7 @@
         passwordError = false;
     }
 
-    // Методы для синхронизации (повторный ввод пароля) 
+    // Методы для демо-подтверждения
 
     private void OpenSyncPasswordDialog()
     {
@@ -283,7 +288,7 @@
 
     private void VerifySyncPassword()
     {
-        // Проверка мастер-пароля перед синхронизацией
+        // Проверка демо-пароля перед показом сценария
         if (syncPassword == ValidMasterPassword)
         {
             showSyncPasswordDialog = false;
@@ -316,7 +321,7 @@
         showWarning = false;
     }
 
-    // Методы синхронихации
+    // Методы демо-сценария
 
     private async void StartSync()
     {
@@ -325,9 +330,7 @@
         syncProgress = 0;
         syncResult = null;
         
-        // Временная реализация
-        
-        // Имитация прогресса 
+        // Имитация прогресса без обмена данными
         syncTimer = new Timer(100);
         syncTimer.Elapsed += async (sender, e) =>
         {
@@ -335,11 +338,10 @@
             {
                 if (syncProgress < 100)
                 {
-                    // Обновление прогресса синхронизации
+                    // Обновление демо-прогресса
                     syncProgress += 10;
                     if (syncProgress > 100) syncProgress = 100;
                     
-                    // Расчет скорости передачи через getFileSendSpeed()
                     syncSpeed = GetFileSendSpeed().ToString("F2");
                     StateHasChanged();
                 }
@@ -350,7 +352,7 @@
                     syncResult = new SyncResultModel
                     {
                         IsSuccess = true,
-                        Message = "Синхронизация завершена успешно!"
+                        Message = "Демо завершено: реального обмена файлами не было. Локальная синхронизация будет добавлена позже."
                     };
                     StateHasChanged();
                 }
@@ -361,7 +363,7 @@
         await Task.CompletedTask;
     }
 
-    // Функция расчёта скорости передачи
+    // Демо-значение для прежней полосы состояния
     private double GetFileSendSpeed()
     {
                
@@ -472,6 +474,17 @@
     .sync-auth-header .subtitle {
         color: #64748b;
         font-size: 13px;
+    }
+
+    .demo-notice {
+        padding: 12px 14px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 14px;
+        background: rgba(245, 158, 11, 0.12);
+        color: #92400e;
+        font-size: 13px;
+        line-height: 1.35;
     }
 
     /* Кнопки */
