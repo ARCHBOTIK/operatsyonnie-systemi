@@ -54,7 +54,7 @@ h1:focus {
 #app {
     min-height: 100vh;
     box-sizing: border-box;
-    padding-top: max(32px, env(safe-area-inset-top));
+    padding-top: 0;
 }
 
 #blazor-error-ui {

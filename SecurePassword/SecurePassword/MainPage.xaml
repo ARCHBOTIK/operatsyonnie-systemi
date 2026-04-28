@@ -3,10 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:SecurePassword"
              xmlns:components="clr-namespace:SecurePassword.Components"
-             x:Class="SecurePassword.MainPage">
+             x:Class="SecurePassword.MainPage"
+             Padding="0"
+             Shell.NavBarIsVisible="False">
 
     <BlazorWebView x:Name="blazorWebView" 
                    HostPage="wwwroot/index.html"
+                   Margin="0"
                    BlazorWebViewInitializing="blazorWebView_BlazorWebViewInitializing"
                    BlazorWebViewInitialized="blazorWebView_BlazorWebViewInitialized">
         <BlazorWebView.RootComponents>

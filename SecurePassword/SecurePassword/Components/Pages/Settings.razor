@@ -20,37 +20,63 @@
             </div>
         </section>
 
-<!-- Таймер автоблокировки -->
-<div class="section-label">БЕЗОПАСНОСТЬ</div>
+<!-- Блокировка -->
 <section class="card">
-    <div class="row timeout-row">
-        <div class="row-left">
-            <span class="ico">
-                 <img src="icons/timer.svg" alt="Таймер" />
-            </span>
-            <span class="row-title">Блокировка</span>
+    <div class="card-content">
+        <div class="row">
+            <div class="row-left">
+                <span class="ico">
+                    <img src="icons/shield.svg" alt="Блокировка" />
+                </span>
+                <span class="row-title">Автоблокировка</span>
+            </div>
         </div>
         
-        <div class="custom-select" @onclick="ToggleDropdown">
-            <div class="select-selected">
-                @GetSelectedText()
+        <div class="divider"></div>
+        
+        <!-- При выходе -->
+        <div class="toggle-row" @onclick="ToggleLockOnExit">
+            <div class="toggle-text">
+                <div class="toggle-label">При выходе из приложения</div>
+                <div class="toggle-hint">Блокировать после закрытия</div>
             </div>
-            @if (showDropdown)
-            {
-                <div class="select-items">
-                    @foreach (var option in timeoutOptions)
-                    {
-                        <div class="select-item @(selectedTimeout == option.Value ? "selected" : "")" 
-                             @onclick="() => SelectOption(option.Value)">
-                            @option.Text
-                        </div>
-                    }
-                </div>
-            }
+            <label class="switch">
+                <input type="checkbox" checked="@lockOnExit" @onchange="ToggleLockOnExit" />
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- При сворачивании -->
+        <div class="toggle-row" @onclick="ToggleLockOnMinimize">
+            <div class="toggle-text">
+                <div class="toggle-label">При сворачивании</div>
+                <div class="toggle-hint">Блокировать при скрытии окна</div>
+            </div>
+            <label class="switch">
+                <input type="checkbox" checked="@lockOnMinimize" @onchange="ToggleLockOnMinimize" />
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- По таймеру -->
+        <div class="toggle-row" @onclick="ToggleLockTimer">
+            <div class="toggle-text">
+                <div class="toggle-label">Через 2 минуты бездействия</div>
+                <div class="toggle-hint">Автоблокировка по таймеру</div>
+            </div>
+            <label class="switch">
+                <input type="checkbox" checked="@lockOnTimer" @onchange="ToggleLockTimer" />
+                <span class="slider"></span>
+            </label>
         </div>
     </div>
 </section>
-        <!-- Очистка БД -->
+       
+<!-- Очистка БД -->
         <section class="card">
             <div class="row" @onclick="OpenDeleteModal">
                 <div class="row-left">
@@ -61,8 +87,6 @@
                 </div>
             </div>
         </section>
-
-        <div style="height: 16px;"></div>
 
         <!-- Перенос данных -->
         <section class="card">
@@ -138,6 +162,15 @@
     // Состояния модальных окон
     private bool showReplaceModal = false;
     private bool showDeleteModal = false;
+
+    // Блокировка
+    private bool lockOnExit = true;
+    private bool lockOnMinimize = true;
+    private bool lockOnTimer = false;
+
+    private void ToggleLockOnExit() => lockOnExit = !lockOnExit;
+    private void ToggleLockOnMinimize() => lockOnMinimize = !lockOnMinimize;
+    private void ToggleLockTimer() => lockOnTimer = !lockOnTimer;
 
     // Поля формы смены пароля
     private string currentPassword = "";
@@ -243,119 +276,3 @@ private string GetSelectedText()
 
 }
 
-<style>
-    .appbar
-    {
-        text-align:center;
-    }
-
-   /* Кастомный выпадающий список */
-.custom-select {
-    position: relative;
-    width: 90px;
-    cursor: pointer;
-    z-index: 1000;
-    flex-shrink: 0; 
-    margin-left: auto; 
-}
-
-.select-selected {
-    background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1));
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 30px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.select-items {
-    position: absolute;
-    top: 110%;
-    left: 0;
-    right: 0;
-    background: radial-gradient(circle at 15% 20%, rgba(255,255,255,.8), transparent 28%), 
-                radial-gradient(circle at 85% 15%, rgba(120,255,220,.22), transparent 24%), 
-                radial-gradient(circle at 70% 75%, rgba(120,190,255,.20), transparent 26%), 
-                linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5);
-    z-index: 10000;
-    max-height: 220px;
-    overflow-y: auto;
-    padding: 6px 0;
-}
-
-.select-item {
-    padding: 6px 16px;
-    font-size: 13px;
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-    margin: 3px 6px;
-    border-radius: 25px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.select-item:hover {
-    background: var(--accent);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(25, 163, 140, 0.3);
-    border-color: rgba(255,255,255,0.3);
-}
-
-.select-item.selected {
-    background: var(--label);
-    color: white;
-    font-weight: 600;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
-    border-color: rgba(255,255,255,0.3);
-}
-
-.select-items::-webkit-scrollbar {
-    width: 6px;
-}
-
-.select-items::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    margin: 10px 0;
-}
-
-.select-items::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.select-items::-webkit-scrollbar-thumb:hover {
-    background: var(--label);
-}
-
-section.card:has(.custom-select) {
-    overflow: visible !important;
-    z-index: 100;
-}
-
-.timeout-row {
-    position: relative;
-    z-index: 200;
-}
-</style>

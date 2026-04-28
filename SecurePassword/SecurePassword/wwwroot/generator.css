@@ -4,6 +4,10 @@
     gap: 14px;
 }
 
+.options-section h3 {
+    text-align: center;
+}
+
 .password-display-area {
     background: linear-gradient( 180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,.16) 100% );
     border: 1px solid rgba(255,255,255,.26);
