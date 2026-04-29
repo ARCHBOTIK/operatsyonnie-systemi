@@ -4,7 +4,7 @@
     -webkit-touch-callout: none !important;
 }
 
-/* Запрещаем выделение текста везде, кроме полей ввода */
+/* Запрещаем выделение текста везде, кроме полей ввода и чекбоксов */
 * {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -23,12 +23,6 @@ textarea:focus {
     -ms-user-select: text !important;
     user-select: text !important;
 }
-
-/* Убираем обводку при фокусе на всех элементах */
-*:focus {
-    outline: none !important;
-}
-
 
 *:focus-visible {
     outline: 2px solid var(--accent) !important;

@@ -89,31 +89,31 @@ body {
     -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
 }
 
-    .screen::before,
-    .screen::after {
-        content: "";
-        position: absolute;
-        border-radius: 999px;
-        pointer-events: none;
-        filter: blur(40px);
-        z-index: 0;
-    }
+.screen::before,
+.screen::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    filter: blur(40px);
+    z-index: 0;
+}
 
-    .screen::before {
-        width: 240px;
-        height: 240px;
-        top: -40px;
-        left: -50px;
-        background: rgba(255,255,255,.35);
-    }
+.screen::before {
+    width: 240px;
+    height: 240px;
+    top: -40px;
+    left: -50px;
+    background: rgba(255,255,255,.35);
+}
 
-    .screen::after {
-        width: 280px;
-        height: 280px;
-        right: -80px;
-        bottom: 80px;
-        background: rgba(91, 240, 208, .20);
-    }
+.screen::after {
+    width: 280px;
+    height: 280px;
+    right: -80px;
+    bottom: 80px;
+    background: rgba(91, 240, 208, .20);
+}
 
 /* Top bar */
 .appbar {
@@ -132,6 +132,7 @@ body {
     backdrop-filter: blur(18px) saturate(150%);
     -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
+
     .appbar::before {
         content: "";
         position: absolute;
@@ -142,6 +143,7 @@ body {
         background: linear-gradient( 90deg, transparent, rgba(255,255,255,.75), transparent );
         pointer-events: none;
     }
+
 .appbar-left,
 .appbar-right {
     display: flex;
@@ -300,12 +302,12 @@ body {
     display: block;
 }
 
-    .ico svg {
-        width: 26px;
-        height: 26px;
-        fill: #111;
-        opacity: .92;
-    }
+.ico svg {
+    width: 26px;
+    height: 26px;
+    fill: #111;
+    opacity: .92;
+}
 
 /* Brands */
 .brand {
@@ -441,7 +443,7 @@ body {
 }
 
 .modal-header {
-    text-align:center;
+    text-align: center;
     border-bottom: 1px solid rgba(255,255,255,.18);
 }
 
@@ -924,15 +926,18 @@ textarea {
     right: 60px;
     width: 0;
     opacity: 0;
-    overflow: hidden;
+    overflow: visible;
     transition: all 0.3s;
     outline: none;
+    pointer-events: none;
 }
 
-.search-wrapper.expanded {
-    width: 220px;
-    opacity: 1;
-}
+    .search-wrapper.expanded {
+        width: 220px;
+        opacity: 1;
+        overflow: visible;
+        pointer-events: auto;
+    }
 
 .search-toggle-btn {
     margin-left: 4px; /* Дополнительный отступ слева от кнопки */
@@ -955,6 +960,8 @@ textarea {
 
     .search-input:focus {
         border-color: var(--accent);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(25, 163, 140, 0.3);
     }
 
 .search-clear {
@@ -1155,4 +1162,3 @@ textarea {
     border-bottom: 1px solid rgba(255,255,255,.1);
     margin-bottom: 8px;
 }
-
