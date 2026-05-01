@@ -188,6 +188,7 @@
 .strength-strong {
     --strength-gradient: linear-gradient( 90deg, #2e7d32, #66bb6a );
 }
+
 .strength-text {
     font-size: 14px;
     font-weight: 700;
