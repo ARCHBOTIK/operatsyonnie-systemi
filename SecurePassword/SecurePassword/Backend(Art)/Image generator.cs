@@ -27,7 +27,7 @@ public class ServiceImageGenerator
             SaveServiceImage(serviceName, fullPath);
         }
 
-        return $"service-icons/{fileName}";
+        return BuildWebRelativePath("service-icons", fileName);
     }
 
     public static (string IconPath, string Color1, string Color2) GetServiceIconWithColors(string serviceName)
@@ -43,22 +43,7 @@ public class ServiceImageGenerator
         if (string.IsNullOrWhiteSpace(serviceName))
             serviceName = "?";
 
-        string displayText = GetInitials(serviceName);
-        var (color1, color2) = GenerateContrastingColors(serviceName);
-
-        using var surface = SKSurface.Create(new SKImageInfo(width, height));
-        var canvas = surface.Canvas;
-
-        using (var shader = SKShader.CreateLinearGradient(
-            new SKPoint(0, 0),
-            new SKPoint(width, height),
-            new[] { color1, color2 },
-            new float[] { 0, 1 },
-            SKShaderTileMode.Clamp))
-        using (var paint = new SKPaint { Shader = shader })
-        {
-            canvas.DrawRect(new SKRect(0, 0, width, height), paint);
-        }
+        string displayText = GetDisplayLetters(serviceName);
 
         DrawTextCentered(canvas, displayText, width, height);
 
@@ -70,16 +55,18 @@ public class ServiceImageGenerator
         return stream.ToArray();
     }
 
-    private static string GetInitials(string text)
+    private static string GetDisplayLetters(string text)
     {
-        var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string normalized = new string(text
+            .Trim()
+            .Where(char.IsLetterOrDigit)
+            .ToArray());
 
-        if (parts.Length == 0)
+        if (string.IsNullOrWhiteSpace(normalized))
             return "?";
 
-        return (parts.Length < 2)
-            ? parts[0][0].ToString().ToUpper()
-            : (parts[0][0].ToString() + parts[1][0]).ToUpper();
+        int lettersCount = Math.Clamp(normalized.Length, 2, 4);
+        return normalized[..lettersCount].ToUpperInvariant();
     }
 
     // --- Цвета (контраст через HSV) ---
@@ -109,54 +96,26 @@ public class ServiceImageGenerator
 
     private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
     {
-        if (string.IsNullOrEmpty(text)) return;
+        component = Math.Abs(component % 256);
 
-        float targetSize = Math.Min(width, height) * 0.8f;
+        if (component < 70)
+            component += 130;
 
-        using var typeface = LoadTypeface();
+        if (component > 210)
+            component -= 45;
 
-        using var paint = new SKPaint
-        {
-            Color = SKColors.White,
-            IsAntialias = true
-        };
-
-        float fontSize = targetSize;
-
-        using var font = new SKFont(typeface, fontSize);
-
-        var bounds = new SKRect();
-        font.MeasureText(text, out bounds);
-
-        float scale = targetSize / Math.Max(bounds.Width, bounds.Height);
-        fontSize *= scale;
-
-        using var finalFont = new SKFont(typeface, fontSize);
-
-        float x = width / 2f;
-        float y = height / 2f - bounds.MidY;
-
-        // тень
-        using var shadowPaint = new SKPaint
-        {
-            Color = SKColors.Black.WithAlpha(100),
-            IsAntialias = true
-        };
-
-        canvas.DrawText(text, x + 2, y + 2, SKTextAlign.Center, finalFont, shadowPaint);
-        canvas.DrawText(text, x, y, SKTextAlign.Center, finalFont, paint);
+        return Math.Min(220, Math.Max(60, component));
     }
 
     // --- Шрифты ---
 
-    private static SKTypeface LoadTypeface()
-    {
-        string fontPath = Path.Combine(GetFontsDirectory(), "NotoSans-Bold.ttf");
+        int fontSize = (int)(Math.Min(width, height) * 0.8f);
 
-        if (File.Exists(fontPath))
+        using (var font = new SKFont(GetPreferredTypeface(), fontSize))
+        using (var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true, FakeBoldText = true })
         {
-            return SKTypeface.FromFile(fontPath);
-        }
+            var textBounds = new SKRect();
+            font.MeasureText(text, out textBounds);
 
         return SKTypeface.FromFamilyName("sans-serif", SKFontStyle.Bold);
     }
@@ -183,10 +142,29 @@ public class ServiceImageGenerator
 
     private static string SanitizeFileName(string fileName)
     {
-        foreach (char c in Path.GetInvalidFileNameChars())
+        var invalidChars = Path.GetInvalidFileNameChars();
+        foreach (char c in invalidChars)
         {
             fileName = fileName.Replace(c, '_');
         }
         return fileName;
+    }
+
+    private static SKTypeface GetPreferredTypeface()
+    {
+        return SKTypeface.FromFamilyName("Noto Sans", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            ?? SKTypeface.FromFamilyName("Roboto", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            ?? SKTypeface.Default;
+    }
+
+    private static string BuildWebRelativePath(params string[] segments)
+    {
+        string normalizedPath = string.Join('/',
+            segments
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().Replace('\\', '/').Trim('/')));
+
+        return $"/{normalizedPath}";
     }
 }
