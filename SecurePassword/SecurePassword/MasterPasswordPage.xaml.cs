@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.Maui.Graphics;
 
 #if WINDOWS
@@ -429,7 +430,7 @@ public partial class MasterPasswordPage : ContentPage
     }
 #endif
 
-        public void PrepareForLock()
+    public void PrepareForLock()
     {
         SetMode(MasterPasswordMode.Login);
     }
@@ -438,6 +439,8 @@ public partial class MasterPasswordPage : ContentPage
 
     private void OpenMain()
     {
-        Application.Current.Windows[0].Page = _mainPage;
+        var appWindow = Application.Current?.Windows.FirstOrDefault();
+        if (appWindow is not null)
+            appWindow.Page = _mainPage;
     }
 }

@@ -230,6 +230,9 @@
     private void LockApplication()
     {
         MasterPasswordPage.PrepareForLock();
-        Application.Current?.Windows[0].Page = MasterPasswordPage;
+
+        var appWindow = Application.Current?.Windows.FirstOrDefault();
+        if (appWindow is not null)
+            appWindow.Page = MasterPasswordPage;
     }
 }
