@@ -1,24 +1,22 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using SkiaSharp;
 
 public class ServiceImageGenerator
 {
-    // Публичный метод для сохранения иконки
     public static void SaveServiceImage(string serviceName, string filePath, int width = 200, int height = 200)
     {
         byte[] imageBytes = GenerateServiceImage(serviceName, width, height);
         File.WriteAllBytes(filePath, imageBytes);
     }
 
-    // Публичный метод для получения пути к иконке (для UI)
     public static string GetServiceIconPath(string serviceName)
     {
         if (string.IsNullOrWhiteSpace(serviceName))
             serviceName = "default";
 
-        string iconsDirectory = Path.Combine(AppContext.BaseDirectory, "wwwroot", "service-icons");
+        string iconsDirectory = GetIconsDirectory();
         Directory.CreateDirectory(iconsDirectory);
 
         string fileName = $"{SanitizeFileName(serviceName)}.png";
@@ -32,19 +30,14 @@ public class ServiceImageGenerator
         return BuildWebRelativePath("service-icons", fileName);
     }
 
-    // Публичный метод для получения иконки и цветов
     public static (string IconPath, string Color1, string Color2) GetServiceIconWithColors(string serviceName)
     {
-        var (hash1, hash2) = GenerateTwoHashes(serviceName);
-        SKColor color1 = HashToSkColor(hash1);
-        SKColor color2 = HashToSkColor(hash2);
-
+        var (color1, color2) = GenerateContrastingColors(serviceName);
         string iconPath = GetServiceIconPath(serviceName);
-        
+
         return (iconPath, ColorToHex(color1), ColorToHex(color2));
     }
 
-    // Приватные методы (были публичными, теперь приватные)
     private static byte[] GenerateServiceImage(string serviceName, int width = 200, int height = 200)
     {
         if (string.IsNullOrWhiteSpace(serviceName))
@@ -52,33 +45,14 @@ public class ServiceImageGenerator
 
         string displayText = GetDisplayLetters(serviceName);
 
-        var (hash1, hash2) = GenerateTwoHashes(serviceName);
+        DrawTextCentered(canvas, displayText, width, height);
 
-        SKColor color1 = HashToSkColor(hash1);
-        SKColor color2 = HashToSkColor(hash2);
+        using var image = surface.Snapshot();
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        using var stream = new MemoryStream();
 
-        using (var surface = SKSurface.Create(new SKImageInfo(width, height)))
-        {
-            var canvas = surface.Canvas;
-
-            using (var shader = SKShader.CreateLinearGradient(
-                new SKPoint(0, 0),
-                new SKPoint(width, height), new[] { color1, color2 }, new float[] { 0, 1 }, SKShaderTileMode.Clamp))
-            using (var paint = new SKPaint { Shader = shader })
-            {
-                canvas.DrawRect(new SKRect(0, 0, width, height), paint);
-            }
-
-            DrawTextCentered(canvas, displayText, width, height);
-
-            using (var image = surface.Snapshot())
-            using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
-            using (var stream = new MemoryStream())
-            {
-                data.SaveTo(stream);
-                return stream.ToArray();
-            }
-        }
+        data.SaveTo(stream);
+        return stream.ToArray();
     }
 
     private static string GetDisplayLetters(string text)
@@ -95,38 +69,22 @@ public class ServiceImageGenerator
         return normalized[..lettersCount].ToUpperInvariant();
     }
 
-    private static (int Hash1, int Hash2) GenerateTwoHashes(string input)
+    // --- Цвета (контраст через HSV) ---
+
+    private static (SKColor, SKColor) GenerateContrastingColors(string input)
     {
         if (string.IsNullOrEmpty(input))
             input = "default";
 
-        int hash1 = 17;
-        int hash2 = 23;
+        int hash = input.Aggregate(0, (acc, c) => acc * 31 + c);
 
-        for (int i = 0; i < input.Length; i++)
-        {
-            char c = input[i];
-            hash1 = hash1 * 31 + c;
-            hash2 = hash2 * 37 + c;
-        }
+        float baseHue = Math.Abs(hash % 360);
+        float secondHue = (baseHue + 180) % 360;
 
-        hash1 = hash1 ^ (hash1 >> 16);
-        hash2 = hash2 ^ (hash2 >> 16);
+        var color1 = SKColor.FromHsv(baseHue, 90, 90);
+        var color2 = SKColor.FromHsv(secondHue, 90, 90);
 
-        return (Math.Abs(hash1), Math.Abs(hash2));
-    }
-
-    private static SKColor HashToSkColor(int hash)
-    {
-        int r = (hash & 0xFF0000) >> 16;
-        int g = (hash & 0x00FF00) >> 8;
-        int b = hash & 0x0000FF;
-
-        r = EnsureVibrantColor(r);
-        g = EnsureVibrantColor(g);
-        b = EnsureVibrantColor(b);
-
-        return new SKColor((byte)r, (byte)g, (byte)b);
+        return (color1, color2);
     }
 
     private static string ColorToHex(SKColor color)
@@ -134,7 +92,9 @@ public class ServiceImageGenerator
         return $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
     }
 
-    private static int EnsureVibrantColor(int component)
+    // --- Рендер текста (80% площади) ---
+
+    private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
     {
         component = Math.Abs(component % 256);
 
@@ -147,9 +107,7 @@ public class ServiceImageGenerator
         return Math.Min(220, Math.Max(60, component));
     }
 
-    private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
-    {
-        if (string.IsNullOrEmpty(text)) return;
+    // --- Шрифты ---
 
         int fontSize = (int)(Math.Min(width, height) * 0.8f);
 
@@ -159,11 +117,27 @@ public class ServiceImageGenerator
             var textBounds = new SKRect();
             font.MeasureText(text, out textBounds);
 
-            float x = (width - textBounds.Width) / 2 - textBounds.Left;
-            float y = (height - textBounds.Height) / 2 - textBounds.Top;
+        return SKTypeface.FromFamilyName("sans-serif", SKFontStyle.Bold);
+    }
 
-            canvas.DrawText(text, x, y, SKTextAlign.Left, font, textPaint);
-        }
+    private static string GetFontsDirectory()
+    {
+#if ANDROID || IOS
+        return FileSystem.AppDataDirectory;
+#else
+        return Path.Combine(AppContext.BaseDirectory, "wwwroot", "fonts");
+#endif
+    }
+
+    // --- Пути ---
+
+    private static string GetIconsDirectory()
+    {
+#if ANDROID || IOS
+        return Path.Combine(FileSystem.AppDataDirectory, "service-icons");
+#else
+        return Path.Combine(AppContext.BaseDirectory, "wwwroot", "service-icons");
+#endif
     }
 
     private static string SanitizeFileName(string fileName)
