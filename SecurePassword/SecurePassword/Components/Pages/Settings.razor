@@ -1,14 +1,16 @@
 @page "/settings"
+@using System.IO
+@using Microsoft.Maui.Storage
+@inject NavigationManager Navigation
+@inject MasterPasswordService MasterPasswordService
+@inject MasterPasswordPage MasterPasswordPage
 
 <div class="screen">
-    <!-- Top app bar -->
     <header class="appbar">
         <h1 class="appbar-title">Настройки</h1>
     </header>
 
-    <!-- Content -->
     <main class="content">
-        <!-- Смена пароля -->
         <section class="card">
             <div class="row" @onclick="OpenReplaceModal">
                 <div class="row-left">
@@ -20,75 +22,69 @@
             </div>
         </section>
 
-<!-- Блокировка -->
-<section class="card">
-    <div class="card-content">
-        <div class="row">
-            <div class="row-left">
-                <span class="ico">
-                    <img src="icons/shield.svg" alt="Блокировка" />
-                </span>
-                <span class="row-title">Автоблокировка</span>
+        <section class="card">
+            <div class="card-content">
+                <div class="row">
+                    <div class="row-left">
+                        <span class="ico">
+                            <img src="icons/shield.svg" alt="Блокировка" />
+                        </span>
+                        <span class="row-title">Автоблокировка</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="toggle-row" @onclick="ToggleLockOnExit">
+                    <div class="toggle-text">
+                        <div class="toggle-label">При выходе из приложения</div>
+                        <div class="toggle-hint">Блокировать после закрытия</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked="@lockOnExit" @onchange="ToggleLockOnExit" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="toggle-row" @onclick="ToggleLockOnMinimize">
+                    <div class="toggle-text">
+                        <div class="toggle-label">При сворачивании</div>
+                        <div class="toggle-hint">Блокировать при скрытии окна</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked="@lockOnMinimize" @onchange="ToggleLockOnMinimize" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="toggle-row" @onclick="ToggleLockTimer">
+                    <div class="toggle-text">
+                        <div class="toggle-label">Через 2 минуты бездействия</div>
+                        <div class="toggle-hint">Автоблокировка по таймеру</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" checked="@lockOnTimer" @onchange="ToggleLockTimer" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
-        </div>
-        
-        <div class="divider"></div>
-        
-        <!-- При выходе -->
-        <div class="toggle-row" @onclick="ToggleLockOnExit">
-            <div class="toggle-text">
-                <div class="toggle-label">При выходе из приложения</div>
-                <div class="toggle-hint">Блокировать после закрытия</div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" checked="@lockOnExit" @onchange="ToggleLockOnExit" />
-                <span class="slider"></span>
-            </label>
-        </div>
-        
-        <div class="divider"></div>
-        
-        <!-- При сворачивании -->
-        <div class="toggle-row" @onclick="ToggleLockOnMinimize">
-            <div class="toggle-text">
-                <div class="toggle-label">При сворачивании</div>
-                <div class="toggle-hint">Блокировать при скрытии окна</div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" checked="@lockOnMinimize" @onchange="ToggleLockOnMinimize" />
-                <span class="slider"></span>
-            </label>
-        </div>
-        
-        <div class="divider"></div>
-        
-        <!-- По таймеру -->
-        <div class="toggle-row" @onclick="ToggleLockTimer">
-            <div class="toggle-text">
-                <div class="toggle-label">Через 2 минуты бездействия</div>
-                <div class="toggle-hint">Автоблокировка по таймеру</div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" checked="@lockOnTimer" @onchange="ToggleLockTimer" />
-                <span class="slider"></span>
-            </label>
-        </div>
-    </div>
-</section>
-       
-<!-- Очистка БД -->
+        </section>
+
         <section class="card">
             <div class="row" @onclick="OpenDeleteModal">
                 <div class="row-left">
                     <span class="ico">
-                         <img src="icons/delete.svg" alt="Очистить данные" />
+                        <img src="icons/delete.svg" alt="Очистить данные" />
                     </span>
                     <span class="row-title">Очистить все данные</span>
                 </div>
             </div>
         </section>
 
-        <!-- Перенос данных -->
         <section class="card">
             <div class="row" @onclick="SendUserToForm">
                 <div class="row-left">
@@ -96,11 +92,11 @@
                         <img src="icons/sync.svg" alt="Перенести данные" />
                     </span>
                     <span class="row-title">Перенести данные</span>
-                 </div>
-             </div>
+                </div>
+            </div>
         </section>
     </main>
-<!-- Модальное окно смены пароля -->
+
     @if (showReplaceModal)
     {
         <div class="modal-overlay" @onclick="CloseReplaceModal">
@@ -121,20 +117,19 @@
                         <label>Подтверждение</label>
                         <input type="password" class="form-control" @bind="confirmPassword" placeholder="········" />
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(replacePasswordError))
+                    {
+                        <p class="toggle-hint" style="color:#d32f2f;">@replacePasswordError</p>
+                    }
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary" @onclick="ReplaceMasterPassword">
-                        Подтвердить
-                    </button>
-                    <button class="btn btn-secondary" @onclick="CloseReplaceModal">
-                        Отмена
-                    </button>
+                    <button class="btn btn-primary" @onclick="ReplaceMasterPassword">Подтвердить</button>
+                    <button class="btn btn-secondary" @onclick="CloseReplaceModal">Отмена</button>
                 </div>
             </div>
         </div>
     }
 
-    <!-- Модальное окно подтверждения очистки БД -->
     @if (showDeleteModal)
     {
         <div class="modal-overlay" @onclick="CloseDeleteModal">
@@ -146,12 +141,8 @@
                     <p>Вы уверены? Все сохранённые пароли, карты и заметки будут безвозвратно удалены.</p>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary" style="background: #d32f2f;" @onclick="DeleteDatabase">
-                        Удалить всё
-                    </button>
-                    <button class="btn btn-secondary" @onclick="CloseDeleteModal">
-                        Отмена
-                    </button>
+                    <button class="btn btn-primary" style="background: #d32f2f;" @onclick="DeleteDatabase">Удалить всё</button>
+                    <button class="btn btn-secondary" @onclick="CloseDeleteModal">Отмена</button>
                 </div>
             </div>
         </div>
@@ -159,120 +150,89 @@
 </div>
 
 @code {
-    // Состояния модальных окон
-    private bool showReplaceModal = false;
-    private bool showDeleteModal = false;
+    private static readonly string[] VaultFiles = ["keys.dat", "passwords.dat", "cards.dat", "notes.dat"];
 
-    // Блокировка
+    private bool showReplaceModal;
+    private bool showDeleteModal;
+
     private bool lockOnExit = true;
     private bool lockOnMinimize = true;
-    private bool lockOnTimer = false;
+    private bool lockOnTimer;
+
+    private string currentPassword = string.Empty;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
+    private string replacePasswordError = string.Empty;
 
     private void ToggleLockOnExit() => lockOnExit = !lockOnExit;
     private void ToggleLockOnMinimize() => lockOnMinimize = !lockOnMinimize;
     private void ToggleLockTimer() => lockOnTimer = !lockOnTimer;
 
-    // Поля формы смены пароля
-    private string currentPassword = "";
-    private string newPassword = "";
-    private string confirmPassword = "";
-
-    // Выбранное значение таймера (в секундах)
-    private string selectedTimeout = "60"; // По умолчанию 1 минута
-
-    // Методы смены пароля
-    private void OpenReplaceModal()
-    {
-        showReplaceModal = true;
-    }
+    private void OpenReplaceModal() => showReplaceModal = true;
 
     private void CloseReplaceModal()
     {
         showReplaceModal = false;
-        currentPassword = "";
-        newPassword = "";
-        confirmPassword = "";
+        currentPassword = string.Empty;
+        newPassword = string.Empty;
+        confirmPassword = string.Empty;
+        replacePasswordError = string.Empty;
     }
 
     private void ReplaceMasterPassword()
     {
-        // Смена пароля
-        Console.WriteLine($"Смена пароля: текущий={currentPassword}, новый={newPassword}, подтверждение={confirmPassword}");
-        CloseReplaceModal();
+        replacePasswordError = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            replacePasswordError = "Заполните все поля.";
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            replacePasswordError = "Новый пароль и подтверждение не совпадают.";
+            return;
+        }
+
+        try
+        {
+            MasterPasswordService.ChangeMasterPassword(currentPassword, newPassword);
+            CloseReplaceModal();
+        }
+        catch
+        {
+            replacePasswordError = "Не удалось сменить мастер-пароль. Проверьте текущий пароль.";
+        }
     }
 
-    // Методы таймера
-    private void OnTimeoutChanged(ChangeEventArgs e)
-    {
-        SetTimeLogout();
-    }
+    private void OpenDeleteModal() => showDeleteModal = true;
+    private void CloseDeleteModal() => showDeleteModal = false;
 
-    private void SetTimeLogout()
-    {
-        Console.WriteLine($"Таймер автоблокировки установлен на {selectedTimeout} секунд");
-        // Установка таймера
-    }
-
-    // Методы очистки БД
-    private void OpenDeleteModal()
-    {
-        showDeleteModal = true;
-    }
-
-    private void CloseDeleteModal()
-    {
-        showDeleteModal = false;
-    }
     private void DeleteDatabase()
     {
-        Console.WriteLine("База данных очищена");
-        //  Очистка БД
+        foreach (var file in VaultFiles)
+        {
+            var filePath = Path.Combine(FileSystem.AppDataDirectory, file);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
+
         CloseDeleteModal();
+        LockApplication();
     }
 
-    [Inject]
-    private NavigationManager Navigation { get; set; } = default!;
-
-    // Метод перенаправления на форму отправки
     private void SendUserToForm()
     {
-        //Navigation.NavigateTo("/send");
+        Navigation.NavigateTo("/syncauth");
     }
 
-    private bool showDropdown = false;
+    private void LockApplication()
+    {
+        MasterPasswordPage.PrepareForLock();
 
-private List<TimeoutOption> timeoutOptions = new List<TimeoutOption>
-{
-    new TimeoutOption { Value = "0", Text = "Никогда" },
-    new TimeoutOption { Value = "30", Text = "30 сек" },
-    new TimeoutOption { Value = "60", Text = "1 мин" },
-    new TimeoutOption { Value = "120", Text = "2 мин" },
-    new TimeoutOption { Value = "300", Text = "5 мин" },
-    new TimeoutOption { Value = "600", Text = "10 мин" }
-};
-
-private class TimeoutOption
-{
-    public string Value { get; set; }
-    public string Text { get; set; }
+        var appWindow = Application.Current?.Windows.FirstOrDefault();
+        if (appWindow is not null)
+            appWindow.Page = MasterPasswordPage;
+    }
 }
-
-private void ToggleDropdown()
-{
-    showDropdown = !showDropdown;
-}
-
-private void SelectOption(string value)
-{
-    selectedTimeout = value;
-    showDropdown = false;
-}
-
-private string GetSelectedText()
-{
-    var option = timeoutOptions.FirstOrDefault(o => o.Value == selectedTimeout);
-    return option?.Text ?? "1 мин";
-}
-
-}
-
