@@ -22,7 +22,6 @@ public class ServiceImageGenerator
         Directory.CreateDirectory(iconsDirectory);
 
         string fileName = $"{SanitizeFileName(serviceName)}.png";
-        string relativePath = $"/service-icons/{fileName}";
         string fullPath = Path.Combine(iconsDirectory, fileName);
 
         if (!File.Exists(fullPath))
@@ -30,7 +29,7 @@ public class ServiceImageGenerator
             SaveServiceImage(serviceName, fullPath);
         }
 
-        return relativePath;
+        return BuildWebRelativePath("service-icons", fileName);
     }
 
     // Публичный метод для получения иконки и цветов
@@ -51,7 +50,7 @@ public class ServiceImageGenerator
         if (string.IsNullOrWhiteSpace(serviceName))
             serviceName = "?";
 
-        string displayText = GetInitials(serviceName);
+        string displayText = GetDisplayLetters(serviceName);
 
         var (hash1, hash2) = GenerateTwoHashes(serviceName);
 
@@ -82,15 +81,18 @@ public class ServiceImageGenerator
         }
     }
 
-    private static string GetInitials(string text)
+    private static string GetDisplayLetters(string text)
     {
-        string[] strings = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (strings.Length == 0)
+        string normalized = new string(text
+            .Trim()
+            .Where(char.IsLetterOrDigit)
+            .ToArray());
+
+        if (string.IsNullOrWhiteSpace(normalized))
             return "?";
-            
-        return (strings.Length < 2) 
-            ? strings[0][0].ToString().ToUpper() 
-            : strings[0][0].ToString().ToUpper() + strings[1][0].ToString().ToUpper();
+
+        int lettersCount = Math.Clamp(normalized.Length, 2, 4);
+        return normalized[..lettersCount].ToUpperInvariant();
     }
 
     private static (int Hash1, int Hash2) GenerateTwoHashes(string input)
@@ -134,29 +136,25 @@ public class ServiceImageGenerator
 
     private static int EnsureVibrantColor(int component)
     {
-        component = component % 256;
+        component = Math.Abs(component % 256);
 
-        if (component < 100)
-        {
-            component = component + 155;
-        }
+        if (component < 70)
+            component += 130;
 
-        if (component > 230)
-        {
-            component = component - 30;
-        }
+        if (component > 210)
+            component -= 45;
 
-        return Math.Min(255, Math.Max(100, component));
+        return Math.Min(220, Math.Max(60, component));
     }
 
     private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        int fontSize = Math.Min(width, height) / 3;
+        int fontSize = (int)(Math.Min(width, height) * 0.8f);
 
-        using (var font = new SKFont(SKTypeface.FromFamilyName("Arial", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright), fontSize))
-        using (var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true })
+        using (var font = new SKFont(GetPreferredTypeface(), fontSize))
+        using (var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true, FakeBoldText = true })
         {
             var textBounds = new SKRect();
             font.MeasureText(text, out textBounds);
@@ -176,5 +174,23 @@ public class ServiceImageGenerator
             fileName = fileName.Replace(c, '_');
         }
         return fileName;
+    }
+
+    private static SKTypeface GetPreferredTypeface()
+    {
+        return SKTypeface.FromFamilyName("Noto Sans", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            ?? SKTypeface.FromFamilyName("Roboto", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            ?? SKTypeface.Default;
+    }
+
+    private static string BuildWebRelativePath(params string[] segments)
+    {
+        string normalizedPath = string.Join('/',
+            segments
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().Replace('\\', '/').Trim('/')));
+
+        return $"/{normalizedPath}";
     }
 }
