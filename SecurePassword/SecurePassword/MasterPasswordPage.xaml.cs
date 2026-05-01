@@ -429,7 +429,12 @@ public partial class MasterPasswordPage : ContentPage
     }
 #endif
 
-    // ===== NAVIGATION =====
+        public void PrepareForLock()
+    {
+        SetMode(MasterPasswordMode.Login);
+    }
+
+// ===== NAVIGATION =====
 
     private void OpenMain()
     {
