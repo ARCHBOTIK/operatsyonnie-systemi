@@ -76,8 +76,8 @@ public class ServiceImageGenerator
         if (string.IsNullOrWhiteSpace(normalized))
             return "?";
 
-        int lettersCount = Math.Clamp(normalized.Length, 2, 4);
-        return normalized[..lettersCount].ToUpperInvariant();
+        char firstSymbol = normalized[0];
+        return char.ToUpperInvariant(firstSymbol).ToString();
     }
 
     private static (SKColor, SKColor) GenerateContrastingColors(string input)
@@ -101,7 +101,7 @@ public class ServiceImageGenerator
 
     private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
     {
-        int fontSize = (int)(Math.Min(width, height) * 0.38f);
+        int fontSize = (int)(Math.Min(width, height) * 0.62f);
 
         using var font = new SKFont(GetPreferredTypeface(), fontSize);
         using var textPaint = new SKPaint
