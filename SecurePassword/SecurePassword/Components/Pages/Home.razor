@@ -342,7 +342,7 @@
                                 <div class="row">
                                     <div class="row-left" @onclick="@(() => ShowPasswordDetail(i))">
                                         <span class="brand">
-                                            <img src="@GetServiceIconPathForUi(i.ServiceName, i.Title)" alt="@i.Title" width="40" height="40" />
+                                            <img src="@GetServiceIconPathForUi(i.ServiceName)" alt="@i.Title" width="40" height="40" />
                                         </span>
                                         <div class="row-text">
                                             <div class="row-title">@i.Title</div>
@@ -550,10 +550,9 @@
     }
     private void TogglePasswordVisibility() => showPassword = !showPassword;
     private void ToggleCvvVisibility() => showCvv = !showCvv;
-    private string GetServiceIconPathForUi(string? serviceName, string? title)
+    private string GetServiceIconPathForUi(string? serviceName)
     {
-        var iconSeed = string.IsNullOrWhiteSpace(serviceName) ? title : serviceName;
-        var path = ServiceImageGenerator.GetServiceIconPath(iconSeed ?? string.Empty);
+        var path = ServiceImageGenerator.GetServiceIconPath(serviceName ?? string.Empty);
         return path.Replace('\\', '/');
     }
     private string GetDetailIcon() => currentDetailType switch { "password" => "icons/login.svg", "card" => "icons/card.svg", "note" => "icons/note.svg", _ => "icons/file.png" };
@@ -670,7 +669,7 @@
         {
             switch (selectedType)
             {
-                case ItemType.Password: PasswordRepository.Add(new PasswordEntry {  Id = GetNextId(passwords), Title = title, Login = login, Password = password, ServiceName = title });
+                case ItemType.Password: PasswordRepository.Add(new PasswordEntry {  Id = GetNextId(passwords), Title = title, Login = login, Password = password });
                     PasswordRepository.Save(); 
                     break;
                 case ItemType.Card: CardRepository.Add(new CardEntry { Id = GetNextId(cards), Title = cardTitle, CardNumber = cardNumber.Replace(" ", ""), CardHolder = cardHolder, ExpiryDate = expiryDate, Cvv = cvv });

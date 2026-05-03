@@ -64,6 +64,25 @@ namespace SecurePassword
 
             builder.Services.AddSingleton<MainPage>();
             builder.Services.AddSingleton<MasterPasswordPage>();
+#if ANDROID
+            builder.ConfigureLifecycleEvents(events =>
+            {
+
+                events.AddAndroid(android => android.OnCreate((activity, bundle) =>
+                {
+                    var color = Android.Graphics.Color.ParseColor("#17BFA6");
+
+                    activity.Window.SetStatusBarColor(color);
+                    activity.Window.SetNavigationBarColor(color);
+
+                    if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.M)
+                    {
+                        activity.Window.DecorView.SystemUiVisibility = 0;
+                    }
+                }));
+
+            });
+#endif
 
             return builder.Build();
         }
