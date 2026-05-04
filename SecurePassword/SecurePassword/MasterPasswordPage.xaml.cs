@@ -1,7 +1,8 @@
-using System;
-using System.IO;
-using System.Linq;
+using Microsoft.AspNetCore.Components.WebView;
+using Microsoft.AspNetCore.Components.WebView.Maui;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using SecurePassword.Components;
 
 #if WINDOWS
 using System.Runtime.InteropServices;
@@ -22,44 +23,110 @@ public partial class MasterPasswordPage : ContentPage
     private const int MinPasswordLength = 8;
 
     private readonly keyManager _keyManager;
-    private readonly MainPage _mainPage;
+    private readonly VaultSessionService _vaultSession;
+    private readonly TcpBridge _tcpBridge;
 
     private MasterPasswordMode _mode;
+    private CancellationTokenSource? _syncCancellation;
 
     private bool _loginPasswordVisible;
     private bool _createPasswordVisible;
     private bool _createConfirmVisible;
     private bool _resetPasswordVisible;
     private bool _resetConfirmVisible;
+    private bool _statusTimerStarted;
+    private bool _appHostInitialized;
 
-    private bool _capsTimerStarted;
-
-    public MasterPasswordPage(keyManager keyManager, MainPage mainPage)
+    public MasterPasswordPage(keyManager keyManager, VaultSessionService vaultSession, TcpBridge tcpBridge)
     {
         InitializeComponent();
         _keyManager = keyManager;
-        _mainPage = mainPage;
+        _vaultSession = vaultSession;
+        _tcpBridge = tcpBridge;
+        _vaultSession.StateChanged += OnSessionStateChanged;
+        UpdateImportHint();
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
 
-        if (!_capsTimerStarted)
+        if (!_statusTimerStarted)
         {
-            _capsTimerStarted = true;
+            _statusTimerStarted = true;
+            Dispatcher.StartTimer(TimeSpan.FromMilliseconds(300), OnStatusTimerTick);
+        }
 
-            Dispatcher.StartTimer(TimeSpan.FromMilliseconds(300), () =>
-            {
-                UpdateCapsLockState();
-                return true;
-            });
+        if (_vaultSession.IsAuthenticated)
+        {
+            EnsureAppHostInitialized();
+            AuthOverlay.IsVisible = false;
+            return;
         }
 
         SetInitialMode();
+        AuthOverlay.IsVisible = true;
     }
 
     private string KeyFilePath => Path.Combine(FileSystem.AppDataDirectory, KeyFileName);
+
+    private bool OnStatusTimerTick()
+    {
+        UpdateCapsLockState();
+
+        if (_vaultSession.ShouldLockForInactivity())
+            PrepareForLock();
+
+        return true;
+    }
+
+    private void OnSessionStateChanged()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            AuthOverlay.IsVisible = !_vaultSession.IsAuthenticated;
+
+            if (_vaultSession.IsAuthenticated)
+            {
+                EnsureAppHostInitialized();
+                return;
+            }
+
+            SetInitialMode();
+        });
+    }
+
+    private void EnsureAppHostInitialized()
+    {
+        if (_appHostInitialized)
+            return;
+
+        void EnsureRootComponent()
+        {
+            bool hasRoutesRootComponent = AppHost.RootComponents.Any(component =>
+                string.Equals(component.Selector, "#app", StringComparison.Ordinal) &&
+                component.ComponentType == typeof(Routes));
+
+            if (!hasRoutesRootComponent)
+            {
+                AppHost.RootComponents.Add(new RootComponent
+                {
+                    Selector = "#app",
+                    ComponentType = typeof(Routes)
+                });
+            }
+
+            _appHostInitialized = true;
+        }
+
+        if (MainThread.IsMainThread)
+        {
+            EnsureRootComponent();
+            return;
+        }
+
+        MainThread.BeginInvokeOnMainThread(EnsureRootComponent);
+    }
 
     private void SetInitialMode()
     {
@@ -74,6 +141,8 @@ public partial class MasterPasswordPage : ContentPage
         LoginBlock.IsVisible = mode == MasterPasswordMode.Login;
         CreateBlock.IsVisible = mode == MasterPasswordMode.Create;
         ResetBlock.IsVisible = mode == MasterPasswordMode.Reset;
+        ImportPanel.IsVisible = false;
+        HideSyncStatus();
 
         switch (mode)
         {
@@ -92,6 +161,7 @@ public partial class MasterPasswordPage : ContentPage
                     CreatePasswordEntry.Text = string.Empty;
                     CreateConfirmEntry.Text = string.Empty;
                 }
+                UpdateImportHint();
                 break;
 
             case MasterPasswordMode.Reset:
@@ -119,11 +189,9 @@ public partial class MasterPasswordPage : ContentPage
                 case MasterPasswordMode.Login:
                     LoginPasswordEntry.Focus();
                     break;
-
                 case MasterPasswordMode.Create:
                     CreatePasswordEntry.Focus();
                     break;
-
                 case MasterPasswordMode.Reset:
                     ResetPasswordEntry.Focus();
                     break;
@@ -157,25 +225,25 @@ public partial class MasterPasswordPage : ContentPage
     {
         if (string.IsNullOrWhiteSpace(password))
         {
-            ShowError("Введите пароль");
+            ShowError("Введите пароль.");
             return false;
         }
 
         if (password.Length < MinPasswordLength)
         {
-            ShowError($"Пароль должен содержать минимум {MinPasswordLength} символов");
+            ShowError($"Пароль должен содержать минимум {MinPasswordLength} символов.");
             return false;
         }
 
         if (string.IsNullOrWhiteSpace(confirmPassword))
         {
-            ShowError("Подтвердите пароль");
+            ShowError("Подтвердите пароль.");
             return false;
         }
 
         if (password != confirmPassword)
         {
-            ShowError("Пароли не совпадают");
+            ShowError("Пароли не совпадают.");
             return false;
         }
 
@@ -189,73 +257,89 @@ public partial class MasterPasswordPage : ContentPage
         button.Text = fieldState ? "Скрыть" : "Показать";
     }
 
-    private async void OnInfoClicked(object sender, EventArgs e)
+    private void UpdateImportHint()
     {
-        string title;
-        string message;
+        ImportAddressLabel.Text = _tcpBridge.GetPeerAddressHint();
+    }
 
-        switch (_mode)
+    private void OnImportClicked(object sender, EventArgs e)
+    {
+        ImportPanel.IsVisible = !ImportPanel.IsVisible;
+        UpdateImportHint();
+
+        if (!ImportPanel.IsVisible)
+            HideSyncStatus();
+    }
+
+    private async void OnReceiveDatabaseClicked(object sender, EventArgs e)
+    {
+        HideSyncStatus();
+        UpdateImportHint();
+
+        SyncButton.IsEnabled = false;
+        SyncCancelButton.IsVisible = true;
+        _syncCancellation = new CancellationTokenSource();
+        ShowSyncStatus("Ожидание второго устройства...");
+
+        try
         {
-            case MasterPasswordMode.Login:
-                title = "О входе";
-                message =
-                    "Это локальное хранилище.\n\n" +
-                    "Если файл keys.dat уже существует, приложение показывает форму входа. " +
-                    "Для доступа нужен мастер-пароль, который использовался при создании хранилища.";
-                break;
-
-            case MasterPasswordMode.Create:
-                title = "О создании";
-                message =
-                    "Хранилище создаётся локально на устройстве.\n\n" +
-                    "После создания будет сформирован файл keys.dat. " +
-                    "Мастер-пароль восстановить невозможно, поэтому его нужно сохранить в надёжном месте.";
-                break;
-
-            default:
-                title = "О сбросе";
-                message =
-                    "Сброс пароля не восстанавливает старый доступ.\n\n" +
-                    "При подтверждении будут удалены keys.dat, passwords.dat, cards.dat и notes.dat. " +
-                    "После этого можно создать новое пустое хранилище или выполнить импорт резервной копии.";
-                break;
+            var result = await _tcpBridge.ReceiveVaultFromPeerAsync(_syncCancellation.Token);
+            if (result.Success)
+            {
+                SetMode(MasterPasswordMode.Login);
+                ShowSuccess("База данных получена. Теперь введите мастер-пароль для входа.");
+                ShowSyncStatus(result.Message, isSuccess: true);
+            }
+            else
+            {
+                ShowSyncStatus(result.Message, isError: !result.Cancelled);
+            }
         }
-
-        await DisplayAlert(title, message, "Понятно");
+        finally
+        {
+            _syncCancellation?.Dispose();
+            _syncCancellation = null;
+            SyncButton.IsEnabled = true;
+            SyncCancelButton.IsVisible = false;
+        }
     }
 
-    // ===== LOGIN =====
-
-    private void OnLoginClicked(object sender, EventArgs e)
+    private void OnCancelSyncClicked(object sender, EventArgs e)
     {
-        TryLogin();
+        _syncCancellation?.Cancel();
+        ShowSyncStatus("Приём базы отменён.");
     }
 
-    private void OnLoginCompleted(object sender, EventArgs e)
+    private async void OnLoginClicked(object sender, EventArgs e)
     {
-        TryLogin();
+        await TryLoginAsync();
     }
 
-    private void TryLogin()
+    private async void OnLoginCompleted(object sender, EventArgs e)
+    {
+        await TryLoginAsync();
+    }
+
+    private async Task TryLoginAsync()
     {
         ClearStatus();
 
         string password = LoginPasswordEntry.Text?.Trim() ?? string.Empty;
-
         if (string.IsNullOrEmpty(password))
         {
-            ShowError("Введите мастер-пароль");
+            ShowError("Введите мастер-пароль.");
             return;
         }
 
         try
         {
             _keyManager.LoadKeyFile(password);
-            OpenMain();
+            OpenVault();
         }
         catch
         {
-            ShowError("Неверный пароль");
+            ShowError("Неверный пароль.");
+            await Task.CompletedTask;
         }
     }
 
@@ -269,11 +353,9 @@ public partial class MasterPasswordPage : ContentPage
         SetMode(MasterPasswordMode.Login);
     }
 
-    // ===== CREATE =====
-
-    private void OnCreateClicked(object sender, EventArgs e)
+    private async void OnCreateClicked(object sender, EventArgs e)
     {
-        TryCreate();
+        await TryCreateAsync();
     }
 
     private void OnCreatePasswordCompleted(object sender, EventArgs e)
@@ -281,12 +363,12 @@ public partial class MasterPasswordPage : ContentPage
         CreateConfirmEntry.Focus();
     }
 
-    private void OnCreateCompleted(object sender, EventArgs e)
+    private async void OnCreateCompleted(object sender, EventArgs e)
     {
-        TryCreate();
+        await TryCreateAsync();
     }
 
-    private void TryCreate()
+    private async Task TryCreateAsync()
     {
         ClearStatus();
 
@@ -299,24 +381,23 @@ public partial class MasterPasswordPage : ContentPage
         try
         {
             _keyManager.CreateKeyFile(password);
-            OpenMain();
+            OpenVault();
         }
         catch
         {
-            ShowError("Не удалось создать хранилище");
+            ShowError("Не удалось создать хранилище.");
+            await Task.CompletedTask;
         }
     }
-
-    // ===== RESET =====
 
     private void OnResetPasswordCompleted(object sender, EventArgs e)
     {
         ResetConfirmEntry.Focus();
     }
 
-    private void OnResetCompleted(object sender, EventArgs e)
+    private async void OnResetCompleted(object sender, EventArgs e)
     {
-        _ = ConfirmAndResetAsync();
+        await ConfirmAndResetAsync();
     }
 
     private async void OnResetClicked(object sender, EventArgs e)
@@ -334,9 +415,9 @@ public partial class MasterPasswordPage : ContentPage
         if (!ValidateNewPassword(newPassword, confirm))
             return;
 
-        bool confirmed = await DisplayAlert(
+        bool confirmed = await DisplayAlertAsync(
             "Подтверждение сброса",
-            "Сброс пароля удалит все сохранённые данные: пароли, карты, заметки и старый ключ. Продолжить?",
+            "Сброс удалит сохранённые пароли, карты, заметки и старый ключ. Продолжить?",
             "Удалить данные",
             "Отмена");
 
@@ -344,43 +425,27 @@ public partial class MasterPasswordPage : ContentPage
             return;
 
         DeleteVaultFiles();
+        _keyManager.ClearLoadedKey();
+        _vaultSession.Lock();
 
-        // Переводим пользователя на стартовый экран создания/импорта.
         SetMode(MasterPasswordMode.Create, preserveFields: true);
         CreatePasswordEntry.Text = newPassword;
         CreateConfirmEntry.Text = confirm;
 
-        ShowSuccess("Старые данные удалены. Теперь создайте новое хранилище или выполните импорт.");
+        ShowSuccess("Старые данные удалены. Теперь создайте новое хранилище или импортируйте базу.");
     }
 
     private void DeleteVaultFiles()
     {
-        string baseDir = FileSystem.AppDataDirectory;
-
-        string[] files =
-        {
-            "keys.dat",
-            "passwords.dat",
-            "cards.dat",
-            "notes.dat"
-        };
+        string[] files = ["keys.dat", "passwords.dat", "cards.dat", "notes.dat"];
 
         foreach (string file in files)
         {
-            string path = Path.Combine(baseDir, file);
+            string path = Path.Combine(FileSystem.AppDataDirectory, file);
             if (File.Exists(path))
                 File.Delete(path);
         }
     }
-
-    // ===== IMPORT =====
-
-    private async void OnImportClicked(object sender, EventArgs e)
-    {
-        await DisplayAlert("Импорт", "Пока не реализовано", "OK");
-    }
-
-    // ===== PASSWORD VISIBILITY =====
 
     private void OnToggleLoginPasswordClicked(object sender, EventArgs e)
     {
@@ -407,13 +472,10 @@ public partial class MasterPasswordPage : ContentPage
         SetPasswordVisibility(ResetConfirmEntry, ResetConfirmToggleButton, ref _resetConfirmVisible);
     }
 
-    // ===== CAPS LOCK =====
-
     private void UpdateCapsLockState()
     {
 #if WINDOWS
-        bool isCapsLockOn = IsCapsLockOnWindows();
-        CapsLockContainer.IsVisible = isCapsLockOn;
+        CapsLockContainer.IsVisible = IsCapsLockOnWindows() && AuthOverlay.IsVisible;
 #else
         CapsLockContainer.IsVisible = false;
 #endif
@@ -432,15 +494,69 @@ public partial class MasterPasswordPage : ContentPage
 
     public void PrepareForLock()
     {
-        SetMode(MasterPasswordMode.Login);
+        _syncCancellation?.Cancel();
+        _keyManager.ClearLoadedKey();
+        _vaultSession.Lock();
+        ClearPasswordFields();
+        SetInitialMode();
+        AuthOverlay.IsVisible = true;
     }
 
-// ===== NAVIGATION =====
-
-    private void OpenMain()
+    private void ClearPasswordFields()
     {
-        var appWindow = Application.Current?.Windows.FirstOrDefault();
-        if (appWindow is not null)
-            appWindow.Page = _mainPage;
+        LoginPasswordEntry.Text = string.Empty;
+        CreatePasswordEntry.Text = string.Empty;
+        CreateConfirmEntry.Text = string.Empty;
+        ResetPasswordEntry.Text = string.Empty;
+        ResetConfirmEntry.Text = string.Empty;
+    }
+
+    private void OpenVault()
+    {
+        if (!_keyManager.IsDekLoaded())
+            throw new InvalidOperationException("DEK was not loaded. Call LoadKeyFile first.");
+
+        EnsureAppHostInitialized();
+        ClearStatus();
+        ClearPasswordFields();
+        ImportPanel.IsVisible = false;
+        _vaultSession.MarkAuthenticated();
+        AuthOverlay.IsVisible = false;
+    }
+
+    private void HideSyncStatus()
+    {
+        SyncStatusLabel.Text = string.Empty;
+        SyncStatusContainer.IsVisible = false;
+    }
+
+    private void ShowSyncStatus(string message, bool isError = false, bool isSuccess = false)
+    {
+        SyncStatusContainer.BackgroundColor = isError
+            ? Color.FromArgb("#FFF2F2")
+            : isSuccess
+                ? Color.FromArgb("#ECFFF8")
+                : Color.FromArgb("#EEF8FF");
+
+        SyncStatusLabel.TextColor = isError
+            ? Color.FromArgb("#C62828")
+            : isSuccess
+                ? Color.FromArgb("#0F8B6D")
+                : Color.FromArgb("#1D4ED8");
+
+        SyncStatusLabel.Text = message;
+        SyncStatusContainer.IsVisible = true;
+    }
+
+    private void blazorWebView_BlazorWebViewInitializing(object sender, BlazorWebViewInitializingEventArgs e)
+    {
+    }
+
+    private void blazorWebView_BlazorWebViewInitialized(object sender, BlazorWebViewInitializedEventArgs e)
+    {
+#if WINDOWS
+        if (e.WebView is Microsoft.UI.Xaml.Controls.WebView2 webView && webView.CoreWebView2 is not null)
+            webView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+#endif
     }
 }

@@ -13,7 +13,7 @@
     <link rel="icon" href="data:,">
 </head>
 <body>
-    <div id="app">Loading...</div>
+    <div id="app"></div>
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
 
@@ -29,6 +29,51 @@
             if (typeof input.setSelectionRange === "function") {
                 input.setSelectionRange(v.length, v.length);
             }
+        };
+
+        let vaultActivityHandler = null;
+        let vaultActivityTimer = null;
+
+        window.vaultSetPlatformClass = function (platformClass) {
+            document.body.classList.remove("platform-android", "platform-default");
+            if (platformClass) {
+                document.body.classList.add(platformClass);
+            }
+        };
+
+        window.vaultRegisterActivity = function (dotNetRef) {
+            window.vaultUnregisterActivity();
+
+            vaultActivityHandler = function () {
+                if (vaultActivityTimer) {
+                    clearTimeout(vaultActivityTimer);
+                }
+
+                vaultActivityTimer = setTimeout(function () {
+                    dotNetRef.invokeMethodAsync("NotifyActivity");
+                }, 100);
+            };
+
+            ["pointerdown", "keydown", "touchstart", "scroll"].forEach(function (eventName) {
+                window.addEventListener(eventName, vaultActivityHandler, { passive: true });
+            });
+        };
+
+        window.vaultUnregisterActivity = function () {
+            if (!vaultActivityHandler) {
+                return;
+            }
+
+            ["pointerdown", "keydown", "touchstart", "scroll"].forEach(function (eventName) {
+                window.removeEventListener(eventName, vaultActivityHandler);
+            });
+
+            if (vaultActivityTimer) {
+                clearTimeout(vaultActivityTimer);
+                vaultActivityTimer = null;
+            }
+
+            vaultActivityHandler = null;
         };
     </script>
 </body>

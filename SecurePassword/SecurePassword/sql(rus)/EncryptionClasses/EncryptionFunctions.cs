@@ -20,6 +20,12 @@ public class EncryptionFunctions : IEncryptionFunctions
     public static byte[] GenerateKEKwArgon2id(string password, byte[] salt, OSType SystemType, int keyLength = 32)
     {
         var req = GetArgonParameters(SystemType); //¬ зависимости от типа системы мы получаем нужные параметры дл€ алгоритма
+        return GenerateKEKwArgon2id(password, salt, req, keyLength);
+    }
+
+    public static byte[] GenerateKEKwArgon2id(string password, byte[] salt, ArgonParameters parameters, int keyLength = 32)
+    {
+        var req = parameters;
         int memorySize = req.MemorySize;
         int iterations = req.Iterations;
         int parallelismDegree = req.ParallelismDegree;

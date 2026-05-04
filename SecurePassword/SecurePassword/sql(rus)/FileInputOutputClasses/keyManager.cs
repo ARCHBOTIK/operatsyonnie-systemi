@@ -1,89 +1,176 @@
-using System;
-using System.Linq;
-using SecurePassword;
-using SQLite;
 namespace SecurePassword;
 
-public class keyManager //Класс для работы с файлом, где хранятся как раз те самые соль, кек, дек
+public class keyManager
 {
+    private static readonly byte[] KeyFileMagic = [0x53, 0x50, 0x4B, 0x31]; // SPK1
+
     private readonly string _keyFilePath;
-    private byte[] _salt;
-    private byte[] _encryptedDek;
-    private byte[] _dek;
-    OSType _systemType = 0; //Я ума не приложу как узнать тип системы))
+    private byte[]? _salt;
+    private byte[]? _encryptedDek;
+    private byte[]? _dek;
+
+    public int KeyVersion { get; private set; }
 
     public keyManager(string keyFilePath)
     {
         _keyFilePath = keyFilePath;
     }
 
-    public void CreateKeyFile(string password) //Создать файл
+    public void CreateKeyFile(string password)
     {
-        _dek = EncryptionFunctions.GenerateDEK(32); //Генерируем ДЕК
-        _salt = EncryptionFunctions.GenerateSalt(16); //Генерируем СОЛЬ
-#if WINDOWS
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, 0); //Восстанавливаем КЕК
-#elif ANDROID
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, OSType.Android); //Восстанавливаем КЕК
-#endif
-        byte[] nonce = new byte[12];
-        byte[] tag = new byte[16];
-        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //Шифруем ДЕК
-        SaveKeyFile(); //Сохраняем файл
+        _dek = EncryptionFunctions.GenerateDEK(32);
+        _salt = EncryptionFunctions.GenerateSalt(16);
+
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, GetPlatformType());
+        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out _, out _);
+        KeyVersion++;
+
+        SaveKeyFile();
     }
 
-    public void LoadKeyFile(string password) //Загрузить файл
+    public void LoadKeyFile(string password)
     {
-        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath)); //Читаем файл с помозью вспомогательного класса
-        using (var ms = new MemoryStream(keyFileBytes))
-        using (var br = new BinaryReader(ms)) //Это для работы с двоичными данными
-        {
-            _salt = br.ReadBytes(16); //Читаем соль
-            _encryptedDek = br.ReadBytes(60); //Читаем зашифрованный ДЕК
-        }
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-#if WINDOWS
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, 0); //Восстанавливаем КЕК
-#elif ANDROID
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, OSType.Android); //Восстанавливаем КЕК
-#endif 
-        sw.Stop();
-        System.Diagnostics.Debug.WriteLine($"ARGON2 ONLY = {sw.ElapsedMilliseconds} ms");
-        _dek = EncryptionFunctions.DecryptDEK(kek, _encryptedDek); //Расшифровка ДЕКа
+        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath));
+        ReadKeyFile(keyFileBytes, out _salt, out _encryptedDek, out var argonParameters);
+
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, argonParameters);
+        _dek = EncryptionFunctions.DecryptDEK(kek, _encryptedDek);
+        KeyVersion++;
     }
 
-    private void SaveKeyFile() //Сохранить файл
+    public bool IsDekLoaded()
     {
-        using (var ms = new MemoryStream())
-        using (var bw = new BinaryWriter(ms)) //Ну это для работы с потоком двоичных данных
-        {
-            bw.Write(_salt); //Записываем соль
-            bw.Write(_encryptedDek); //Записываем зашифрованный ДЕК. Если всё-таки надо, добавлю запись параметров к аргону
-            FileWorker.writeFile(ms.ToArray(), Path.GetFileName(_keyFilePath)); //Записываем это всё в файл
-        }
+        return _dek is { Length: > 0 };
     }
 
-    public byte[] GetDEK() //Получаение ДЕК из кеша
+    public void ClearLoadedKey()
     {
-        if (_dek == null) throw new InvalidOperationException("DEK was not loaded. Call Load() method.");
+        _dek = null;
+        KeyVersion++;
+    }
+
+    public byte[] GetDEK()
+    {
+        if (_dek is null || _dek.Length == 0)
+            throw new InvalidOperationException("DEK was not loaded. Call LoadKeyFile first.");
+
         return _dek;
     }
 
-    public void ChangePassword(string newPassword) //Смена пароля (если не будем добавлять функцию смены мастер-пароля, может пригодиться для ротации. Нет - удалю)
+    public byte[] ExportKeyFileForTransfer()
     {
-        if (_dek == null) throw new InvalidOperationException("DEK was not loaded.");
-        _salt = EncryptionFunctions.GenerateSalt(); //Создаем новую соль
-        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(newPassword, _salt, _systemType); //Создаем новый KEK
-        byte[] nonce; byte[] tag;
-        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out nonce, out tag); //Шифруем старый DEK новым KEK
-        SaveKeyFile(); //Сохраняем файл с данными
+        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath));
+        if (HasPortableHeader(keyFileBytes))
+            return keyFileBytes;
+
+        ReadLegacyKeyFile(keyFileBytes, out var salt, out var encryptedDek);
+        return PackKeyFile(salt, encryptedDek, EncryptionFunctions.GetArgonParameters(GetPlatformType()));
     }
+
+    public void ChangePassword(string newPassword)
+    {
+        if (_dek is null)
+            throw new InvalidOperationException("DEK was not loaded.");
+
+        _salt = EncryptionFunctions.GenerateSalt();
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(newPassword, _salt, GetPlatformType());
+        _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out _, out _);
+        SaveKeyFile();
+    }
+
     public void replaceMasterPassword(string oldPassword, string newPassword)
     {
-        // Расшифровывание DEK старым мастер-паролем
         LoadKeyFile(oldPassword);
-
-        // Перешифровывание DEK новым мастер-паролем
         ChangePassword(newPassword);
+    }
+
+    private void SaveKeyFile()
+    {
+        if (_salt is null || _encryptedDek is null)
+            throw new InvalidOperationException("Key data was not initialized.");
+
+        byte[] keyFileBytes = PackKeyFile(
+            _salt,
+            _encryptedDek,
+            EncryptionFunctions.GetArgonParameters(GetPlatformType()));
+        FileWorker.writeFile(keyFileBytes, Path.GetFileName(_keyFilePath));
+    }
+
+    private static void ReadKeyFile(byte[] keyFileBytes, out byte[] salt, out byte[] encryptedDek, out ArgonParameters argonParameters)
+    {
+        if (!HasPortableHeader(keyFileBytes))
+        {
+            ReadLegacyKeyFile(keyFileBytes, out salt, out encryptedDek);
+            argonParameters = EncryptionFunctions.GetArgonParameters(GetPlatformType());
+            return;
+        }
+
+        using var memoryStream = new MemoryStream(keyFileBytes);
+        using var reader = new BinaryReader(memoryStream);
+
+        byte[] magic = reader.ReadBytes(KeyFileMagic.Length);
+        if (!magic.SequenceEqual(KeyFileMagic))
+            throw new InvalidDataException("Unsupported key file format.");
+
+        int memorySize = reader.ReadInt32();
+        int iterations = reader.ReadInt32();
+        int parallelismDegree = reader.ReadInt32();
+        int saltLength = reader.ReadInt32();
+        int encryptedDekLength = reader.ReadInt32();
+
+        if (saltLength <= 0 || encryptedDekLength <= 0)
+            throw new InvalidDataException("Key file metadata is corrupted.");
+
+        salt = reader.ReadBytes(saltLength);
+        encryptedDek = reader.ReadBytes(encryptedDekLength);
+
+        if (salt.Length != saltLength || encryptedDek.Length != encryptedDekLength)
+            throw new InvalidDataException("Key file is truncated.");
+
+        argonParameters = new ArgonParameters(memorySize, iterations, parallelismDegree);
+    }
+
+    private static void ReadLegacyKeyFile(byte[] keyFileBytes, out byte[] salt, out byte[] encryptedDek)
+    {
+        if (keyFileBytes.Length <= 16)
+            throw new InvalidDataException("Key file is corrupted.");
+
+        using var memoryStream = new MemoryStream(keyFileBytes);
+        using var reader = new BinaryReader(memoryStream);
+
+        salt = reader.ReadBytes(16);
+        encryptedDek = reader.ReadBytes((int)(memoryStream.Length - memoryStream.Position));
+    }
+
+    private static byte[] PackKeyFile(byte[] salt, byte[] encryptedDek, ArgonParameters argonParameters)
+    {
+        using var memoryStream = new MemoryStream();
+        using var writer = new BinaryWriter(memoryStream);
+
+        writer.Write(KeyFileMagic);
+        writer.Write(argonParameters.MemorySize);
+        writer.Write(argonParameters.Iterations);
+        writer.Write(argonParameters.ParallelismDegree);
+        writer.Write(salt.Length);
+        writer.Write(encryptedDek.Length);
+        writer.Write(salt);
+        writer.Write(encryptedDek);
+
+        return memoryStream.ToArray();
+    }
+
+    private static bool HasPortableHeader(byte[] keyFileBytes)
+    {
+        return keyFileBytes.Length >= KeyFileMagic.Length &&
+            keyFileBytes.Take(KeyFileMagic.Length).SequenceEqual(KeyFileMagic);
+    }
+
+    private static OSType GetPlatformType()
+    {
+#if ANDROID
+        return OSType.Android;
+#else
+        return OSType.Windows;
+#endif
     }
 }

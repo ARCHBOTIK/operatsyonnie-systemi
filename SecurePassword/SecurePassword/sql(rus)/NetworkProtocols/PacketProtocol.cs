@@ -1,55 +1,57 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
-namespace SecurePassword.SQL_Rus_.NetworkProtocols
+namespace SecurePassword;
+
+public static class PacketProtocol
 {
-    internal class PacketProtocol
+    public const int MaxDataLength = 10_000_000;
+
+    public static async Task WritePacketAsync(NetworkStream stream, byte[] data, CancellationToken token = default)
     {
-        public const int MAX_DATA_LENGTH = 10000000;
-        public static async Task WritePacketAsync(NetworkStream stream, byte[] data, CancellationToken token = default)
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(data);
+
+        int length = IPAddress.HostToNetworkOrder(data.Length);
+        byte[] lengthBytes = BitConverter.GetBytes(length);
+
+        await stream.WriteAsync(lengthBytes, token);
+        await stream.WriteAsync(data, token);
+        await stream.FlushAsync(token);
+    }
+
+    public static async Task<byte[]> ReadPacketAsync(NetworkStream stream, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        byte[] lengthBytes = await ReadExactAsync(stream, 4, token);
+        int length = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(lengthBytes));
+
+        if (length <= 0 || length > MaxDataLength)
+            throw new InvalidOperationException("Invalid packet size.");
+
+        return await ReadExactAsync(stream, length, token);
+    }
+
+    public static async Task<byte[]> ReadExactAsync(NetworkStream stream, int size, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        if (size < 0)
+            throw new ArgumentOutOfRangeException(nameof(size));
+
+        byte[] buffer = new byte[size];
+        int read = 0;
+
+        while (read < size)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            if (data == null) throw new ArgumentNullException(nameof(data));
+            int chunk = await stream.ReadAsync(buffer.AsMemory(read, size - read), token);
+            if (chunk == 0)
+                throw new IOException("Disconnected.");
 
-            int length = IPAddress.HostToNetworkOrder(data.Length);
-            byte[] lengthBytes = BitConverter.GetBytes(length);
-
-            await stream.WriteAsync(lengthBytes, 0, 4, token);
-            await stream.WriteAsync(data, 0, data.Length, token);
-            await stream.FlushAsync(token);
+            read += chunk;
         }
 
-        public static async Task<byte[]> ReadPacketAsync(NetworkStream stream, CancellationToken token = default)
-        {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-
-            byte[] lengthBytes = await ReadExactAsync(stream, 4, token);
-            int length = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(lengthBytes));
-
-            if (length <= 0 || length > MAX_DATA_LENGTH) throw new Exception("Invalid packet size!");
-
-            return await ReadExactAsync(stream, length, token);
-        }
-
-        public static async Task<byte[]> ReadExactAsync(NetworkStream stream, int size, CancellationToken token = default)
-        {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            if (size < 0) throw new ArgumentOutOfRangeException(nameof(size));
-
-            byte[] buffer = new byte[size];
-            int read = 0;
-
-            while (read < size)
-            {
-                int r = await stream.ReadAsync(buffer, read, size - read, token);
-                if (r == 0) throw new Exception("Disconnected!");
-                read += r;
-            }
-
-            return buffer;
-        }
+        return buffer;
     }
 }

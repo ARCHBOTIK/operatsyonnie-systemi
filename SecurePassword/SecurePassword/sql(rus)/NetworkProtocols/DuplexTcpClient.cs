@@ -1,55 +1,63 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace SecurePassword.SQL_Rus_.NetworkProtocols
+namespace SecurePassword;
+
+public sealed class DuplexTcpClient : IDisposable
 {
-    internal class DuplexTCPClient
+    private TcpClient? _tcpClient;
+    private NetworkStream? _stream;
+
+    public bool IsConnected => _tcpClient?.Connected == true && _stream is not null;
+
+    public async Task ConnectAsync(string host, int port, CancellationToken token = default)
     {
-        private TcpClient _TcpClient;
-        private NetworkStream _stream;
-        private CancellationTokenSource _cts;
+        Close();
 
-        public event Action<byte[]> DataReceived;
+        _tcpClient = new TcpClient();
+        await _tcpClient.ConnectAsync(host, port, token);
+        _stream = _tcpClient.GetStream();
+    }
 
-        public async Task ConnectAsync(string ip, int port)
+    public async Task SendDataAsync(byte[] data, CancellationToken token = default)
+    {
+        if (_stream is null)
+            throw new InvalidOperationException("Client is not connected.");
+
+        await PacketProtocol.WritePacketAsync(_stream, data, token);
+    }
+
+    public async Task<byte[]> ReceiveDataAsync(CancellationToken token = default)
+    {
+        if (_stream is null)
+            throw new InvalidOperationException("Client is not connected.");
+
+        return await PacketProtocol.ReadPacketAsync(_stream, token);
+    }
+
+    public void Close()
+    {
+        try
         {
-            _TcpClient = new TcpClient();
-            await _TcpClient.ConnectAsync(ip, port);
-            _stream = _TcpClient.GetStream();
-            _cts = new CancellationTokenSource();
-            _ = ReceiveLoop(_cts.Token);
+            _stream?.Close();
+        }
+        catch
+        {
         }
 
-        public async Task SendDataAsync(byte[] data, CancellationToken token = default)
+        try
         {
-            await PacketProtocol.WritePacketAsync(_stream, data, token);
+            _tcpClient?.Close();
+        }
+        catch
+        {
         }
 
-        private async Task ReceiveLoop(CancellationToken token)
-        {
-            try
-            {
-                while(!token.IsCancellationRequested)
-                {
-                    byte[] data = await PacketProtocol.ReadPacketAsync(_stream, token);
-                    DataReceived?.Invoke(data);
-                }
-            }
-            catch
-            {
+        _stream = null;
+        _tcpClient = null;
+    }
 
-            }
-        }
-
-        public void Close()
-        {
-            try { _cts?.Cancel(); } catch { }
-            try { _stream?.Close(); } catch { }
-            try { _TcpClient?.Close(); } catch { }
-        }
+    public void Dispose()
+    {
+        Close();
     }
 }

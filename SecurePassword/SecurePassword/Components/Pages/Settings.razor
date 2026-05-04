@@ -1,9 +1,9 @@
 @page "/settings"
 @using System.IO
-@using Microsoft.Maui.Storage
 @inject NavigationManager Navigation
 @inject MasterPasswordService MasterPasswordService
 @inject MasterPasswordPage MasterPasswordPage
+@inject VaultSessionService VaultSession
 
 <div class="screen">
     <header class="appbar">
@@ -15,9 +15,9 @@
             <div class="row" @onclick="OpenReplaceModal">
                 <div class="row-left">
                     <span class="ico">
-                        <img src="icons/lock.svg" alt="Сменить пароль" />
+                        <img src="/icons/lock.svg" alt="Сменить пароль" />
                     </span>
-                    <span class="row-title">Сменить мастер‑пароль</span>
+                    <span class="row-title">Сменить мастер-пароль</span>
                 </div>
             </div>
         </section>
@@ -27,7 +27,7 @@
                 <div class="row">
                     <div class="row-left">
                         <span class="ico">
-                            <img src="icons/shield.svg" alt="Блокировка" />
+                            <img src="/icons/shield.svg" alt="Блокировка" />
                         </span>
                         <span class="row-title">Автоблокировка</span>
                     </div>
@@ -35,41 +35,52 @@
 
                 <div class="divider"></div>
 
-                <div class="toggle-row" @onclick="ToggleLockOnExit">
+                <label class="toggle-row">
                     <div class="toggle-text">
                         <div class="toggle-label">При выходе из приложения</div>
-                        <div class="toggle-hint">Блокировать после закрытия</div>
+                        <div class="toggle-hint">Следующий запуск потребует повторную авторизацию</div>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" checked="@lockOnExit" @onchange="ToggleLockOnExit" />
+                    <span class="switch">
+                        <input type="checkbox" checked="@VaultSession.LockOnExit" @onchange="ToggleLockOnExit" />
                         <span class="slider"></span>
-                    </label>
-                </div>
+                    </span>
+                </label>
 
                 <div class="divider"></div>
 
-                <div class="toggle-row" @onclick="ToggleLockOnMinimize">
+                <label class="toggle-row">
                     <div class="toggle-text">
                         <div class="toggle-label">При сворачивании</div>
-                        <div class="toggle-hint">Блокировать при скрытии окна</div>
+                        <div class="toggle-hint">Скрытие окна возвращает на экран мастер-пароля</div>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" checked="@lockOnMinimize" @onchange="ToggleLockOnMinimize" />
+                    <span class="switch">
+                        <input type="checkbox" checked="@VaultSession.LockOnMinimize" @onchange="ToggleLockOnMinimize" />
                         <span class="slider"></span>
-                    </label>
-                </div>
+                    </span>
+                </label>
 
                 <div class="divider"></div>
 
-                <div class="toggle-row" @onclick="ToggleLockTimer">
+                <label class="toggle-row timeout-row">
                     <div class="toggle-text">
                         <div class="toggle-label">Через 2 минуты бездействия</div>
-                        <div class="toggle-hint">Автоблокировка по таймеру</div>
+                        <div class="toggle-hint">При отсутствии активности потребуется повторная авторизация</div>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" checked="@lockOnTimer" @onchange="ToggleLockTimer" />
+                    <span class="switch">
+                        <input type="checkbox" checked="@VaultSession.LockOnTimer" @onchange="ToggleLockTimer" />
                         <span class="slider"></span>
-                    </label>
+                    </span>
+                </label>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="row" @onclick="LockApplication">
+                <div class="row-left">
+                    <span class="ico">
+                        <img src="/icons/timer.svg" alt="Заблокировать" />
+                    </span>
+                    <span class="row-title">Заблокировать сейчас</span>
                 </div>
             </div>
         </section>
@@ -78,7 +89,7 @@
             <div class="row" @onclick="OpenDeleteModal">
                 <div class="row-left">
                     <span class="ico">
-                        <img src="icons/delete.svg" alt="Очистить данные" />
+                        <img src="/icons/delete.svg" alt="Очистить данные" />
                     </span>
                     <span class="row-title">Очистить все данные</span>
                 </div>
@@ -89,9 +100,9 @@
             <div class="row" @onclick="SendUserToForm">
                 <div class="row-left">
                     <span class="ico">
-                        <img src="icons/sync.svg" alt="Перенести данные" />
+                        <img src="/icons/sync.svg" alt="Перенести данные" />
                     </span>
-                    <span class="row-title">Перенести данные</span>
+                    <span class="row-title">Обмен данными</span>
                 </div>
             </div>
         </section>
@@ -102,20 +113,20 @@
         <div class="modal-overlay" @onclick="CloseReplaceModal">
             <div class="modal-container" @onclick:stopPropagation="true">
                 <div class="modal-header">
-                    <h2>Смена мастер‑пароля</h2>
+                    <h2>Смена мастер-пароля</h2>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Текущий пароль</label>
-                        <input type="password" class="form-control" @bind="currentPassword" placeholder="········" />
+                        <input type="password" class="form-control" @bind="currentPassword" placeholder="••••••••" />
                     </div>
                     <div class="form-group">
                         <label>Новый пароль</label>
-                        <input type="password" class="form-control" @bind="newPassword" placeholder="········" />
+                        <input type="password" class="form-control" @bind="newPassword" placeholder="••••••••" />
                     </div>
                     <div class="form-group">
                         <label>Подтверждение</label>
-                        <input type="password" class="form-control" @bind="confirmPassword" placeholder="········" />
+                        <input type="password" class="form-control" @bind="confirmPassword" placeholder="••••••••" />
                     </div>
                     @if (!string.IsNullOrWhiteSpace(replacePasswordError))
                     {
@@ -138,10 +149,10 @@
                     <h2>Очистить базу данных</h2>
                 </div>
                 <div class="modal-body">
-                    <p>Вы уверены? Все сохранённые пароли, карты и заметки будут безвозвратно удалены.</p>
+                    <p>Все сохранённые пароли, карты и заметки будут безвозвратно удалены.</p>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary" style="background: #d32f2f;" @onclick="DeleteDatabase">Удалить всё</button>
+                    <button class="btn btn-danger" @onclick="DeleteDatabase">Удалить всё</button>
                     <button class="btn btn-secondary" @onclick="CloseDeleteModal">Отмена</button>
                 </div>
             </div>
@@ -155,18 +166,25 @@
     private bool showReplaceModal;
     private bool showDeleteModal;
 
-    private bool lockOnExit = true;
-    private bool lockOnMinimize = true;
-    private bool lockOnTimer;
-
     private string currentPassword = string.Empty;
     private string newPassword = string.Empty;
     private string confirmPassword = string.Empty;
     private string replacePasswordError = string.Empty;
 
-    private void ToggleLockOnExit() => lockOnExit = !lockOnExit;
-    private void ToggleLockOnMinimize() => lockOnMinimize = !lockOnMinimize;
-    private void ToggleLockTimer() => lockOnTimer = !lockOnTimer;
+    private void ToggleLockOnExit(ChangeEventArgs _)
+    {
+        VaultSession.LockOnExit = !VaultSession.LockOnExit;
+    }
+
+    private void ToggleLockOnMinimize(ChangeEventArgs _)
+    {
+        VaultSession.LockOnMinimize = !VaultSession.LockOnMinimize;
+    }
+
+    private void ToggleLockTimer(ChangeEventArgs _)
+    {
+        VaultSession.LockOnTimer = !VaultSession.LockOnTimer;
+    }
 
     private void OpenReplaceModal() => showReplaceModal = true;
 
@@ -183,7 +201,9 @@
     {
         replacePasswordError = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+        if (string.IsNullOrWhiteSpace(currentPassword) ||
+            string.IsNullOrWhiteSpace(newPassword) ||
+            string.IsNullOrWhiteSpace(confirmPassword))
         {
             replacePasswordError = "Заполните все поля.";
             return;
@@ -211,9 +231,9 @@
 
     private void DeleteDatabase()
     {
-        foreach (var file in VaultFiles)
+        foreach (string file in VaultFiles)
         {
-            var filePath = Path.Combine(FileSystem.AppDataDirectory, file);
+            string filePath = Path.Combine(FileSystem.AppDataDirectory, file);
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
@@ -229,10 +249,7 @@
 
     private void LockApplication()
     {
+        Navigation.NavigateTo("/");
         MasterPasswordPage.PrepareForLock();
-
-        var appWindow = Application.Current?.Windows.FirstOrDefault();
-        if (appWindow is not null)
-            appWindow.Page = MasterPasswordPage;
     }
 }

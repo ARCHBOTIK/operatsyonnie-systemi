@@ -1,104 +1,149 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject VaultSessionService VaultSession
 
-@Body
+<div class="layout-shell">
+    <main class="layout-body">
+        @Body
+    </main>
 
-<nav class="bottom-nav" aria-label="Навигация">
-    <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
-        <span class="nav-ico">
-            <img src="/icons/my_safe.svg" alt="Сейф" />
-        </span>
-        <span class="nav-text">Мой сейф</span>
-    </NavLink>
+    <nav class="bottom-nav" aria-label="Навигация">
+        <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+            <span class="nav-ico">
+                <img src="/icons/my_safe.svg" alt="Сейф" />
+            </span>
+            <span class="nav-text">Мой сейф</span>
+        </NavLink>
 
-    <NavLink class="nav-item" href="/syncauth">
-        <span class="nav-ico">
-            <img src="/icons/send.svg" alt="Отправка" />
-        </span>
-        <span class="nav-text">Отправка</span>
-    </NavLink>
+        <NavLink class="nav-item" href="/syncauth">
+            <span class="nav-ico">
+                <img src="/icons/sync.svg" alt="Обмен" />
+            </span>
+            <span class="nav-text">Обмен</span>
+        </NavLink>
 
-    <NavLink class="nav-item" href="/generator">
-        <span class="nav-ico">
-            <img src="/icons/generator.svg" alt="Генератор" />
-        </span>
-        <span class="nav-text">Генератор</span>
-    </NavLink>
+        <NavLink class="nav-item" href="/generator">
+            <span class="nav-ico">
+                <img src="/icons/generator.svg" alt="Генератор" />
+            </span>
+            <span class="nav-text">Генератор</span>
+        </NavLink>
 
-    <NavLink class="nav-item" href="/settings">
-        <span class="nav-ico">
-            <img src="/icons/settings.svg" alt="Настройки" />
-        </span>
-        <span class="nav-text">Настройки</span>
-    </NavLink>
-</nav>
+        <NavLink class="nav-item" href="/settings">
+            <span class="nav-ico">
+                <img src="/icons/settings.svg" alt="Настройки" />
+            </span>
+            <span class="nav-text">Настройки</span>
+        </NavLink>
+    </nav>
+</div>
 
-        <style>
-            .layout-shell {
-    position: relative;
-    min-height: 100dvh;
-}
+<style>
+    .layout-shell {
+        position: relative;
+        min-height: 100dvh;
+    }
 
-.layout-body {
-    min-height: 100dvh;
-    padding-bottom: calc(72px + 24px);
-}
+    .layout-body {
+        min-height: 100dvh;
+        padding-bottom: calc(72px + 24px);
+    }
 
-.bottom-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 10px;
-    margin: 0 auto;
-    width: min(380px, 85vw);
-    min-width: 280px;
-    height: 72px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 8px 12px;
-    background: linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.18) 100%);
-    border: 1px solid rgba(255,255,255,.28);
-    border-radius: 26px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 12px 32px rgba(15,23,32,.12);
-    backdrop-filter: blur(24px) saturate(155%);
-    -webkit-backdrop-filter: blur(24px) saturate(155%);
-    z-index: 9999;
-}
+    .bottom-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 10px;
+        margin: 0 auto;
+        width: min(380px, 85vw);
+        min-width: 280px;
+        height: 72px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 8px 12px;
+        background: linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.18) 100%);
+        border: 1px solid rgba(255,255,255,.28);
+        border-radius: 26px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 12px 32px rgba(15,23,32,.12);
+        backdrop-filter: blur(24px) saturate(155%);
+        -webkit-backdrop-filter: blur(24px) saturate(155%);
+        z-index: 9999;
+    }
 
-.nav-item {
-    position: relative;
-    flex: 1;
-    text-decoration: none;
-    color: rgba(15,23,32,.82);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 0;
-    border-radius: 18px;
-    transition: background .18s ease, transform .18s ease;
-}
+    .nav-item {
+        position: relative;
+        flex: 1;
+        text-decoration: none;
+        color: rgba(15,23,32,.82);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 0;
+        border-radius: 18px;
+        transition: background .18s ease, transform .18s ease;
+    }
 
     .nav-item.active {
         background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.12));
         box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 6px 16px rgba(15,23,32,.07);
     }
 
-        .nav-item.active .nav-text {
-            color: #19a38c;
-            font-weight: 700;
+    .nav-item.active .nav-text {
+        color: #19a38c;
+        font-weight: 700;
+    }
+
+    .nav-ico img {
+        width: 22px;
+        height: 22px;
+        display: block;
+        object-fit: contain;
+    }
+
+    .nav-text {
+        font-size: 12px;
+        line-height: 1;
+    }
+</style>
+
+@code {
+    private DotNetObjectReference<MainLayout>? _activityReference;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _activityReference = DotNetObjectReference.Create(this);
+
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+            await JS.InvokeVoidAsync("vaultSetPlatformClass", "platform-android");
+        else
+            await JS.InvokeVoidAsync("vaultSetPlatformClass", "platform-default");
+
+        await JS.InvokeVoidAsync("vaultRegisterActivity", _activityReference);
+    }
+
+    [JSInvokable]
+    public void NotifyActivity()
+    {
+        VaultSession.RecordActivity();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("vaultUnregisterActivity");
+        }
+        catch
+        {
         }
 
-.nav-ico img {
-    width: 22px;
-    height: 22px;
-    display: block;
-    object-fit: contain;
+        _activityReference?.Dispose();
+    }
 }
-
-.nav-text {
-    font-size: 12px;
-    line-height: 1;
-}
-        </style>

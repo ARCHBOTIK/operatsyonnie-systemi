@@ -12,7 +12,6 @@ public class PasswordEntry : IHasID
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    // Свойства для удобной работы со строками
     public string Title
     {
         get => TitleBytes != null ? Encoding.UTF8.GetString(TitleBytes) : string.Empty;

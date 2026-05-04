@@ -8,7 +8,7 @@
             </div>
             <h2>@GetTitle()</h2>
             <button class="close-button" @onclick="OnClose">
-                <img src="icons/close.svg" alt="Закрыть" />
+                <img src="icons/close.svg" alt="Р—Р°РєСЂС‹С‚СЊ" />
             </button>
         </div>
 
@@ -17,29 +17,29 @@
             {
                 <div class="detail-section">
                     <div class="detail-field">
-                        <label>Название</label>
+                        <label>РќР°Р·РІР°РЅРёРµ</label>
                         <div class="field-value">@PasswordData.Title</div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Логин</label>
+                        <label>Р›РѕРіРёРЅ</label>
                         <div class="field-value copyable" @onclick="@(() => CopyToClipboard(PasswordData.Login))">
                             @PasswordData.Login
-                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                            <img src="icons/copy.svg" class="copy-icon" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
                         </div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Пароль</label>
+                        <label>РџР°СЂРѕР»СЊ</label>
                         <div class="field-value password-field">
                             <span class="@(showPassword ? "" : "password-hidden")">
-                                @(showPassword ? PasswordData.Password : "••••••••")
+                                @(showPassword ? PasswordData.Password : "вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў")
                             </span>
                             <button class="icon-button-small" @onclick="TogglePasswordVisibility">
-                                <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" alt="Показать/скрыть" />
+                                <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" alt="РџРѕРєР°Р·Р°С‚СЊ/СЃРєСЂС‹С‚СЊ" />
                             </button>
                             <button class="icon-button-small" @onclick="@(() => CopyToClipboard(PasswordData.Password))">
-                                <img src="icons/copy.svg" alt="Копировать" />
+                                <img src="icons/copy.svg" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
                             </button>
                         </div>
                     </div>
@@ -53,40 +53,40 @@
                         <div class="card-number-large">@FormatCardNumber(CardData.CardNumber)</div>
                         <div class="card-meta-large">
                             <div>
-                                <label>Владелец</label>
+                                <label>Р’Р»Р°РґРµР»РµС†</label>
                                 <div>@CardData.CardHolder.ToUpperInvariant()</div>
                             </div>
                             <div>
-                                <label>Срок</label>
+                                <label>РЎСЂРѕРє</label>
                                 <div>@CardData.ExpiryDate</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Название карты</label>
+                        <label>РќР°Р·РІР°РЅРёРµ РєР°СЂС‚С‹</label>
                         <div class="field-value">@CardData.Title</div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Номер карты</label>
+                        <label>РќРѕРјРµСЂ РєР°СЂС‚С‹</label>
                         <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardNumber))">
                             @FormatCardNumber(CardData.CardNumber)
-                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                            <img src="icons/copy.svg" class="copy-icon" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
                         </div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Владелец</label>
+                        <label>Р’Р»Р°РґРµР»РµС†</label>
                         <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardHolder))">
                             @CardData.CardHolder.ToUpperInvariant()
-                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                            <img src="icons/copy.svg" class="copy-icon" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
                         </div>
                     </div>
 
                     <div class="detail-row">
                         <div class="detail-field">
-                            <label>Срок действия</label>
+                            <label>РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ</label>
                             <div class="field-value">@CardData.ExpiryDate</div>
                         </div>
 
@@ -94,13 +94,13 @@
                             <label>CVV</label>
                             <div class="field-value password-field">
                                 <span class="@(showCvv ? "" : "password-hidden")">
-                                    @(showCvv ? CardData.Cvv : "•••")
+                                    @(showCvv ? CardData.Cvv : "вЂўвЂўвЂў")
                                 </span>
                                 <button class="icon-button-small" @onclick="ToggleCvvVisibility">
-                                    <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" alt="Показать/скрыть" />
+                                    <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" alt="РџРѕРєР°Р·Р°С‚СЊ/СЃРєСЂС‹С‚СЊ" />
                                 </button>
                                 <button class="icon-button-small" @onclick="@(() => CopyToClipboard(CardData.Cvv))">
-                                    <img src="icons/copy.svg" alt="Копировать" />
+                                    <img src="icons/copy.svg" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
                                 </button>
                             </div>
                         </div>
@@ -111,12 +111,12 @@
             {
                 <div class="detail-section">
                     <div class="detail-field">
-                        <label>Название заметки</label>
+                        <label>РќР°Р·РІР°РЅРёРµ Р·Р°РјРµС‚РєРё</label>
                         <div class="field-value">@NoteData.Title</div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Содержание</label>
+                        <label>РЎРѕРґРµСЂР¶Р°РЅРёРµ</label>
                         <div class="field-value note-content">@NoteData.Content</div>
                     </div>
                 </div>
@@ -125,12 +125,12 @@
 
         <div class="detail-footer">
             <button class="btn btn-secondary" @onclick="OnEdit">
-                <img src="icons/edit.svg" alt="Редактировать" />
-                <span>Редактировать</span>
+                <img src="icons/edit.svg" alt="Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ" />
+                <span>Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ</span>
             </button>
             <button class="btn btn-danger" @onclick="OnDelete">
-                <img src="icons/delete.svg" alt="Удалить" />
-                <span>Удалить</span>
+                <img src="icons/delete.svg" alt="РЈРґР°Р»РёС‚СЊ" />
+                <span>РЈРґР°Р»РёС‚СЊ</span>
             </button>
         </div>
     </div>
@@ -163,10 +163,10 @@
     {
         return DetailType switch
         {
-            "password" => "Пароль",
-            "card" => "Карта",
-            "note" => "Заметка",
-            _ => "Элемент"
+            "password" => "РџР°СЂРѕР»СЊ",
+            "card" => "РљР°СЂС‚Р°",
+            "note" => "Р—Р°РјРµС‚РєР°",
+            _ => "Р­Р»РµРјРµРЅС‚"
         };
     }
 
@@ -184,7 +184,7 @@
     private string FormatCardNumber(string? number)
     {
         if (string.IsNullOrWhiteSpace(number))
-            return "•••• •••• •••• ••••";
+            return "вЂўвЂўвЂўвЂў вЂўвЂўвЂўвЂў вЂўвЂўвЂўвЂў вЂўвЂўвЂўвЂў";
         
         var digits = new string(number.Where(char.IsDigit).ToArray());
         if (digits.Length < 16)
@@ -204,7 +204,6 @@
         }
         catch
         {
-            // Игнорируем ошибки копирования
         }
     }
 }

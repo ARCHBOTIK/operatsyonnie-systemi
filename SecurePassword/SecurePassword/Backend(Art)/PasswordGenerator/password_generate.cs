@@ -1,114 +1,88 @@
-﻿using System;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-
 namespace SecurePassword;
 
-public class PasswordGenerator: IPasswordGenerator
+public class PasswordGenerator : IPasswordGenerator
 {
-    private const string LowercaseChars = "abcdefghijklmnopqrstuvwxyz"; 
+    private const string LowercaseChars = "abcdefghijklmnopqrstuvwxyz";
     private const string UppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private const string DigitChars = "0123456789";
     private const string SpecialChars = "!@#$%^&*()_-+=<>?";
-    private const short PasswordLength = 15;
+    private const short DefaultPasswordLength = 15;
 
     public static string GeneratePassword(bool useLowercase, bool useUppercase, bool useDigits, bool useSpecial, byte passwordLength)
     {
-
-        if (!useLowercase && !useUppercase && !useDigits && !useSpecial) 
-            throw new ArgumentException("Должен быть выбран\n хотя бы один тип символов");
-
-        StringBuilder charPool = new StringBuilder();
-
-        // добавление только нужных символов к строке
-
-        if (useLowercase)
-            charPool.Append(LowercaseChars);
-        if (useUppercase)
-            charPool.Append(UppercaseChars);
-        if (useDigits)
-            charPool.Append(DigitChars);
-        if (useSpecial)
-            charPool.Append(SpecialChars);
-
-        string availableChars = charPool.ToString();
-
-        StringBuilder password = new StringBuilder();
-
-        Random random = new Random(); // модуль генерации случайных чисел
-
-
-        for (short i = 0; i < passwordLength; i++) // генерация пароля с указанием длины
-        {
-            int randomIndex = random.Next(availableChars.Length);
-            password.Append(availableChars[randomIndex]);
-        }
-
-        return password.ToString();
+        return GeneratePasswordInternal(useLowercase, useUppercase, useDigits, useSpecial, passwordLength);
     }
+
     public static string GeneratePassword(bool useLowercase, bool useUppercase, bool useDigits, bool useSpecial)
     {
-
-        if (!useLowercase && !useUppercase && !useDigits && !useSpecial)
-            throw new ArgumentException("Должен быть выбран хотя бы один тип символов");
-
-        StringBuilder charPool = new StringBuilder();
-
-        // добавление только нужных символов к строке
-
-        if (useLowercase)
-            charPool.Append(LowercaseChars);
-        if (useUppercase)
-            charPool.Append(UppercaseChars);
-        if (useDigits)
-            charPool.Append(DigitChars);
-        if (useSpecial)
-            charPool.Append(SpecialChars);
-
-        string availableChars = charPool.ToString();
-
-        StringBuilder password = new StringBuilder();
-
-        Random random = new Random(); // модуль генерации случайных чисел
-
-
-        for (short i = 0; i < PasswordLength; i++) // генерация пароля без указанием длины
-        {
-            int randomIndex = random.Next(availableChars.Length);
-            password.Append(availableChars[randomIndex]);
-        }
-
-        return password.ToString();
+        return GeneratePasswordInternal(useLowercase, useUppercase, useDigits, useSpecial, DefaultPasswordLength);
     }
 
-    public static bool ValidatePassword(string password,bool useLowercase,bool useUppercase,bool useDigits,bool useSpecial)
+    public static bool ValidatePassword(string password, bool useLowercase, bool useUppercase, bool useDigits, bool useSpecial)
     {
-        bool hasLowercase = false;
-        bool hasUppercase = false;
-        bool hasDigit = false;
-        bool hasSpecial = false;
+        bool hasLowercase = password.Any(char.IsLower);
+        bool hasUppercase = password.Any(char.IsUpper);
+        bool hasDigit = password.Any(char.IsDigit);
+        bool hasSpecial = password.Any(ch => SpecialChars.Contains(ch));
 
-        // Проходим по каждому символу пароля
-        foreach (char c in password)
-        {
-            if (char.IsLower(c)) hasLowercase = true;
-            else if (char.IsUpper(c)) hasUppercase = true;
-            else if (char.IsDigit(c)) hasDigit = true;
-            else if (SpecialChars.Contains(c)) hasSpecial = true;
-        }
-
-        // Проверяем результаты
-        if (useLowercase && !hasLowercase) 
+        if (useLowercase && !hasLowercase)
             return false;
-        if (useUppercase && !hasUppercase) 
+        if (useUppercase && !hasUppercase)
             return false;
-        if (useDigits && !hasDigit) 
+        if (useDigits && !hasDigit)
             return false;
-        if (useSpecial && !hasSpecial) 
+        if (useSpecial && !hasSpecial)
             return false;
 
         return true;
+    }
+
+    private static string GeneratePasswordInternal(bool useLowercase, bool useUppercase, bool useDigits, bool useSpecial, int passwordLength)
+    {
+        var enabledSets = new List<string>();
+
+        if (useLowercase)
+            enabledSets.Add(LowercaseChars);
+        if (useUppercase)
+            enabledSets.Add(UppercaseChars);
+        if (useDigits)
+            enabledSets.Add(DigitChars);
+        if (useSpecial)
+            enabledSets.Add(SpecialChars);
+
+        if (enabledSets.Count == 0)
+            throw new ArgumentException("Должен быть выбран хотя бы один тип символов");
+
+        passwordLength = Math.Clamp(passwordLength, 4, 255);
+
+        var allChars = string.Concat(enabledSets);
+        var passwordChars = new List<char>(passwordLength);
+
+        foreach (var charSet in enabledSets)
+            passwordChars.Add(GetRandomChar(charSet));
+
+        while (passwordChars.Count < passwordLength)
+            passwordChars.Add(GetRandomChar(allChars));
+
+        Shuffle(passwordChars);
+        return new string(passwordChars.ToArray());
+    }
+
+    private static char GetRandomChar(string chars)
+    {
+        int index = RandomNumberGenerator.GetInt32(chars.Length);
+        return chars[index];
+    }
+
+    private static void Shuffle(IList<char> chars)
+    {
+        for (int i = chars.Count - 1; i > 0; i--)
+        {
+            int swapIndex = RandomNumberGenerator.GetInt32(i + 1);
+            (chars[i], chars[swapIndex]) = (chars[swapIndex], chars[i]);
+        }
     }
 }

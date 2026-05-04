@@ -4,13 +4,11 @@ using System.Linq;
 
 namespace SecurePassword
 {
-    // Класс для передачи данных из формы в SecureRepository
     public class FormDataProcessor
     {
         private keyManager _keyManager;
         private bool _isInitialized;
 
-        // Словарь для хранения репозиториев разных типов
         private Dictionary<Type, object> _repositories;
 
         public FormDataProcessor()
@@ -19,7 +17,6 @@ namespace SecurePassword
             _isInitialized = false;
         }
 
-        // Инициализация с мастер-паролем
         public bool Initialize(string password, bool createNew = false)
         {
             try
@@ -40,16 +37,15 @@ namespace SecurePassword
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка инициализации: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё: {ex.Message}");
                 return false;
             }
         }
 
-        // Получить или создать репозиторий для конкретного типа
         private SecureRepository<T> GetRepository<T>(string filename) where T : class, IHasID, new()
         {
             if (!_isInitialized)
-                throw new InvalidOperationException("Сначала вызовите Initialize()");
+                throw new InvalidOperationException("РЎРЅР°С‡Р°Р»Р° РІС‹Р·РѕРІРёС‚Рµ Initialize()");
 
             Type type = typeof(T);
             if (!_repositories.ContainsKey(type))
@@ -61,54 +57,48 @@ namespace SecurePassword
             return (SecureRepository<T>)_repositories[type];
         }
 
-        // Добавить новую запись из формы
-        // Использует SecureRepository.Add()
         public bool AddRecord<T>(T record, string filename) where T : class, IHasID, new()
         {
             try
             {
                 var repository = GetRepository<T>(filename);
                 repository.Add(record);
-                repository.Save(); // Сохраняем сразу после добавления
+                repository.Save(); // РЎРѕС…СЂР°РЅСЏРµРј СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РґРѕР±Р°РІР»РµРЅРёСЏ
                 return true;
             }
-            catch (InvalidOperationException ex) // Элемент с таким ID уже существует
+            catch (InvalidOperationException ex) // Р­Р»РµРјРµРЅС‚ СЃ С‚Р°РєРёРј ID СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР°: {ex.Message}");
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при добавлении: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РїСЂРё РґРѕР±Р°РІР»РµРЅРёРё: {ex.Message}");
                 return false;
             }
         }
 
-        // Обновить существующую запись из формы
-        // Использует SecureRepository.Update()
         public bool UpdateRecord<T>(T record, string filename) where T : class, IHasID, new()
         {
             try
             {
                 var repository = GetRepository<T>(filename);
                 repository.Update(record);
-                repository.Save(); // Сохраняем после обновления
+                repository.Save(); // РЎРѕС…СЂР°РЅСЏРµРј РїРѕСЃР»Рµ РѕР±РЅРѕРІР»РµРЅРёСЏ
                 return true;
             }
-            catch (KeyNotFoundException ex) // Элемент не найден
+            catch (KeyNotFoundException ex) // Р­Р»РµРјРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ
             {
-                Console.WriteLine($"Ошибка: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР°: {ex.Message}");
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при обновлении: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РїСЂРё РѕР±РЅРѕРІР»РµРЅРёРё: {ex.Message}");
                 return false;
             }
         }
 
-        // Удалить запись по ID
-        // Использует SecureRepository.Remove() и SecureRepository.Save()
         public bool DeleteRecord<T>(int id, string filename) where T : class, IHasID, new()
         {
             try
@@ -118,20 +108,18 @@ namespace SecurePassword
 
                 if (deleted)
                 {
-                    repository.Save(); // Сохраняем после удаления
+                    repository.Save(); // РЎРѕС…СЂР°РЅСЏРµРј РїРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ
                 }
 
                 return deleted;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при удалении: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РїСЂРё СѓРґР°Р»РµРЅРёРё: {ex.Message}");
                 return false;
             }
         }
 
-        // Получить запись по ID для отображения в форме
-        // Использует SecureRepository.GetItemById()
         public T GetRecordById<T>(int id, string filename) where T : class, IHasID, new()
         {
             try
@@ -141,13 +129,11 @@ namespace SecurePassword
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при получении записи: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё Р·Р°РїРёСЃРё: {ex.Message}");
                 return null;
             }
         }
 
-        // Получить все записи для отображения в списке/таблице
-        // Использует SecureRepository.getAll()
         public List<T> GetAllRecords<T>(string filename) where T : class, IHasID, new()
         {
             try
@@ -157,13 +143,11 @@ namespace SecurePassword
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при получении списка: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё СЃРїРёСЃРєР°: {ex.Message}");
                 return new List<T>();
             }
         }
 
-        // Проверить существование записи с указанным ID
-        // Использует SecureRepository.GetItemById()
         public bool RecordExists<T>(int id, string filename) where T : class, IHasID, new()
         {
             try
@@ -177,7 +161,6 @@ namespace SecurePassword
             }
         }
 
-        // Сортировка с ключом
         public List<T> SortRecord<T>(
             string filename,
             Func<T, object> keySelector,
@@ -194,12 +177,11 @@ namespace SecurePassword
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при сортировке: {ex.Message}");
+                Console.WriteLine($"РћС€РёР±РєР° РїСЂРё СЃРѕСЂС‚РёСЂРѕРІРєРµ: {ex.Message}");
                 return new List<T>();
             }
         }
 
-        // Сохранить все изменения
         public void SaveAllChanges()
         {
             foreach (var repo in _repositories.Values)

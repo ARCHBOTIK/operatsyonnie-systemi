@@ -1,99 +1,144 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace SecurePassword;
 
-public class SecureRepository<T> where T : IHasID //Работа с файлами с шифрованием
+public class SecureRepository<T> where T : IHasID
 {
     private readonly string _fileName;
-    private readonly keyManager _keyManager; //Файлик с данными для шифрования
+    private readonly keyManager _keyManager;
     private List<T> _items;
+    private bool _isLoaded;
+    private int _loadedKeyVersion = -1;
 
     public SecureRepository(string filename, keyManager keymanager)
     {
         _fileName = filename;
         _keyManager = keymanager;
-        _items = new List<T>();
-        Load();
+        _items = [];
     }
 
-    private void Load() //Функция загрузки файла с данными
+    private void Load()
     {
-        byte[] fileBytes; //Массив с байтами - сериализованные данные
+        byte[] fileBytes;
+
         try
         {
-            fileBytes = FileWorker.readFile(_fileName); //Читаем сериализованные шифрованные данные
+            fileBytes = FileWorker.readFile(_fileName);
         }
         catch (FileNotFoundException)
         {
-            _items = new List<T>(); //Не нашли файл - опустошили массив данных и вышли из загрузки
+            _items = [];
             return;
         }
-        byte[] dek = _keyManager.GetDEK(); //Считали ДЕК из кеша
+
+        byte[] dek = _keyManager.GetDEK();
+
         try
         {
-            byte[] plaintext = EncryptionFunctions.DecryptData(dek, fileBytes); //Расшифровали сериализованные данные
-            _items = JsonSerializer.Deserialize<List<T>>(plaintext) ?? new List<T>(); //Десериализовали данные
+            byte[] plaintext = EncryptionFunctions.DecryptData(dek, fileBytes);
+            _items = JsonSerializer.Deserialize<List<T>>(plaintext) ?? [];
         }
-        catch (CryptographicException) //Ошибки криптографического характера
+        catch (CryptographicException)
         {
             throw new InvalidOperationException($"Data decryption error. Either file {_fileName} is corrupted or using wrong data encryption key.");
         }
-        catch (JsonException) //Ошибки с десереализацией
+        catch (JsonException)
         {
             throw new InvalidOperationException($"Deserialization error in file {_fileName}!");
         }
     }
 
-    public void Save() //Сохранение файла
+    private bool EnsureLoaded()
     {
-        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(_items); //Сериализуем данные в байты
-        byte[] dek = _keyManager.GetDEK(); //Читаем ДЕК
-        byte[] encryptedData = EncryptionFunctions.EncryptData(dek, plaintext); //Шифруем ДЕКом сериализованные данные
-        FileWorker.writeFile(encryptedData, _fileName); //Записываем шифрованные сериализованные данные в файл
-    }
+        if (_isLoaded && _loadedKeyVersion == _keyManager.KeyVersion && _keyManager.IsDekLoaded())
+            return true;
 
-    public T GetItemById(int id) => _items.FirstOrDefault(x => x.Id == id); //Получить элемент по айди (Логику могу поменять если не нравится)
-
-    public IEnumerable<T> getAll() => _items; //Получить массив данных
-
-    public void Add(T newItem) //Добавить по айди (если айди не занят)
-    {
-        if (_items.Any(x => x.Id == newItem.Id)) throw new InvalidOperationException($"Element with ID = {newItem.Id} exists already!"); //Выброс исключений если есть элемент с таким ID
-        _items.Add(newItem); //Используем метод Add для List
-    }
-
-    public bool Remove(int id) //Удалить по айди
-    {
-        var item = GetItemById(id); //Берём элемент по айди
-        if (item != null) //Если нашёлся такой элемент
+        if (!_keyManager.IsDekLoaded())
         {
-            _items.Remove(item); //Удаляем
-            return true; //Показываем вызывающему коду, что нашли такой элемент и удалили
+            _items = [];
+            _isLoaded = false;
+            _loadedKeyVersion = -1;
+            return false;
         }
-        return false; //Иначе показываем вызывающему коду, что не нашли такой
+
+        Load();
+        _isLoaded = true;
+        _loadedKeyVersion = _keyManager.KeyVersion;
+        return true;
     }
 
-    public void Update(T newItem) //Функция для замены существующего объекта с конкретным ID
+    private void EnsureUnlocked()
     {
-        var oldItem = GetItemById(newItem.Id);
-        if (oldItem == null) throw new KeyNotFoundException($"Element with ID = {newItem.Id} not found!");
-        _items.Remove(oldItem); //Методы List<T>
+        if (!EnsureLoaded())
+            throw new InvalidOperationException("Vault is locked. Call LoadKeyFile first.");
+    }
+
+    public void Save()
+    {
+        EnsureUnlocked();
+
+        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(_items);
+        byte[] dek = _keyManager.GetDEK();
+        byte[] encryptedData = EncryptionFunctions.EncryptData(dek, plaintext);
+        FileWorker.writeFile(encryptedData, _fileName);
+    }
+
+    public T GetItemById(int id)
+    {
+        return !EnsureLoaded() ? default : _items.FirstOrDefault(x => x.Id == id);
+    }
+
+    public IEnumerable<T> getAll()
+    {
+        return !EnsureLoaded() ? [] : _items;
+    }
+
+    public void Add(T newItem)
+    {
+        EnsureUnlocked();
+
+        if (_items.Any(x => x.Id == newItem.Id))
+            throw new InvalidOperationException($"Element with ID = {newItem.Id} exists already!");
+
         _items.Add(newItem);
     }
+
+    public bool Remove(int id)
+    {
+        EnsureUnlocked();
+
+        var item = _items.FirstOrDefault(x => x.Id == id);
+        if (item is null)
+            return false;
+
+        _items.Remove(item);
+        return true;
+    }
+
+    public void Update(T newItem)
+    {
+        EnsureUnlocked();
+
+        var oldItem = _items.FirstOrDefault(x => x.Id == newItem.Id);
+        if (oldItem is null)
+            throw new KeyNotFoundException($"Element with ID = {newItem.Id} not found!");
+
+        _items.Remove(oldItem);
+        _items.Add(newItem);
+    }
+
     public void DeleteDatabase()
     {
         try
         {
-            // Удаляем файл
             if (File.Exists(_fileName))
-            {
                 File.Delete(_fileName);
-            }
-            // Очищаем кэш
+
             _items.Clear();
+            _isLoaded = true;
         }
         catch (Exception ex)
         {

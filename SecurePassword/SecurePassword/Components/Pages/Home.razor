@@ -1,31 +1,32 @@
-﻿@page "/"
+@page "/"
+@implements IDisposable
 
 <div class="screen">
     <header class="appbar">
         <div class="appbar-left">
             <button class="icon-button" @onclick="ToggleSort" title="Сортировка">
-                <img src="@GetSortIcon()" />
+                <img src="@GetSortIcon()" alt="Сортировка" />
             </button>
         </div>
 
         <div class="appbar-right">
             <div class="search-wrapper @(isSearchExpanded ? "expanded" : "")">
-                <input type="text" 
-                       class="search-input" 
-                       placeholder="Поиск..." 
-                       @bind="searchQuery"
-                       @bind:event="oninput"
+                <input type="text"
+                       class="search-input"
+                       placeholder="Поиск..."
+                       value="@searchQuery"
+                       @oninput="OnSearchInput"
                        @onkeypress="OnSearchKeyPress"
                        @onblur="OnSearchBlur" />
                 @if (!string.IsNullOrEmpty(searchQuery))
                 {
                     <button class="search-clear" @onclick="ClearSearch">
-                        <img src="icons/close.svg" alt="Очистить" />
+                        <img src="/icons/close.svg" alt="Очистить" />
                     </button>
                 }
             </div>
             <button class="icon-button" @onclick="ToggleSearch">
-                <img src="icons/search.svg" alt="Поиск" />
+                <img src="/icons/search.svg" alt="Поиск" />
             </button>
         </div>
     </header>
@@ -33,30 +34,23 @@
     @if (!string.IsNullOrEmpty(searchQuery))
     {
         <div class="search-results-inline">
-            @if (!string.IsNullOrEmpty(searchQuery) && searchResults.Any())
+            @if (GetFilteredItemsCount() > 0)
             {
                 <div class="sort-indicator">
                     Сортировка: @(sortBy == "title" ? "по названию" : "по типу")
                     @(sortDescending ? "▼" : "▲")
                 </div>
             }
+
             <div class="search-header-inline">
                 <span>Найдено: @GetFilteredItemsCount()</span>
             </div>
-            
+
             <div class="search-filters-inline">
-                <button class="filter-chip @(activeFilter == "all" ? "active" : "")" @onclick="@(() => SetFilter("all"))">
-                    Все
-                </button>
-                <button class="filter-chip @(activeFilter == "password" ? "active" : "")" @onclick="@(() => SetFilter("password"))">
-                    Пароли
-                </button>
-                <button class="filter-chip @(activeFilter == "card" ? "active" : "")" @onclick="@(() => SetFilter("card"))">
-                    Карты
-                </button>
-                <button class="filter-chip @(activeFilter == "note" ? "active" : "")" @onclick="@(() => SetFilter("note"))">
-                    Заметки
-                </button>
+                <button class="filter-chip @(activeFilter == "all" ? "active" : "")" @onclick="@(() => SetFilter("all"))">Все</button>
+                <button class="filter-chip @(activeFilter == "password" ? "active" : "")" @onclick="@(() => SetFilter("password"))">Пароли</button>
+                <button class="filter-chip @(activeFilter == "card" ? "active" : "")" @onclick="@(() => SetFilter("card"))">Карты</button>
+                <button class="filter-chip @(activeFilter == "note" ? "active" : "")" @onclick="@(() => SetFilter("note"))">Заметки</button>
             </div>
 
             <div class="search-results-list-inline">
@@ -75,7 +69,7 @@
                         <div class="result-badge">@GetItemTypeName(item.Type)</div>
                     </div>
                 }
-    
+
                 @if (!GetFilteredItems().Any())
                 {
                     <div class="no-results-inline">
@@ -90,31 +84,34 @@
         <main class="content">
             @if (showAddForm)
             {
-                <div class="modal-overlay" @onclick="SetFormState">
+                <div class="modal-overlay" @onclick="CloseForm">
                     <div class="modal-container" @onclick:stopPropagation="true">
                         <div class="modal-header">
-                            <h2>Добавление нового элемента</h2>
+                            <h2>@(isEditMode ? "Редактирование элемента" : "Добавление нового элемента")</h2>
                         </div>
 
                         <div class="modal-body">
                             <div class="form-group">
-                                <label>Тип элемента:</label>
+                                <label>Тип элемента</label>
                                 <div class="type-selector">
                                     <button class="@(selectedType == ItemType.Password ? "active" : "")"
-                                            @onclick="@(() => selectedType = ItemType.Password)">
-                                        <img src="icons/login.svg" alt="Пароль" />
+                                            @onclick="@(() => SelectType(ItemType.Password))"
+                                            disabled="@isEditMode">
+                                        <img src="/icons/login.svg" alt="Пароль" />
                                         <span>Пароль</span>
                                     </button>
 
                                     <button class="@(selectedType == ItemType.Card ? "active" : "")"
-                                            @onclick="@(() => selectedType = ItemType.Card)">
-                                        <img src="icons/card.svg" alt="Карта" />
+                                            @onclick="@(() => SelectType(ItemType.Card))"
+                                            disabled="@isEditMode">
+                                        <img src="/icons/card.svg" alt="Карта" />
                                         <span>Карта</span>
                                     </button>
 
                                     <button class="@(selectedType == ItemType.Note ? "active" : "")"
-                                            @onclick="@(() => selectedType = ItemType.Note)">
-                                        <img src="icons/secure_note.svg" alt="Заметка" />
+                                            @onclick="@(() => SelectType(ItemType.Note))"
+                                            disabled="@isEditMode">
+                                        <img src="/icons/note.svg" alt="Заметка" />
                                         <span>Заметка</span>
                                     </button>
                                 </div>
@@ -124,8 +121,13 @@
                             {
                                 <div class="password-form">
                                     <div class="form-group">
+                                        <label for="serviceName">Сервис или сайт</label>
+                                        <input type="text" id="serviceName" class="form-control" @bind="serviceName" placeholder="Например: GitHub" />
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="passwordTitle">Название</label>
-                                        <input type="text" id="passwordTitle" class="form-control" @bind="title" placeholder="Название" />
+                                        <input type="text" id="passwordTitle" class="form-control" @bind="title" placeholder="Рабочий аккаунт" />
                                     </div>
 
                                     <div class="form-group">
@@ -135,7 +137,7 @@
 
                                     <div class="form-group">
                                         <label for="password">Пароль</label>
-                                        <input type="password" id="password" class="form-control" @bind="password" placeholder="········" maxlength="100" />
+                                        <input type="password" id="password" class="form-control" @bind="password" placeholder="••••••••" maxlength="100" />
                                     </div>
                                 </div>
                             }
@@ -199,6 +201,11 @@
                             @if (selectedType == ItemType.Note)
                             {
                                 <div class="note-form">
+                                    <div class="note-form-header">
+                                        <img src="/icons/note.svg" alt="Заметка" />
+                                        <span>Защищённая заметка</span>
+                                    </div>
+
                                     <div class="form-group">
                                         <label for="noteTitle">Название заметки</label>
                                         <input type="text" id="noteTitle" class="form-control" @bind="noteTitle" placeholder="Важные мысли" />
@@ -214,10 +221,10 @@
 
                         <div class="modal-footer">
                             <button class="btn btn-primary" @onclick="SaveItem">
-                                <img src="icons/plus.svg" alt="Сохранить" />
-                                <span>Сохранить</span>
+                                <img src="/icons/plus.svg" alt="Сохранить" />
+                                <span>@(isEditMode ? "Сохранить изменения" : "Сохранить")</span>
                             </button>
-                            <button class="btn btn-secondary" @onclick="SetFormState">Отмена</button>
+                            <button class="btn btn-secondary" @onclick="CloseForm">Отмена</button>
                         </div>
                     </div>
                 </div>
@@ -229,11 +236,11 @@
                     <div class="detail-container" @onclick:stopPropagation="true">
                         <div class="detail-header">
                             <div class="detail-icon">
-                                <img src="@GetDetailIcon()" />
+                                <img src="@GetDetailIcon()" alt="Иконка" />
                             </div>
                             <h2>@detailTitle</h2>
                             <button class="close-button" @onclick="CloseDetail">
-                                <img src="icons/close.svg" alt="Закрыть" />
+                                <img src="/icons/close.svg" alt="Закрыть" />
                             </button>
                         </div>
 
@@ -253,7 +260,7 @@
                                     <div class="field-value password-field">
                                         <span>@(showPassword ? detailPassword : "••••••••")</span>
                                         <button class="icon-button-small" @onclick="TogglePasswordVisibility">
-                                            <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" />
+                                            <img src="@(showPassword ? "/icons/eye-off.svg" : "/icons/eye.svg")" alt="Видимость пароля" />
                                         </button>
                                     </div>
                                 </div>
@@ -282,7 +289,7 @@
                                         <div class="field-value password-field">
                                             <span>@(showCvv ? detailCvv : "•••")</span>
                                             <button class="icon-button-small" @onclick="ToggleCvvVisibility">
-                                                <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" />
+                                                <img src="@(showCvv ? "/icons/eye-off.svg" : "/icons/eye.svg")" alt="Видимость CVV" />
                                             </button>
                                         </div>
                                     </div>
@@ -303,11 +310,11 @@
 
                         <div class="detail-footer">
                             <button class="btn btn-secondary" @onclick="EditItem">
-                                <img src="icons/edit.svg" />
+                                <img src="/icons/edit.svg" alt="Редактировать" />
                                 <span>Редактировать</span>
                             </button>
                             <button class="btn btn-danger" @onclick="DeleteItem">
-                                <img src="icons/delete.svg" />
+                                <img src="/icons/delete.svg" alt="Удалить" />
                                 <span>Удалить</span>
                             </button>
                         </div>
@@ -318,7 +325,7 @@
             <section class="card">
                 <div class="row" @onclick="@(() => ToggleCategory(0))">
                     <div class="row-left">
-                        <span class="ico"><img src="icons/login.svg" alt="Логины" /></span>
+                        <span class="ico"><img src="/icons/login.svg" alt="Логины" /></span>
                         <span class="row-title">Логины</span>
                     </div>
                     <div>
@@ -329,39 +336,39 @@
 
                 @if (expandedIndex == 0)
                 {
-                        @if (passwords.Count == 0)
+                    @if (passwords.Count == 0)
+                    {
+                        <div class="divider"></div>
+                        <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                    }
+                    else
+                    {
+                        @foreach (var item in passwords)
                         {
                             <div class="divider"></div>
-                            <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
-                        }
-                        else
-                        {
-                            @foreach (var i in passwords)
-                            {
-                                <div class="divider"></div>
-                                <div class="row">
-                                    <div class="row-left" @onclick="@(() => ShowPasswordDetail(i))">
-                                        <span class="brand">
-                                            <img src="@GetServiceIconPathForUi(i.ServiceName)" alt="@i.Title" width="40" height="40" />
-                                        </span>
-                                        <div class="row-text">
-                                            <div class="row-title">@i.Title</div>
-                                            <div class="row-sub">@i.Login</div>
-                                        </div>
+                            <div class="row">
+                                <div class="row-left" @onclick="@(() => ShowPasswordDetail(item))">
+                                    <span class="brand">
+                                        <img src="@GetServiceIconPathForUi(item.ServiceName, item.Title)" alt="@item.Title" width="40" height="40" />
+                                    </span>
+                                    <div class="row-text">
+                                        <div class="row-title">@item.Title</div>
+                                        <div class="row-sub">@item.Login</div>
                                     </div>
-                                    <button class="kebab" aria-label="Действия" @onclick="(() => ShowPasswordDetail(i))" @onclick:stopPropagation="true">
-                                        <span></span><span></span><span></span>
-                                    </button>
                                 </div>
-                            }
+                                <button class="kebab" aria-label="Действия" @onclick="(() => ShowPasswordDetail(item))" @onclick:stopPropagation="true">
+                                    <span></span><span></span><span></span>
+                                </button>
+                            </div>
                         }
+                    }
                 }
             </section>
 
             <section class="card">
                 <div class="row" @onclick="@(() => ToggleCategory(1))">
                     <div class="row-left">
-                        <span class="ico"><img src="icons/card.svg" alt="Карты" /></span>
+                        <span class="ico"><img src="/icons/card.svg" alt="Карты" /></span>
                         <span class="row-title">Карты</span>
                     </div>
                     <div>
@@ -372,41 +379,39 @@
 
                 @if (expandedIndex == 1)
                 {
-                    <div>
-                        @if (cards.Count == 0)
+                    @if (cards.Count == 0)
+                    {
+                        <div class="divider"></div>
+                        <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                    }
+                    else
+                    {
+                        @foreach (var item in cards)
                         {
                             <div class="divider"></div>
-                            <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
-                        }
-                        else
-                        {
-                            @foreach (var i in cards)
-                            {
-                               <div class="divider"></div>
-                                <div class="row">
-                                    <div class="row-left" @onclick="@(() => ShowCardDetail(i))">
-                                        <span class="brand">
-                                            <img src="icons/card.svg" alt="@i.Title" width="40" height="40" />
-                                        </span>
-                                        <div class="row-text">
-                                            <div class="row-title">@i.Title</div>
-                                            <div class="row-sub">@MaskCardNumber(i.CardNumber)</div>
-                                        </div>
+                            <div class="row">
+                                <div class="row-left" @onclick="@(() => ShowCardDetail(item))">
+                                    <span class="brand">
+                                        <img src="/icons/card.svg" alt="@item.Title" width="40" height="40" />
+                                    </span>
+                                    <div class="row-text">
+                                        <div class="row-title">@item.Title</div>
+                                        <div class="row-sub">@MaskCardNumber(item.CardNumber)</div>
                                     </div>
-                                    <button class="kebab" aria-label="Действия" @onclick="(() => ShowCardDetail(i))" @onclick:stopPropagation="true">
-                                        <span></span><span></span><span></span>
-                                    </button>
                                 </div>
-                            }
+                                <button class="kebab" aria-label="Действия" @onclick="(() => ShowCardDetail(item))" @onclick:stopPropagation="true">
+                                    <span></span><span></span><span></span>
+                                </button>
+                            </div>
                         }
-                    </div>
+                    }
                 }
             </section>
 
             <section class="card">
                 <div class="row" @onclick="@(() => ToggleCategory(2))">
                     <div class="row-left">
-                        <span class="ico"><img src="icons/note.svg" alt="Защищённые заметки" /></span>
+                        <span class="ico"><img src="/icons/note.svg" alt="Защищённые заметки" /></span>
                         <span class="row-title">Защищённые заметки</span>
                     </div>
                     <div>
@@ -417,251 +422,467 @@
 
                 @if (expandedIndex == 2)
                 {
-                    <div>
-                        @if (notes.Count == 0)
+                    @if (notes.Count == 0)
+                    {
+                        <div class="divider"></div>
+                        <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                    }
+                    else
+                    {
+                        @foreach (var item in notes)
                         {
                             <div class="divider"></div>
-                            <div class="row"><span style="margin: 0 auto; color: #999;">Нет данных</span></div>
+                            <div class="row">
+                                <div class="row-left" @onclick="@(() => ShowNoteDetail(item))">
+                                    <span class="brand">
+                                        <img src="/icons/note.svg" alt="@item.Title" width="40" height="40" />
+                                    </span>
+                                    <div class="row-text">
+                                        <div class="row-title">@item.Title</div>
+                                        <div class="row-sub">@GetNotePreview(item.Content)</div>
+                                    </div>
+                                </div>
+                                <button class="kebab" aria-label="Действия" @onclick="(() => ShowNoteDetail(item))" @onclick:stopPropagation="true">
+                                    <span></span><span></span><span></span>
+                                </button>
+                            </div>
                         }
-                        else
-                        {
-                            @foreach (var i in notes)
-                            {
-                               <div class="divider"></div>
-<div class="row">
-    <div class="row-left" @onclick="@(() => ShowNoteDetail(i))">
-        <span class="brand">
-            <img src="icons/note.svg" alt="@i.Title" width="40" height="40" />
-        </span>
-        <div class="row-text">
-            <div class="row-title">@i.Title</div>
-            <div class="row-sub">@GetNotePreview(i.Content)</div>
-        </div>
-    </div>
-    <button class="kebab" aria-label="Действия" @onclick="(() => ShowNoteDetail(i))" @onclick:stopPropagation="true">
-        <span></span><span></span><span></span>
-    </button>
-</div>
-                            }
-                        }
-                    </div>
+                    }
                 }
             </section>
 
-            <button class="fab" @onclick="SetFormState">
-                <img src="icons/plus.svg" alt="Добавить" />
-            </button>
+            <div class="fab-container">
+                <button class="fab" @onclick="OpenAddForm" aria-label="Добавить">
+                    <img src="/icons/plus.svg" alt="Добавить" />
+                </button>
+            </div>
         </main>
     }
 </div>
 
-
 @code {
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private VaultSessionService VaultSession { get; set; } = default!;
     [Inject] private SecureRepository<PasswordEntry> PasswordRepository { get; set; } = default!;
     [Inject] private SecureRepository<CardEntry> CardRepository { get; set; } = default!;
     [Inject] private SecureRepository<NoteEntry> NoteRepository { get; set; } = default!;
 
-    private List<SearchResult> searchResults = new();
-    private List<PasswordEntry> passwords = new();
-    private List<CardEntry> cards = new();
-    private List<NoteEntry> notes = new();
+    private List<PasswordEntry> passwords = [];
+    private List<CardEntry> cards = [];
+    private List<NoteEntry> notes = [];
 
     private enum CardField { Number, Holder, Exp, Cvv }
-    private CardField _activeField = CardField.Number;
     private enum ItemType { Password, Card, Note }
+
+    private CardField _activeField = CardField.Number;
     private ItemType selectedType = ItemType.Password;
 
-    private string title = "", login = "", password = "";
-    private string cardNumber = "", cardHolder = "", expiryDate = "", cvv = "", cardTitle = "";
-    private string noteTitle = "", noteContent = "";
-    private int expandedIndex = 0;
-    private bool showAddForm = false;
-    
-    private string searchQuery = "";
-    private bool isSearchExpanded = false;
+    private string title = string.Empty;
+    private string login = string.Empty;
+    private string password = string.Empty;
+    private string serviceName = string.Empty;
+    private string cardNumber = string.Empty;
+    private string cardHolder = string.Empty;
+    private string expiryDate = string.Empty;
+    private string cvv = string.Empty;
+    private string cardTitle = string.Empty;
+    private string noteTitle = string.Empty;
+    private string noteContent = string.Empty;
+
+    private int expandedIndex;
+    private bool showAddForm;
+    private bool isEditMode;
+
+    private string searchQuery = string.Empty;
+    private bool isSearchExpanded;
     private string activeFilter = "all";
+    private string sortBy = "title";
+    private bool sortDescending;
 
-    // Детальный просмотр
-    private bool showDetail = false;
-    private string currentDetailType = "";
-    private string detailTitle = "", detailLogin = "", detailPassword = "";
-    private string detailCardNumber = "", detailCardHolder = "", detailExpiryDate = "", detailCvv = "", detailContent = "";
-    private bool showPassword = false, showCvv = false;
-    private PasswordEntry? selectedPassword = null;
-    private CardEntry? selectedCard = null;
-    private NoteEntry? selectedNote = null;
+    private bool showDetail;
+    private string currentDetailType = string.Empty;
+    private string detailTitle = string.Empty;
+    private string detailLogin = string.Empty;
+    private string detailPassword = string.Empty;
+    private string detailCardNumber = string.Empty;
+    private string detailCardHolder = string.Empty;
+    private string detailExpiryDate = string.Empty;
+    private string detailCvv = string.Empty;
+    private string detailContent = string.Empty;
+    private bool showPassword;
+    private bool showCvv;
 
-    private class SearchResult { 
-        public string Type { get; set; } = "";
-        public string Title { get; set; } = "";
-        public string Subtitle { get; set; } = ""; 
-        public object Data { get; set; } = null!; 
+    private PasswordEntry? selectedPassword;
+    private CardEntry? selectedCard;
+    private NoteEntry? selectedNote;
+
+    private class SearchResult
+    {
+        public string Type { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Subtitle { get; set; } = string.Empty;
+        public string SearchText { get; set; } = string.Empty;
+        public object Data { get; set; } = default!;
     }
 
-    protected override void OnInitialized() => LoadData();
+    protected override void OnInitialized()
+    {
+        VaultSession.StateChanged += OnVaultSessionChanged;
+
+        if (VaultSession.IsAuthenticated)
+            LoadData();
+    }
+
+    private void OnVaultSessionChanged()
+    {
+        if (!VaultSession.IsAuthenticated)
+            return;
+
+        InvokeAsync(() =>
+        {
+            LoadData();
+            StateHasChanged();
+        });
+    }
 
     private void LoadData()
     {
-        try { 
-            passwords = PasswordRepository.getAll().ToList(); 
-            cards = CardRepository.getAll().ToList();
-            notes = NoteRepository.getAll().ToList();
+        try
+        {
+            passwords = PasswordRepository.getAll().OrderBy(item => item.Title).ToList();
+            cards = CardRepository.getAll().OrderBy(item => item.Title).ToList();
+            notes = NoteRepository.getAll().OrderBy(item => item.Title).ToList();
         }
-        catch (Exception ex) { Console.WriteLine($"Error: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
     }
 
-    private void ShowPasswordDetail(PasswordEntry p)
+    private void ShowPasswordDetail(PasswordEntry item)
     {
-        showDetail = true; 
+        showDetail = true;
         currentDetailType = "password";
-        detailTitle = p.Title;
-        detailLogin = p.Login; 
-        detailPassword = p.Password;
-        selectedPassword = p; 
+        detailTitle = item.Title;
+        detailLogin = item.Login;
+        detailPassword = item.Password;
+        selectedPassword = item;
+        selectedCard = null;
+        selectedNote = null;
         showPassword = false;
     }
 
-    private void ShowCardDetail(CardEntry c)
+    private void ShowCardDetail(CardEntry item)
     {
-        showDetail = true; 
+        showDetail = true;
         currentDetailType = "card";
-        detailTitle = c.Title; 
-        detailCardNumber = c.CardNumber;
-        detailCardHolder = c.CardHolder;
-        detailExpiryDate = c.ExpiryDate; 
-        detailCvv = c.Cvv;
-        selectedCard = c;
+        detailTitle = item.Title;
+        detailCardNumber = item.CardNumber;
+        detailCardHolder = item.CardHolder;
+        detailExpiryDate = item.ExpiryDate;
+        detailCvv = item.Cvv;
+        selectedPassword = null;
+        selectedCard = item;
+        selectedNote = null;
         showCvv = false;
     }
 
-    private void ShowNoteDetail(NoteEntry n)
+    private void ShowNoteDetail(NoteEntry item)
     {
         showDetail = true;
         currentDetailType = "note";
-        detailTitle = n.Title; 
-        detailContent = n.Content;
-        selectedNote = n;
+        detailTitle = item.Title;
+        detailContent = item.Content;
+        selectedPassword = null;
+        selectedCard = null;
+        selectedNote = item;
     }
 
-    private void CloseDetail() { 
+    private void CloseDetail()
+    {
         showDetail = false;
-        showPassword = showCvv = false;
+        showPassword = false;
+        showCvv = false;
     }
+
     private void TogglePasswordVisibility() => showPassword = !showPassword;
     private void ToggleCvvVisibility() => showCvv = !showCvv;
-    private string GetServiceIconPathForUi(string? serviceName)
-    {
-        var path = ServiceImageGenerator.GetServiceIconPath(serviceName ?? string.Empty);
-        return path.Replace('\\', '/');
-    }
-    private string GetDetailIcon() => currentDetailType switch { "password" => "icons/login.svg", "card" => "icons/card.svg", "note" => "icons/note.svg", _ => "icons/file.png" };
 
-    private void EditItem() {
-        Console.WriteLine($"Edit: {currentDetailType}"); 
-        CloseDetail(); 
+    private string GetServiceIconPathForUi(string? currentServiceName, string? fallbackTitle)
+    {
+        return ServiceImageGenerator.GetServiceIconSource(currentServiceName, fallbackTitle);
     }
-    
+
+    private string GetDetailIcon() => currentDetailType switch
+    {
+        "password" => "/icons/login.svg",
+        "card" => "/icons/card.svg",
+        "note" => "/icons/note.svg",
+        _ => "/icons/note.svg"
+    };
+
+    private void EditItem()
+    {
+        switch (currentDetailType)
+        {
+            case "password" when selectedPassword is not null:
+                isEditMode = true;
+                selectedType = ItemType.Password;
+                title = selectedPassword.Title;
+                login = selectedPassword.Login;
+                password = selectedPassword.Password;
+                serviceName = selectedPassword.ServiceName;
+                break;
+
+            case "card" when selectedCard is not null:
+                isEditMode = true;
+                selectedType = ItemType.Card;
+                cardTitle = selectedCard.Title;
+                cardNumber = FormatCardNumberForInput(selectedCard.CardNumber);
+                cardHolder = selectedCard.CardHolder;
+                expiryDate = selectedCard.ExpiryDate;
+                cvv = selectedCard.Cvv;
+                break;
+
+            case "note" when selectedNote is not null:
+                isEditMode = true;
+                selectedType = ItemType.Note;
+                noteTitle = selectedNote.Title;
+                noteContent = selectedNote.Content;
+                break;
+
+            default:
+                return;
+        }
+
+        CloseDetail();
+        showAddForm = true;
+    }
+
     private async Task DeleteItem()
     {
-        if (currentDetailType == "password" && selectedPassword != null) { passwords.Remove(selectedPassword); PasswordRepository.Save(); }
-        else if (currentDetailType == "card" && selectedCard != null) { cards.Remove(selectedCard); CardRepository.Save(); }
-        else if (currentDetailType == "note" && selectedNote != null) { notes.Remove(selectedNote); NoteRepository.Save(); }
-        CloseDetail(); 
-        LoadData();
+        try
+        {
+            if (currentDetailType == "password" && selectedPassword is not null)
+            {
+                PasswordRepository.Remove(selectedPassword.Id);
+                PasswordRepository.Save();
+            }
+            else if (currentDetailType == "card" && selectedCard is not null)
+            {
+                CardRepository.Remove(selectedCard.Id);
+                CardRepository.Save();
+            }
+            else if (currentDetailType == "note" && selectedNote is not null)
+            {
+                NoteRepository.Remove(selectedNote.Id);
+                NoteRepository.Save();
+            }
+
+            CloseDetail();
+            LoadData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+
         await Task.CompletedTask;
     }
 
-    private void ToggleSearch() { 
+    private void ToggleSearch()
+    {
         isSearchExpanded = !isSearchExpanded;
-        if (!isSearchExpanded) { 
-            searchQuery = "";
-            activeFilter = "all"; 
-        } 
+        if (!isSearchExpanded)
+        {
+            searchQuery = string.Empty;
+            activeFilter = "all";
+        }
     }
-    private void OnSearchBlur() { 
-        if (string.IsNullOrEmpty(searchQuery)) isSearchExpanded = false;
+
+    private void OnSearchBlur()
+    {
+        if (string.IsNullOrEmpty(searchQuery))
+            isSearchExpanded = false;
     }
-    private void ClearSearch() => searchQuery = "";
-    private void OnSearchKeyPress(KeyboardEventArgs e) { if (e.Key == "Escape") { isSearchExpanded = false; searchQuery = ""; } }
-    private void SetFilter(string f) => activeFilter = f;
+
+    private void ClearSearch() => searchQuery = string.Empty;
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            isSearchExpanded = false;
+            searchQuery = string.Empty;
+        }
+    }
+
+    private void SetFilter(string filter) => activeFilter = filter;
+
     private List<SearchResult> GetFilteredItems()
     {
-        filterRecord();
-        return searchResults;
+        return ApplySearchAndFilter(BuildSearchSource()).ToList();
     }
-    private int GetFilteredItemsCount()
+
+    private int GetFilteredItemsCount() => GetFilteredItems().Count;
+
+    private string GetItemIcon(SearchResult item) => item.Type switch
     {
-        return GetFilteredItems().Count;
-    }
-    private string GetItemIcon(SearchResult i) => i.Type switch { "password" => "icons/login.svg", "card" => "icons/card.svg", "note" => "icons/note.svg", _ => "icons/file.png" };
-    private string GetItemTypeName(string t) => t switch { "password" => "Пароль", "card" => "Карта", "note" => "Заметка", _ => t };
+        "password" => "/icons/login.svg",
+        "card" => "/icons/card.svg",
+        "note" => "/icons/note.svg",
+        _ => "/icons/note.svg"
+    };
+
+    private string GetItemTypeName(string itemType) => itemType switch
+    {
+        "password" => "Пароль",
+        "card" => "Карта",
+        "note" => "Заметка",
+        _ => itemType
+    };
+
     private void SelectSearchResult(SearchResult item)
     {
-        searchQuery = "";
+        searchQuery = string.Empty;
         isSearchExpanded = false;
         activeFilter = "all";
-    
+
         switch (item.Type)
         {
-            case "password":
-                if (item.Data is PasswordEntry p)
-                    ShowPasswordDetail(p);
+            case "password" when item.Data is PasswordEntry passwordItem:
+                ShowPasswordDetail(passwordItem);
                 break;
-            case "card":
-                if (item.Data is CardEntry c)
-                    ShowCardDetail(c);
+            case "card" when item.Data is CardEntry cardItem:
+                ShowCardDetail(cardItem);
                 break;
-            case "note":
-                if (item.Data is NoteEntry n)
-                    ShowNoteDetail(n);
+            case "note" when item.Data is NoteEntry noteItem:
+                ShowNoteDetail(noteItem);
                 break;
         }
     }
 
-    private async Task FocusField(CardField f) { 
-        _activeField = f;
-        var id = f switch { CardField.Number => "cardNumberInput", CardField.Holder => "cardHolderInput", CardField.Exp => "expiryInput", CardField.Cvv => "cvvInput", _ => "cardNumberInput" };
-        await JS.InvokeVoidAsync("bpFocus", id); 
+    private async Task FocusField(CardField field)
+    {
+        _activeField = field;
+        string elementId = field switch
+        {
+            CardField.Number => "cardNumberInput",
+            CardField.Holder => "cardHolderInput",
+            CardField.Exp => "expiryInput",
+            CardField.Cvv => "cvvInput",
+            _ => "cardNumberInput"
+        };
+
+        await JS.InvokeVoidAsync("bpFocus", elementId);
     }
-    private void OnCardNumberInput(ChangeEventArgs e) { 
-        var r = e.Value?.ToString() ?? "";
-        var d = new string(r.Where(char.IsDigit).ToArray());
-        if (d.Length > 16) d = d[..16]; 
-        cardNumber = string.Join(" ", Enumerable.Range(0, (d.Length + 3) / 4).Select(i => d.Skip(i * 4).Take(4)).Where(g => g.Any()).Select(g => new string(g.ToArray())));
+
+    private void OnCardNumberInput(ChangeEventArgs e)
+    {
+        var digits = new string((e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (digits.Length > 16)
+            digits = digits[..16];
+
+        cardNumber = FormatCardNumberForInput(digits);
     }
-    private void OnCardHolderInput(ChangeEventArgs e) => cardHolder = (e.Value?.ToString() ?? "").Trim();
-    private void OnCvvInput(ChangeEventArgs e) { 
-        var r = e.Value?.ToString() ?? ""; 
-        var d = new string(r.Where(char.IsDigit).ToArray()); 
-        if (d.Length > 3) d = d[..3]; cvv = d; 
+
+    private void OnCardHolderInput(ChangeEventArgs e) => cardHolder = (e.Value?.ToString() ?? string.Empty).Trim();
+
+    private void OnCvvInput(ChangeEventArgs e)
+    {
+        var digits = new string((e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (digits.Length > 3)
+            digits = digits[..3];
+
+        cvv = digits;
     }
-    private void OnExpiryInput(ChangeEventArgs e) {
-        var r = e.Value?.ToString() ?? "";
-        var d = new string(r.Where(char.IsDigit).ToArray());
-        if (d.Length > 4) d = d[..4]; 
-        expiryDate = d.Length switch { <= 2 => d, _ => d[..2] + "/" + d[2..] }; 
+
+    private void OnExpiryInput(ChangeEventArgs e)
+    {
+        var digits = new string((e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (digits.Length > 4)
+            digits = digits[..4];
+
+        expiryDate = digits.Length <= 2 ? digits : $"{digits[..2]}/{digits[2..]}";
     }
-    private void ToggleCategory(int i) => expandedIndex = expandedIndex == i ? -1 : i;
-    private void SetFormState() { 
-        showAddForm = !showAddForm;
-        if (!showAddForm) ClearForm(); 
-        else selectedType = ItemType.Password; 
+
+    private void ToggleCategory(int index)
+    {
+        expandedIndex = expandedIndex == index ? -1 : index;
     }
-    private void ClearForm() { title = login = password = cardNumber = cardHolder = expiryDate = cvv = cardTitle = noteTitle = noteContent = ""; }
-    private string MaskCardNumber(string? v) { 
-        if (string.IsNullOrWhiteSpace(v)) 
-        return "Номер карты не указан"; 
-        var d = new string(v.Where(char.IsDigit).ToArray()); 
-        if (d.Length < 4) return "••••"; 
-        return $"•••• •••• •••• {d[^4..]}"; 
+
+    private void OpenAddForm()
+    {
+        isEditMode = false;
+        selectedPassword = null;
+        selectedCard = null;
+        selectedNote = null;
+        SelectType(ItemType.Password);
+        ClearForm();
+        showAddForm = true;
     }
-    private string GetNotePreview(string? c) {
-        if (string.IsNullOrWhiteSpace(c)) return "Пустая заметка";
-        var t = c.Replace("\r", " ").Replace("\n", " ").Trim(); 
-        return t.Length > 50 ? t[..50] + "..." : t; 
+
+    private void CloseForm()
+    {
+        showAddForm = false;
+        isEditMode = false;
+        ClearForm();
     }
-    private int GetNextId<T>(List<T> items) where T : IHasID => items.Any() ? items.Max(x => x.Id) + 1 : 1;
+
+    private void SelectType(ItemType type)
+    {
+        if (isEditMode)
+            return;
+
+        selectedType = type;
+    }
+
+    private void ClearForm()
+    {
+        title = string.Empty;
+        login = string.Empty;
+        password = string.Empty;
+        serviceName = string.Empty;
+        cardNumber = string.Empty;
+        cardHolder = string.Empty;
+        expiryDate = string.Empty;
+        cvv = string.Empty;
+        cardTitle = string.Empty;
+        noteTitle = string.Empty;
+        noteContent = string.Empty;
+        _activeField = CardField.Number;
+    }
+
+    private string MaskCardNumber(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "Номер карты не указан";
+
+        string digits = new(value.Where(char.IsDigit).ToArray());
+        if (digits.Length < 4)
+            return "••••";
+
+        return $"•••• •••• •••• {digits[^4..]}";
+    }
+
+    private string GetNotePreview(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return "Пустая заметка";
+
+        var text = content.Replace("\r", " ").Replace("\n", " ").Trim();
+        return text.Length > 50 ? $"{text[..50]}..." : text;
+    }
+
+    private int GetNextId<T>(List<T> items) where T : IHasID
+    {
+        return items.Any() ? items.Max(item => item.Id) + 1 : 1;
+    }
 
     private async Task SaveItem()
     {
@@ -669,79 +890,204 @@
         {
             switch (selectedType)
             {
-                case ItemType.Password: PasswordRepository.Add(new PasswordEntry {  Id = GetNextId(passwords), Title = title, Login = login, Password = password });
-                    PasswordRepository.Save(); 
+                case ItemType.Password:
+                    await SavePasswordAsync();
                     break;
-                case ItemType.Card: CardRepository.Add(new CardEntry { Id = GetNextId(cards), Title = cardTitle, CardNumber = cardNumber.Replace(" ", ""), CardHolder = cardHolder, ExpiryDate = expiryDate, Cvv = cvv });
-                    CardRepository.Save(); 
+                case ItemType.Card:
+                    await SaveCardAsync();
                     break;
-                case ItemType.Note: NoteRepository.Add(new NoteEntry { Id = GetNextId(notes), Title = noteTitle, Content = noteContent }); 
-                    NoteRepository.Save(); 
+                case ItemType.Note:
+                    await SaveNoteAsync();
                     break;
             }
-            LoadData(); ClearForm(); showAddForm = false;
+
+            LoadData();
+            CloseForm();
         }
-        catch (Exception ex) { Console.WriteLine($"Error: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private async Task SavePasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(login))
+            return;
+
+        string normalizedServiceName = string.IsNullOrWhiteSpace(serviceName)
+            ? title
+            : serviceName.Trim();
+
+        if (isEditMode && selectedPassword is not null)
+        {
+            PasswordRepository.Update(new PasswordEntry
+            {
+                Id = selectedPassword.Id,
+                Title = title.Trim(),
+                Login = login.Trim(),
+                Password = password,
+                ServiceName = normalizedServiceName,
+                CreatedAt = selectedPassword.CreatedAt,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            PasswordRepository.Add(new PasswordEntry
+            {
+                Id = GetNextId(passwords),
+                Title = title.Trim(),
+                Login = login.Trim(),
+                Password = password,
+                ServiceName = normalizedServiceName,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+
+        PasswordRepository.Save();
         await Task.CompletedTask;
     }
 
-    private void filterRecord()
+    private async Task SaveCardAsync()
     {
-        var allItems = new List<SearchResult>();
-    
-        foreach (var p in passwords)
+        if (string.IsNullOrWhiteSpace(cardTitle) || string.IsNullOrWhiteSpace(cardNumber))
+            return;
+
+        string normalizedCardNumber = new(cardNumber.Where(char.IsDigit).ToArray());
+
+        if (isEditMode && selectedCard is not null)
         {
-            allItems.Add(new SearchResult
+            CardRepository.Update(new CardEntry
+            {
+                Id = selectedCard.Id,
+                Title = cardTitle.Trim(),
+                CardNumber = normalizedCardNumber,
+                CardHolder = cardHolder.Trim(),
+                ExpiryDate = expiryDate.Trim(),
+                Cvv = cvv.Trim(),
+                BankName = selectedCard.BankName,
+                CreatedAt = selectedCard.CreatedAt,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            CardRepository.Add(new CardEntry
+            {
+                Id = GetNextId(cards),
+                Title = cardTitle.Trim(),
+                CardNumber = normalizedCardNumber,
+                CardHolder = cardHolder.Trim(),
+                ExpiryDate = expiryDate.Trim(),
+                Cvv = cvv.Trim(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+
+        CardRepository.Save();
+        await Task.CompletedTask;
+    }
+
+    private async Task SaveNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(noteTitle) && string.IsNullOrWhiteSpace(noteContent))
+            return;
+
+        string normalizedTitle = string.IsNullOrWhiteSpace(noteTitle)
+            ? "Новая заметка"
+            : noteTitle.Trim();
+
+        if (isEditMode && selectedNote is not null)
+        {
+            NoteRepository.Update(new NoteEntry
+            {
+                Id = selectedNote.Id,
+                Title = normalizedTitle,
+                Content = noteContent,
+                CreatedAt = selectedNote.CreatedAt,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            NoteRepository.Add(new NoteEntry
+            {
+                Id = GetNextId(notes),
+                Title = normalizedTitle,
+                Content = noteContent,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+
+        NoteRepository.Save();
+        await Task.CompletedTask;
+    }
+
+    private void FilterRecords()
+    {
+    }
+
+    private IEnumerable<SearchResult> BuildSearchSource()
+    {
+        foreach (var item in passwords)
+        {
+            yield return new SearchResult
             {
                 Type = "password",
-                Title = p.Title,
-                Subtitle = p.Login,
-                Data = p
-            });
+                Title = item.Title,
+                Subtitle = string.IsNullOrWhiteSpace(item.Login) ? item.ServiceName : item.Login,
+                SearchText = JoinSearchText(item.Title, item.Login, item.ServiceName),
+                Data = item
+            };
         }
-    
-        foreach (var c in cards)
+
+        foreach (var item in cards)
         {
-            allItems.Add(new SearchResult
+            yield return new SearchResult
             {
                 Type = "card",
-                Title = c.Title,
-                Subtitle = MaskCardNumber(c.CardNumber),
-                Data = c
-            });
+                Title = item.Title,
+                Subtitle = MaskCardNumber(item.CardNumber),
+                SearchText = JoinSearchText(item.Title, item.CardHolder, item.BankName, item.CardNumber),
+                Data = item
+            };
         }
-    
-        foreach (var n in notes)
+
+        foreach (var item in notes)
         {
-            allItems.Add(new SearchResult
+            yield return new SearchResult
             {
                 Type = "note",
-                Title = n.Title,
-                Subtitle = GetNotePreview(n.Content),
-                Data = n
-            });
+                Title = item.Title,
+                Subtitle = GetNotePreview(item.Content),
+                SearchText = JoinSearchText(item.Title, item.Content),
+                Data = item
+            };
         }
-    
+    }
+
+    private IEnumerable<SearchResult> ApplySearchAndFilter(IEnumerable<SearchResult> source)
+    {
+        IEnumerable<SearchResult> filtered = source;
+
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            string query = searchQuery.ToLowerInvariant();
-            allItems = allItems.Where(item => 
-                item.Title.ToLowerInvariant().Contains(query) || 
-                item.Subtitle.ToLowerInvariant().Contains(query)
-            ).ToList();
+            string query = searchQuery.Trim();
+            filtered = filtered.Where(item =>
+                ContainsSearchText(item.SearchText, query) ||
+                ContainsSearchText(item.Title, query) ||
+                ContainsSearchText(item.Subtitle, query));
         }
-    
+
         if (activeFilter != "all")
-        {
-            allItems = allItems.Where(item => item.Type == activeFilter).ToList();
-        }
-    
-        allItems = allItems.OrderBy(item => item.Title).ToList();
-    
-        searchResults = allItems;
+            filtered = filtered.Where(item => item.Type == activeFilter);
+
+        return filtered;
     }
-    private string sortBy = "title"; // title, type, date
-private bool sortDescending = false;
 
     private void ToggleSort()
     {
@@ -749,44 +1095,63 @@ private bool sortDescending = false;
         {
             sortBy = "type";
         }
-        else if (sortBy == "type")
+        else
         {
             sortBy = "title";
             sortDescending = !sortDescending;
         }
-    
-        filterRecord();
+
         StateHasChanged();
     }
+
     private List<SearchResult> GetFilteredItemsSorted()
     {
-        filterRecord();
-    
-        var results = searchResults.ToList();
-    
-        
-        switch (sortBy)
+        var filteredItems = GetFilteredItems();
+
+        return sortBy switch
         {
-            case "title":
-                results = sortDescending 
-                    ? results.OrderByDescending(x => x.Title).ToList()
-                    : results.OrderBy(x => x.Title).ToList();
-                break;
-            case "type":
-                results = sortDescending
-                    ? results.OrderByDescending(x => x.Type).ThenBy(x => x.Title).ToList()
-                    : results.OrderBy(x => x.Type).ThenBy(x => x.Title).ToList();
-                break;
-        }
-    
-        return results;
+            "type" => sortDescending
+                ? filteredItems.OrderByDescending(item => item.Type).ThenBy(item => item.Title).ToList()
+                : filteredItems.OrderBy(item => item.Type).ThenBy(item => item.Title).ToList(),
+            _ => sortDescending
+                ? filteredItems.OrderByDescending(item => item.Title).ToList()
+                : filteredItems.OrderBy(item => item.Title).ToList()
+        };
+    }
+
+    private static string JoinSearchText(params string?[] values)
+    {
+        return string.Join(' ', values.Where(value => !string.IsNullOrWhiteSpace(value)));
+    }
+
+    private static bool ContainsSearchText(string? value, string query)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+            value.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
     private string GetSortIcon()
     {
-        if (sortBy == "title")
-            return sortDescending ? "icons/sort-desc.svg" : "icons/sort-asc.svg";
-        else
-            return "icons/sort-type.svg";
+        return sortBy == "title"
+            ? (sortDescending ? "/icons/sort-desc.svg" : "/icons/sort-asc.svg")
+            : "/icons/sort-type.svg";
+    }
+
+    private static string FormatCardNumberForInput(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        return string.Join(" ",
+            Enumerable.Range(0, (digits.Length + 3) / 4)
+                .Select(index => digits.Skip(index * 4).Take(4))
+                .Where(chunk => chunk.Any())
+                .Select(chunk => new string(chunk.ToArray())));
+    }
+
+    public void Dispose()
+    {
+        VaultSession.StateChanged -= OnVaultSessionChanged;
     }
 }

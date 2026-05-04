@@ -1,50 +1,54 @@
-using System;
-using System.IO;
-using System.Linq;
-using Microsoft.Maui.Storage;
 using SkiaSharp;
 
-public class ServiceImageGenerator
+namespace SecurePassword;
+
+public static class ServiceImageGenerator
 {
-    public static void SaveServiceImage(string serviceName, string filePath, int width = 200, int height = 200)
+    private static readonly Dictionary<string, string> KnownIcons = new(StringComparer.OrdinalIgnoreCase)
     {
-        byte[] imageBytes = GenerateServiceImage(serviceName, width, height);
-        File.WriteAllBytes(filePath, imageBytes);
+        ["yandex"] = "/passwords/yandex.png",
+        ["vk"] = "/passwords/vk.jpg",
+        ["vkontakte"] = "/passwords/vk.jpg",
+        ["sber"] = "/passwords/sber.jpg",
+        ["sberbank"] = "/passwords/sber.jpg",
+        ["google"] = "/passwords/google.webp",
+        ["gmail"] = "/passwords/google.webp",
+        ["github"] = "/passwords/github.jpg"
+    };
+
+    public static string GetServiceIconPath(string? serviceName)
+    {
+        return GetServiceIconSource(serviceName);
     }
 
-    public static string GetServiceIconPath(string serviceName)
+    public static string GetServiceIconSource(string? serviceName, string? fallbackText = null)
     {
-        if (string.IsNullOrWhiteSpace(serviceName))
-            serviceName = "default";
+        string key = BuildLookupValue(serviceName, fallbackText);
 
-        string iconsDirectory = GetIconsDirectory();
-        Directory.CreateDirectory(iconsDirectory);
+        foreach (var knownIcon in KnownIcons)
+        {
+            if (key.Contains(knownIcon.Key, StringComparison.OrdinalIgnoreCase))
+                return knownIcon.Value;
+        }
 
-        string fileName = $"{SanitizeFileName(serviceName)}.png";
-        string fullPath = Path.Combine(iconsDirectory, fileName);
-
-        if (!File.Exists(fullPath))
-            SaveServiceImage(serviceName, fullPath);
-
-        return BuildWebRelativePath("service-icons", fileName);
+        string displayText = GetDisplayLetters(string.IsNullOrWhiteSpace(serviceName) ? fallbackText ?? "?" : serviceName);
+        byte[] imageBytes = GenerateServiceImage(displayText, key, 200, 200);
+        return $"data:image/png;base64,{Convert.ToBase64String(imageBytes)}";
     }
 
-    public static (string IconPath, string Color1, string Color2) GetServiceIconWithColors(string serviceName)
+    public static (string IconPath, string Color1, string Color2) GetServiceIconWithColors(string? serviceName, string? fallbackText = null)
     {
-        var (color1, color2) = GenerateContrastingColors(serviceName);
-        string iconPath = GetServiceIconPath(serviceName);
+        string key = BuildLookupValue(serviceName, fallbackText);
+        var (color1, color2) = GenerateContrastingColors(key);
+        string iconPath = GetServiceIconSource(serviceName, fallbackText);
         return (iconPath, ColorToHex(color1), ColorToHex(color2));
     }
 
-    private static byte[] GenerateServiceImage(string serviceName, int width = 200, int height = 200)
+    private static byte[] GenerateServiceImage(string displayText, string colorSeed, int width, int height)
     {
-        if (string.IsNullOrWhiteSpace(serviceName))
-            serviceName = "?";
-
-        string displayText = GetDisplayLetters(serviceName);
-        var (color1, color2) = GenerateContrastingColors(serviceName);
-
+        var (color1, color2) = GenerateContrastingColors(colorSeed);
         var imageInfo = new SKImageInfo(width, height);
+
         using var surface = SKSurface.Create(imageInfo);
         var canvas = surface.Canvas;
 
@@ -54,14 +58,13 @@ public class ServiceImageGenerator
             Shader = SKShader.CreateLinearGradient(
                 new SKPoint(0, 0),
                 new SKPoint(width, height),
-                new[] { color1, color2 },
+                [color1, color2],
                 null,
                 SKShaderTileMode.Clamp)
         };
 
         canvas.Clear(SKColors.Transparent);
-        canvas.DrawRect(new SKRect(0, 0, width, height), backgroundPaint);
-
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(0, 0, width, height), 48, 48), backgroundPaint);
         DrawTextCentered(canvas, displayText, width, height);
 
         using var image = surface.Snapshot();
@@ -69,15 +72,28 @@ public class ServiceImageGenerator
         return data.ToArray();
     }
 
-    private static string GetDisplayLetters(string text)
+    private static string GetDisplayLetters(string? text)
     {
-        string normalized = new string(text.Trim().Where(char.IsLetterOrDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(text))
+            return "?";
 
+        var parts = text
+            .Split([' ', '-', '_', '.', '@'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => new string(part.Where(char.IsLetterOrDigit).ToArray()))
+            .Where(part => !string.IsNullOrWhiteSpace(part))
+            .ToArray();
+
+        if (parts.Length >= 2)
+            return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[1][0])}";
+
+        string normalized = parts.FirstOrDefault() ?? new string(text.Where(char.IsLetterOrDigit).ToArray());
         if (string.IsNullOrWhiteSpace(normalized))
             return "?";
 
-        char firstSymbol = normalized[0];
-        return char.ToUpperInvariant(firstSymbol).ToString();
+        return new string(normalized
+            .Take(2)
+            .Select(char.ToUpperInvariant)
+            .ToArray());
     }
 
     private static (SKColor, SKColor) GenerateContrastingColors(string input)
@@ -85,23 +101,20 @@ public class ServiceImageGenerator
         if (string.IsNullOrWhiteSpace(input))
             input = "default";
 
-        int hash = input.Aggregate(0, (acc, c) => acc * 31 + c);
+        int hash = input.Aggregate(17, (acc, c) => unchecked(acc * 31 + c));
         float baseHue = Math.Abs(hash % 360);
-        float secondHue = (baseHue + 180) % 360;
+        float secondHue = (baseHue + 46 + Math.Abs(hash % 90)) % 360;
 
-        var color1 = SKColor.FromHsv(baseHue, 85, 85);
-        var color2 = SKColor.FromHsv(secondHue, 90, 75);
+        var color1 = SKColor.FromHsv(baseHue, 72, 88);
+        var color2 = SKColor.FromHsv(secondHue, 88, 70);
         return (color1, color2);
-    }
-
-    private static string ColorToHex(SKColor color)
-    {
-        return $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
     }
 
     private static void DrawTextCentered(SKCanvas canvas, string text, int width, int height)
     {
-        int fontSize = (int)(Math.Min(width, height) * 0.62f);
+        int fontSize = text.Length > 1
+            ? (int)(Math.Min(width, height) * 0.34f)
+            : (int)(Math.Min(width, height) * 0.52f);
 
         using var font = new SKFont(GetPreferredTypeface(), fontSize);
         using var textPaint = new SKPaint
@@ -113,27 +126,26 @@ public class ServiceImageGenerator
 
         SKRect bounds = default;
         float textWidth = font.MeasureText(text, out bounds, textPaint);
-
         float x = (width - textWidth) / 2f;
         float y = (height - bounds.Height) / 2f - bounds.Top;
+
         canvas.DrawText(text, x, y, font, textPaint);
     }
 
-    private static string GetIconsDirectory()
+    private static string BuildLookupValue(string? serviceName, string? fallbackText)
     {
-#if ANDROID || IOS
-        return Path.Combine(FileSystem.AppDataDirectory, "service-icons");
-#else
-        return Path.Combine(AppContext.BaseDirectory, "wwwroot", "service-icons");
-#endif
+        if (!string.IsNullOrWhiteSpace(serviceName))
+            return serviceName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(fallbackText))
+            return fallbackText.Trim();
+
+        return "default";
     }
 
-    private static string SanitizeFileName(string fileName)
+    private static string ColorToHex(SKColor color)
     {
-        foreach (char c in Path.GetInvalidFileNameChars())
-            fileName = fileName.Replace(c, '_');
-
-        return fileName;
+        return $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
     }
 
     private static SKTypeface GetPreferredTypeface()
@@ -142,13 +154,5 @@ public class ServiceImageGenerator
             ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
             ?? SKTypeface.FromFamilyName("Roboto", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
             ?? SKTypeface.Default;
-    }
-
-    private static string BuildWebRelativePath(params string[] segments)
-    {
-        string normalizedPath = string.Join('/',
-            segments.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim().Replace('\\', '/').Trim('/')));
-
-        return $"/{normalizedPath}";
     }
 }

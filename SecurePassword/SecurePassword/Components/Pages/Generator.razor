@@ -1,84 +1,72 @@
 @page "/generator"
-@using SecurePassword;
 
-<!-- Страница генератора паролей -->
 <div class="screen">
-    <!-- Top app bar -->
     <header class="appbar">
         <h1 class="appbar-title">Генератор паролей</h1>
     </header>
 
-    <!-- Content -->
     <main class="content">
         <div class="generator-container">
-            <!-- Текстовый блок с паролем -->
             <div class="password-display-area">
                 <div class="password-display" @onclick="CopyPassword" id="generatedPassword">@generatedPassword</div>
-                
-                <!-- Кнопка генерации -->
-                <button class="btn-generate" @onclick="_GeneratePassword">
-                    <img src="icons/generator.svg" alt="Сгенерировать" />
+
+                <button class="btn-generate" @onclick="GeneratePasswordValue">
+                    <img src="/icons/generator.svg" alt="Сгенерировать" />
                     <span>Сгенерировать</span>
                 </button>
             </div>
 
-            <!-- Набор галочек -->
             <div class="options-section">
                 <h3>Настройки пароля</h3>
-                
-                <!-- Длина пароля -->
+
                 <div class="form-group">
-                    <label for="passwordLength">Длина пароля:</label>
-                    <input type="number" id="passwordLength" class="form-control" @bind="passwordLength" @bind:event="oninput" min="4" max="255" />
+                    <label for="passwordLength">Длина пароля</label>
+                    <input type="number" id="passwordLength" class="form-control" @bind="PasswordLength" @bind:event="oninput" min="4" max="255" />
                 </div>
 
-                <!-- Цифры -->
-                 <div class="checkbox-item">
+                <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeDigits" @onclick="setSymbolsType" />
+                        <input type="checkbox" @bind="includeDigits" @onclick="ResetPasswordPreview" />
                         <span class="checkbox-text">Цифры (0-9)</span>
                     </label>
                 </div>
 
-                <!-- Буквы латинского алфавита (2 галочки) -->
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeLowercase" @onclick="setSymbolsType" />
+                        <input type="checkbox" @bind="includeLowercase" @onclick="ResetPasswordPreview" />
                         <span class="checkbox-text">Строчные буквы (a-z)</span>
                     </label>
                 </div>
 
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeUppercase" @onclick="setSymbolsType" />
+                        <input type="checkbox" @bind="includeUppercase" @onclick="ResetPasswordPreview" />
                         <span class="checkbox-text">Прописные буквы (A-Z)</span>
                     </label>
                 </div>
 
-                <!-- Специальные символы -->
                 <div class="checkbox-item">
                     <label class="checkbox-label">
-                        <input type="checkbox" @bind="includeSpecial" @onclick="setSymbolsType" />
+                        <input type="checkbox" @bind="includeSpecial" @onclick="ResetPasswordPreview" />
                         <span class="checkbox-text">Специальные символы (!&#64;#$%^&*)</span>
                     </label>
                 </div>
             </div>
 
-            <!-- Информация о силе пароля -->
-            @if (generatedPassword != "Нажмите кнопку для генерации" && generatedPassword != "Должен быть выбран хотя бы один тип символов")
+            @if (HasEvaluatedPassword)
             {
                 <div class="password-strength">
                     <h3>Сила пароля</h3>
                     <div class="strength-meter">
-                        <div class="strength-bar @GetStrengthClass()"
-                             style="width: @GetStrengthPercentage()%;"></div>
+                        <div class="strength-bar @GetStrengthClass()" style="width: @GetStrengthPercentage()%;"></div>
                     </div>
                     <div class="strength-text">@GetStrengthText()</div>
                     <div class="strength-details">
-                        <small>Активных опций: @GetActiveOptionsCount() из 4</small>
+                        <small>Энтропия: @GetEntropyBits() бит • Активных опций: @GetActiveOptionsCount() из 4</small>
                     </div>
                 </div>
             }
+
             @if (copied)
             {
                 <div class="copy-toast">
@@ -86,103 +74,108 @@
                     <span class="copy-toast-text">Пароль скопирован</span>
                 </div>
             }
-
         </div>
     </main>
-
 </div>
 
 @code {
-    // Поле для отображения сгенерированного пароля
-    private string generatedPassword = "Нажмите кнопку для генерации";
-    // Длина пароля
-    private byte passwordLength = 12;
-    // Набор галочек 
-    private bool includeDigits = true;      // Цифры
-    private bool includeLowercase = true;   // Строчные буквы
-    private bool includeUppercase = true;   // Прописные буквы
-    private bool includeSpecial = false;    // Специальные символы
+    private const string InitialMessage = "Нажмите кнопку для генерации";
+    private const string ValidationMessage = "Должен быть выбран хотя бы один тип символов";
 
-    // Копирование
+    private string generatedPassword = InitialMessage;
+    private byte passwordLength = 12;
+    private bool includeDigits = true;
+    private bool includeLowercase = true;
+    private bool includeUppercase = true;
+    private bool includeSpecial;
     private bool copied;
 
     public int PasswordLength
     {
         get => passwordLength;
-        set => passwordLength = Math.Clamp((byte)value, (byte)4, (byte)255);
+        set => passwordLength = (byte)Math.Clamp(value, 4, 255);
     }
 
-    // Кнопка генерации 
-    private void _GeneratePassword()
+    private bool HasEvaluatedPassword =>
+        !string.IsNullOrWhiteSpace(generatedPassword) &&
+        generatedPassword != InitialMessage &&
+        generatedPassword != ValidationMessage;
+
+    private void GeneratePasswordValue()
     {
         try
         {
-            generatedPassword = PasswordGenerator.GeneratePassword(includeLowercase, includeUppercase, includeDigits, includeSpecial, passwordLength).ToString();
+            generatedPassword = PasswordGenerator.GeneratePassword(
+                includeLowercase,
+                includeUppercase,
+                includeDigits,
+                includeSpecial,
+                passwordLength);
         }
-        catch (ArgumentException e)
+        catch (ArgumentException exception)
         {
-            generatedPassword = e.Message;
+            generatedPassword = exception.Message.Replace("\n", " ");
         }
     }
 
     private async Task CopyPassword()
     {
-        if (!string.IsNullOrEmpty(generatedPassword) &&
-            generatedPassword != "Нажмите кнопку для генерации" &&
-            generatedPassword != "Должен быть выбран хотя бы один тип символов")
-        {
-            await Clipboard.SetTextAsync(generatedPassword);
-            copied = true;
-            StateHasChanged();
+        if (!HasEvaluatedPassword)
+            return;
 
-            await Task.Delay(1500);
+        await Clipboard.SetTextAsync(generatedPassword);
+        copied = true;
+        StateHasChanged();
 
-            copied = false;
-            StateHasChanged();
-        }
+        await Task.Delay(1500);
+
+        copied = false;
+        StateHasChanged();
     }
 
-    // Подсчет количества активных опций
     private int GetActiveOptionsCount()
     {
-        int number = Convert.ToInt16(includeDigits) + Convert.ToInt16(includeLowercase) + Convert.ToInt16(includeUppercase) + Convert.ToInt16(includeSpecial);
-        return number;
+        return Convert.ToInt32(includeDigits) +
+            Convert.ToInt32(includeLowercase) +
+            Convert.ToInt32(includeUppercase) +
+            Convert.ToInt32(includeSpecial);
     }
 
     private string GetStrengthClass()
     {
-        int active = GetActiveOptionsCount();
-
-        if (active <= 1) return "strength-weak";
-        if (active <= 3) return "strength-medium";
-        return "strength-strong";
+        return PasswordValidator.CalculateCryptographicStrength(generatedPassword) switch
+        {
+            1 => "strength-weak",
+            2 => "strength-medium",
+            3 => "strength-strong",
+            _ => "strength-strong"
+        };
     }
 
-    // Получение процента для прогресс-бара
     private int GetStrengthPercentage()
     {
-        int percentage = GetActiveOptionsCount();
-        return percentage*25;
+        return PasswordValidator.CalculateStrengthPercentage(generatedPassword);
     }
 
-    private void setSymbolsType()
+    private void ResetPasswordPreview()
     {
-        generatedPassword = "Нажмите кнопку для генерации";
+        generatedPassword = InitialMessage;
     }
 
-    // Получение текстового описания силы пароля
     private string GetStrengthText()
     {
-        int active = GetActiveOptionsCount();
-
-        return active switch
+        return PasswordValidator.CalculateCryptographicStrength(generatedPassword) switch
         {
-            0 => "Включите хотя бы одну опцию",
             1 => "Слабый",
             2 => "Нормальный",
             3 => "Хороший",
             4 => "Отличный",
-            _ => ""
+            _ => "Недостаточно данных"
         };
+    }
+
+    private string GetEntropyBits()
+    {
+        return PasswordValidator.CalculateEntropyBits(generatedPassword).ToString("0.#");
     }
 }

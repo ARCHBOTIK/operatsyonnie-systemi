@@ -1,102 +1,109 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
+namespace SecurePassword;
 
-namespace SecurePassword.SQL_Rus_.NetworkProtocols
+public sealed class TcpServer
 {
-    internal class TcpServer
+    private TcpListener? _listener;
+    private CancellationTokenSource? _cts;
+    private bool _isRunning;
+
+    private long _sentPackets;
+    private long _receivedPackets;
+
+    public long SentPackets => Interlocked.Read(ref _sentPackets);
+    public long ReceivedPackets => Interlocked.Read(ref _receivedPackets);
+    public bool IsRunning => _isRunning;
+
+    public event Action<byte[]>? DataReceived;
+    public event Action? ClientConnected;
+    public event Action? ClientDisconnected;
+
+    public Task StartAsync(string ip, int port)
     {
-        private TcpListener _listener;
-        private CancellationTokenSource _cts;
-        private TcpClient _client;
-        public long SentPackets => Interlocked.Read(ref _sentPackets);
-        public long ReceivedPackets => Interlocked.Read(ref _receivedPackets);
-
-        private long _sentPackets;
-        private long _receivedPackets;
-        public event Action<byte[]> DataReceived;
-        public event Action ClientConnected;
-        public event Action ClientDisconnected;
-        private bool _isRunning;
-        public bool IsRunning => _isRunning;
-
-        public Task StartAsync(string ip, int port)
-        {
-            if (_isRunning) return Task.CompletedTask;
-            _cts = new CancellationTokenSource();
-            _listener = new TcpListener(IPAddress.Parse(ip), port);
-            _listener.Start();
-            _isRunning = true;
-            _ = AcceptLoop(_cts.Token);
+        if (_isRunning)
             return Task.CompletedTask;
-        }
 
-        public void Stop()
-        {
-            if (!_isRunning) return;
-            _isRunning = false;
-            _cts?.Cancel();
-            try
-            {
-                _listener?.Stop();
-            }
-            catch { }
-            try
-            {
-                _client.Close();
-            }
-            catch { }
+        _cts = new CancellationTokenSource();
+        _listener = new TcpListener(IPAddress.Parse(ip), port);
+        _listener.Start();
+        _isRunning = true;
+        _ = AcceptLoopAsync(_cts.Token);
+
+        return Task.CompletedTask;
+    }
+
+    public void Stop()
+    {
+        if (!_isRunning)
             return;
-        }
 
-        private async Task AcceptLoop(CancellationToken token)
+        _isRunning = false;
+        _cts?.Cancel();
+
+        try
         {
-            var listener = _listener;
+            _listener?.Stop();
+        }
+        catch
+        {
+        }
+    }
+
+    public async Task SendAsync(TcpClient client, byte[] data, CancellationToken token = default)
+    {
+        using var stream = client.GetStream();
+        await PacketProtocol.WritePacketAsync(stream, data, token);
+        Interlocked.Increment(ref _sentPackets);
+    }
+
+    private async Task AcceptLoopAsync(CancellationToken token)
+    {
+        if (_listener is null)
+            return;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var client = await _listener.AcceptTcpClientAsync(token);
+                ClientConnected?.Invoke();
+                _ = ReceiveLoopAsync(client, token);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task ReceiveLoopAsync(TcpClient client, CancellationToken token)
+    {
+        try
+        {
+            using var stream = client.GetStream();
+
+            while (!token.IsCancellationRequested)
+            {
+                byte[] data = await PacketProtocol.ReadPacketAsync(stream, token);
+                Interlocked.Increment(ref _receivedPackets);
+                DataReceived?.Invoke(data);
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
             try
             {
-                while (!token.IsCancellationRequested)
-                {
-                    var client = await listener.AcceptTcpClientAsync();
-                    ClientConnected?.Invoke();
-                    _ = ReceiveLoop(client, token);
-                }
+                client.Close();
             }
-            catch { }
-
-        }
-
-        private async Task ReceiveLoop(System.Net.Sockets.TcpClient client, CancellationToken token)
-        {
-            var stream = client.GetStream();
-            try
+            catch
             {
-                while(!token.IsCancellationRequested)
-                {
-                    byte[] lengthBytes = await PacketProtocol.ReadExactAsync(stream, 4, token);
-                    int length = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(lengthBytes, 0));
-                    if (length <= 0 || length > PacketProtocol.MAX_DATA_LENGTH) throw new Exception("Invalid packet size!");
-                    byte[] data = await PacketProtocol.ReadExactAsync(stream, length, token);
-                    Interlocked.Increment(ref _receivedPackets);
-                    DataReceived?.Invoke(data);
-                }
             }
-            catch { }
-            client.Close();
-            ClientDisconnected.Invoke();
-        }
 
-        public async Task SendAsync(System.Net.Sockets.TcpClient client, byte[] data)
-        {
-            var stream = client.GetStream();
-            int length = IPAddress.HostToNetworkOrder(data.Length);
-            byte[] lengthBytes = BitConverter.GetBytes(length);
-            await stream.WriteAsync(lengthBytes, 0, 4);
-            await stream.WriteAsync(data, 0, data.Length);
-            Interlocked.Increment(ref _sentPackets);
+            ClientDisconnected?.Invoke();
         }
     }
 }

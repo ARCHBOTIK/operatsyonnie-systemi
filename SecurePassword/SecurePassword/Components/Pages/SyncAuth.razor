@@ -1,391 +1,203 @@
-@using System.Timers
-@inject IJSRuntime JS
 @page "/syncauth"
+@inject TcpBridge SyncBridge
+@inject NavigationManager Navigation
+@inject MasterPasswordPage MasterPasswordPage
 
-<!-- Если не авторизован - окно входа -->
-@if (!isAuthenticated)
-{
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h2>Демо-доступ к синхронизации</h2>
-                <p class="subtitle">Экран работает в демо-режиме. Реальная локальная синхронизация будет добавлена позже.</p>
-            </div>
-            
-            <div class="form-group">
-                <label>Мастер-пароль</label>
-                <input type="password" class="form-control" @bind="masterPassword" 
-                       placeholder="Введите пароль" @onkeypress="OnPasswordKeyPress" />
-            </div>
-            
-            @if (passwordError)
-            {
-                <div class="error-message">
-                    <span>⚠️</span> Неверный демо-пароль.
+<div class="screen sync-page">
+    <header class="appbar">
+        <h1 class="appbar-title">Обмен</h1>
+    </header>
+
+    <main class="content">
+        <div class="sync-auth-container">
+            <div class="sync-auth-card">
+                <div class="sync-auth-header">
+                    <h2>Перенос базы между устройствами</h2>
+                    <p class="subtitle">Выберите действие и следуйте подсказкам на обоих устройствах.</p>
                 </div>
-            }
-            
-            <button class="btn-primary login-btn" @onclick="VerifyPassword">Войти</button>
-        </div>
-    </div>
-}
 
-<!-- Если авторизован - интерфейс синхронизации -->
-@if (isAuthenticated)
-{
-    <div class="sync-auth-container">
-        <div class="sync-auth-card">
-            <div class="sync-auth-header">
-                <h2>Синхронизация данных</h2>
-                <p class="subtitle">Демо-режим: обмен по локальной сети пока не выполняется</p>
-            </div>
-
-            <div class="demo-notice">
-                Функция находится в разработке. Ни один файл не отправляется и не принимается.
-            </div>
-
-            <!-- Кнопка демонстрации пользовательского сценария -->
-            <button class="sync-button primary" @onclick="OpenSyncPasswordDialog">
-                <span class="sync-icon">🔄</span>
-                <span>Открыть демо-сценарий</span>
-            </button>
-
-            <!-- Модальное окно ввода мастер-пароля перед синхронизацией -->
-            @if (showSyncPasswordDialog)
-            {
-                <div class="modal-overlay" @onclick="CloseSyncPasswordDialog">
-                    <div class="modal-container" @onclick:stopPropagation="true">
-                        <div class="modal-header">
-                            <h3>Подтверждение демо-доступа</h3>
-                            <button class="close-btn" @onclick="CloseSyncPasswordDialog">✕</button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label>Введите демо-пароль</label>
-                                <input type="password" class="form-control" @bind="syncPassword" 
-                                       placeholder="Введите пароль" @onkeypress="OnSyncPasswordKeyPress" />
-                            </div>
-                            @if (syncPasswordError)
-                            {
-                                <div class="error-message">
-                                    <span>⚠️</span> Неверный демо-пароль.
-                                </div>
-                            }
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn-primary" @onclick="VerifySyncPassword">Подтвердить</button>
-                            <button class="btn-secondary" @onclick="CloseSyncPasswordDialog">Отмена</button>
-                        </div>
-                    </div>
-                </div>
-            }
-
-            <!-- Блок выбора файлов после подтверждения пароля -->
-            @if (showFileSelection)
-            {
-                <div class="sync-files-section">
-                    <div class="section-header">
-                        <h3>Выберите файлы для демо-сценария</h3>
-                    </div>
-
-                    <!-- Checkbox для выбора всех файлов -->
-                    <div class="checkbox-item select-all">
-                        <label class="checkbox-label">
-                            <input type="checkbox" @bind="selectAll" @bind:event="onchange" />
-                            <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Выбрать все файлы</span>
-                        </label>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <!-- Три checkbox для конкретных файлов -->
-                    <div class="checkbox-item">
-                        <label class="checkbox-label">
-                            <input type="checkbox" @bind="selectedPasswords" />
-                            <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Пароли (passwords.dat)</span>
-                        </label>
-                    </div>
-
-                    <div class="checkbox-item">
-                        <label class="checkbox-label">
-                            <input type="checkbox" @bind="selectedCards" />
-                            <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Банковские карты (cards.dat)</span>
-                        </label>
-                    </div>
-
-                    <div class="checkbox-item">
-                        <label class="checkbox-label">
-                            <input type="checkbox" @bind="selectedNotes" />
-                            <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Заметки (notes.dat)</span>
-                        </label>
-                    </div>
-
-                    <!-- Кнопка запуска демо -->
-                    <button class="sync-button success" @onclick="ShowWarning" disabled="@(!CanSync())">
-                        <span>Показать демо-статус</span>
+                <div class="sync-actions mode-buttons">
+                    <button class="sync-button @(selectedMode == SyncTransferMode.Upload ? "primary" : "secondary")" @onclick="@(() => SelectMode(SyncTransferMode.Upload))">
+                        Передать базу
+                    </button>
+                    <button class="sync-button @(selectedMode == SyncTransferMode.Download ? "primary" : "secondary")" @onclick="@(() => SelectMode(SyncTransferMode.Download))">
+                        Принять базу
                     </button>
                 </div>
-            }
 
-            <!-- Предупреждение перед синхронизацией -->
-            @if (showWarning)
-            {
-                <div class="warning-box">
-                    <div class="warning-icon">⚠️</div>
-                    <div class="warning-text">
-                        <strong>Демо-режим</strong>
-                        <p>Реальная синхронизация и замена данных не выполняются.</p>
-                    </div>
-                    <div class="warning-buttons">
-                        <button class="btn-warning-confirm" @onclick="StartSync">Показать демо</button>
-                        <button class="btn-warning-cancel" @onclick="CancelWarning">Отмена</button>
-                    </div>
-                </div>
-            }
-
-            <!-- Полоса состояния синхронизации -->
-            @if (isSyncing)
-            {
-                <div class="sync-progress">
-                    <div class="progress-header">
-                        <span>Демо-режим...</span>
-                        <span class="progress-percent">@syncProgress%</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: @syncProgress%"></div>
-                    </div>
-                    <div class="progress-speed">
-                        Реальная передача файлов не выполняется
-                    </div>
-                </div>
-            }
-
-            <!-- Результат синхронизации -->
-            @if (syncResult != null)
-            {
-                <div class="sync-result @(syncResult.IsSuccess ? "success" : "error")">
-                    @if (syncResult.IsSuccess)
+                <div class="sync-card">
+                    @if (selectedMode == SyncTransferMode.Upload)
                     {
-                        <span>✅</span>
-                        <span>@syncResult.Message</span>
+                        <div class="form-group">
+                            <label>Адрес устройства-получателя</label>
+                            <input type="text" class="form-control" @bind="peerAddress" placeholder="Например: 192.168.0.15" />
+                        </div>
+
+                        @if (!hasTransferableVault)
+                        {
+                            <div class="sync-result warning">
+                                <span>•</span>
+                                <span>На этом устройстве пока нет готовой базы для передачи.</span>
+                            </div>
+                        }
                     }
                     else
                     {
-                        <span>❌</span>
-                        <span>@syncResult.Message</span>
+                        <div class="sync-info-box">
+                            <p>@addressHint</p>
+                        </div>
+
+                        @if (hasLocalVault)
+                        {
+                            <div class="sync-result warning">
+                                <span>•</span>
+                                <span>Локальная база будет заменена принятой копией. После импорта приложение запросит повторный вход.</span>
+                            </div>
+                        }
                     }
+
+                    @if (!string.IsNullOrWhiteSpace(validationError))
+                    {
+                        <div class="sync-result error">
+                            <span>✖</span>
+                            <span>@validationError</span>
+                        </div>
+                    }
+
+                    @if (syncResult is not null)
+                    {
+                        <div class="sync-result @(syncResult.Success ? "success" : syncResult.Cancelled ? "warning" : "error")">
+                            <span>@(syncResult.Success ? "✓" : syncResult.Cancelled ? "•" : "✖")</span>
+                            <span>@syncResult.Message</span>
+                        </div>
+                    }
+
+                    @if (isSyncing)
+                    {
+                        <div class="sync-progress">
+                            <div class="progress-header">
+                                <span>@progressTitle</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: @progressPercent%"></div>
+                            </div>
+                            <div class="progress-speed">Операцию можно отменить в любой момент.</div>
+                        </div>
+                    }
+
+                    <div class="sync-actions">
+                        <button class="sync-button primary" @onclick="StartSyncAsync" disabled="@isSyncing">
+                            @(selectedMode == SyncTransferMode.Upload ? "Передать базу" : "Принять базу")
+                        </button>
+
+                        @if (isSyncing)
+                        {
+                            <button class="sync-button secondary" @onclick="CancelSync">Отменить</button>
+                        }
+                    </div>
                 </div>
-            }
+            </div>
         </div>
-    </div>
-}
+    </main>
+</div>
 
 @code {
-    // Состояния авторизации
-    private bool passwordError = false;
-    private bool isAuthenticated = false;
-    private string masterPassword = "";
-    
-    // Состояния демо-сценария
-    private bool showSyncPasswordDialog = false;
-    private bool syncPasswordError = false;
-    private string syncPassword = "";
-    private bool showFileSelection = false;
-    
-    // Выбор файлов
-    private bool selectAll = false;
-    private bool selectedPasswords = true;
-    private bool selectedCards = true;
-    private bool selectedNotes = true;
-    
-    // Демо синхронизации
-    private bool showWarning = false;
-    private bool isSyncing = false;
-    private int syncProgress = 0;
-    private string syncSpeed = "0.00";
-    private Timer? syncTimer;
-    private SyncResultModel? syncResult;
-    
-    // Временный демо-пароль для макета экрана
-    private const string ValidMasterPassword = "12345678";
+    private string peerAddress = string.Empty;
+    private string validationError = string.Empty;
+    private string addressHint = string.Empty;
+    private string progressTitle = "Подготовка...";
+    private SyncTransferMode selectedMode;
+    private SyncOperationResult? syncResult;
+    private CancellationTokenSource? syncCancellation;
+    private bool isSyncing;
+    private bool hasTransferableVault;
+    private bool hasLocalVault;
+    private int progressPercent;
 
-    // Методы входа
-
-    private void OnPasswordKeyPress(KeyboardEventArgs e)
+    protected override void OnInitialized()
     {
-        if (e.Key == "Enter")
-        {
-            VerifyPassword();
-        }
+        selectedMode = SyncBridge.GetPreferredMode();
+        RefreshState();
     }
 
-    private void VerifyPassword()
+    private void RefreshState()
     {
-        // Проверка длины демо-пароля
-        if (masterPassword.Length < 8)
-        {
-            passwordError = true;
-            JS.InvokeVoidAsync("alert", "Демо-пароль должен содержать минимум 8 символов.");
-            return;
-        }
-        
-        // Временная проверка для демо-экрана
-        if (masterPassword == ValidMasterPassword)
-        {
-            isAuthenticated = true;
-            passwordError = false;
-            masterPassword = "";
-        }
-        else
-        {
-            passwordError = true;
-            BlockScreen();
-        }
+        hasTransferableVault = SyncBridge.HasTransferableVault();
+        hasLocalVault = SyncBridge.LocalVaultExists();
+        addressHint = SyncBridge.GetPeerAddressHint();
+        validationError = string.Empty;
     }
 
-    private async void BlockScreen()
+    private void SelectMode(SyncTransferMode mode)
     {
-        // Демо-блокировка экрана на 30 секунд при неверном пароле
-        await JS.InvokeVoidAsync("alert", "Неверный демо-пароль. Доступ к демо-экрану заблокирован на 30 секунд.");
-        
-        // Блокируем кнопки
-        await JS.InvokeVoidAsync("document.querySelectorAll('button').forEach(b => b.disabled = true)");
-        
-        await Task.Delay(30000);
-        
-        // Разблокируем
-        await JS.InvokeVoidAsync("document.querySelectorAll('button').forEach(b => b.disabled = false)");
-        passwordError = false;
-    }
-
-    // Методы для демо-подтверждения
-
-    private void OpenSyncPasswordDialog()
-    {
-        showSyncPasswordDialog = true;
-        syncPasswordError = false;
-        syncPassword = "";
-    }
-
-    private void CloseSyncPasswordDialog()
-    {
-        showSyncPasswordDialog = false;
-        syncPasswordError = false;
-        syncPassword = "";
-    }
-
-    private void OnSyncPasswordKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            VerifySyncPassword();
-        }
-    }
-
-    private void VerifySyncPassword()
-    {
-        // Проверка демо-пароля перед показом сценария
-        if (syncPassword == ValidMasterPassword)
-        {
-            showSyncPasswordDialog = false;
-            syncPasswordError = false;
-            showFileSelection = true;
-        }
-        else
-        {
-            syncPasswordError = true;
-        }
-    }
-
-    // Методы выбора файлов
-
-    private bool CanSync()
-    {
-        return (selectedPasswords || selectedCards || selectedNotes) && !isSyncing;
-    }
-
-    // Методы предупреждения
-
-    private void ShowWarning()
-    {
-        if (!CanSync()) return;
-        showWarning = true;
-    }
-
-    private void CancelWarning()
-    {
-        showWarning = false;
-    }
-
-    // Методы демо-сценария
-
-    private async void StartSync()
-    {
-        showWarning = false;
-        isSyncing = true;
-        syncProgress = 0;
+        selectedMode = mode;
+        validationError = string.Empty;
         syncResult = null;
-        
-        // Имитация прогресса без обмена данными
-        syncTimer = new Timer(100);
-        syncTimer.Elapsed += async (sender, e) =>
+        RefreshState();
+    }
+
+    private async Task StartSyncAsync()
+    {
+        validationError = string.Empty;
+        syncResult = null;
+        RefreshState();
+
+        if (selectedMode == SyncTransferMode.Upload)
         {
-            await InvokeAsync(() =>
+            if (!hasTransferableVault)
             {
-                if (syncProgress < 100)
-                {
-                    // Обновление демо-прогресса
-                    syncProgress += 10;
-                    if (syncProgress > 100) syncProgress = 100;
-                    
-                    syncSpeed = GetFileSendSpeed().ToString("F2");
-                    StateHasChanged();
-                }
-                else
-                {
-                    syncTimer.Stop();
-                    isSyncing = false;
-                    syncResult = new SyncResultModel
-                    {
-                        IsSuccess = true,
-                        Message = "Демо завершено: реального обмена файлами не было. Локальная синхронизация будет добавлена позже."
-                    };
-                    StateHasChanged();
-                }
-            });
-        };
-        syncTimer.Start();
-        
-        await Task.CompletedTask;
-    }
+                validationError = "На этом устройстве нет базы для передачи.";
+                return;
+            }
 
-    // Демо-значение для прежней полосы состояния
-    private double GetFileSendSpeed()
-    {
-               
-        // Временная реализация
-        Random rand = new Random();
-        return 0.5 + rand.NextDouble() * 5;
-    }
-
-    private class SyncResultModel
-    {
-        public bool IsSuccess { get; set; }
-        public string Message { get; set; } = "";
-    }
-
-    // Слежение за изменением selectAll
-    protected override void OnParametersSet()
-    {
-        if (selectAll)
-        {
-            selectedPasswords = true;
-            selectedCards = true;
-            selectedNotes = true;
+            if (string.IsNullOrWhiteSpace(peerAddress))
+            {
+                validationError = "Введите адрес устройства-получателя.";
+                return;
+            }
         }
+
+        isSyncing = true;
+        progressPercent = 20;
+        progressTitle = selectedMode == SyncTransferMode.Upload
+            ? "Подключаемся к устройству-получателю..."
+            : "Ожидаем подключение второго устройства...";
+        syncCancellation = new CancellationTokenSource();
+
+        try
+        {
+            progressPercent = 55;
+            syncResult = selectedMode == SyncTransferMode.Upload
+                ? await SyncBridge.SendVaultToPeerAsync(peerAddress.Trim(), syncCancellation.Token)
+                : await SyncBridge.ReceiveVaultFromPeerAsync(syncCancellation.Token);
+
+            progressPercent = syncResult.Success ? 100 : progressPercent;
+
+            if (syncResult.Success && selectedMode == SyncTransferMode.Download)
+            {
+                MasterPasswordPage.PrepareForLock();
+                Navigation.NavigateTo("/");
+            }
+        }
+        finally
+        {
+            isSyncing = false;
+            syncCancellation?.Dispose();
+            syncCancellation = null;
+            RefreshState();
+        }
+    }
+
+    private void CancelSync()
+    {
+        syncCancellation?.Cancel();
+        syncResult = new SyncOperationResult
+        {
+            Cancelled = true,
+            Mode = selectedMode,
+            Message = "Операция отменена пользователем."
+        };
+        isSyncing = false;
+        progressPercent = 0;
     }
 }
