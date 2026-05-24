@@ -1,11 +1,11 @@
 namespace SecurePassword;
 
-internal class FileWorker //Класс, который нужен для удобства работы с JSON файлами
+internal class FileWorker
 {
-    public static byte[] readFile(string fileName) //Функция для чтения данных из файла в байтовый массив
+    public static byte[] readFile(string fileName)
     {
-        string path = FileSystem.AppDataDirectory; //Начинаем формировать абсолютный путь
-        Directory.CreateDirectory(path); //Гарантируем, что в случае, если файла нет (например, первый запуск), он сформируется
+        string path = FileSystem.AppDataDirectory;
+        Directory.CreateDirectory(path);
         path = Path.Combine(path, fileName);
         byte[] bytes = File.ReadAllBytes(path);
         return bytes;

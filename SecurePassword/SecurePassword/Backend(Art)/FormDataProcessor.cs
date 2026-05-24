@@ -63,10 +63,10 @@ namespace SecurePassword
             {
                 var repository = GetRepository<T>(filename);
                 repository.Add(record);
-                repository.Save(); // РЎРѕС…СЂР°РЅСЏРµРј СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РґРѕР±Р°РІР»РµРЅРёСЏ
+                repository.Save();
                 return true;
             }
-            catch (InvalidOperationException ex) // Р­Р»РµРјРµРЅС‚ СЃ С‚Р°РєРёРј ID СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
+            catch (InvalidOperationException ex)
             {
                 Console.WriteLine($"РћС€РёР±РєР°: {ex.Message}");
                 return false;
@@ -84,10 +84,10 @@ namespace SecurePassword
             {
                 var repository = GetRepository<T>(filename);
                 repository.Update(record);
-                repository.Save(); // РЎРѕС…СЂР°РЅСЏРµРј РїРѕСЃР»Рµ РѕР±РЅРѕРІР»РµРЅРёСЏ
+                repository.Save();
                 return true;
             }
-            catch (KeyNotFoundException ex) // Р­Р»РµРјРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ
+            catch (KeyNotFoundException ex)
             {
                 Console.WriteLine($"РћС€РёР±РєР°: {ex.Message}");
                 return false;
@@ -108,7 +108,7 @@ namespace SecurePassword
 
                 if (deleted)
                 {
-                    repository.Save(); // РЎРѕС…СЂР°РЅСЏРµРј РїРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ
+                    repository.Save();
                 }
 
                 return deleted;

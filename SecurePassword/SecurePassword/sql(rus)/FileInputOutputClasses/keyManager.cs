@@ -2,12 +2,15 @@ namespace SecurePassword;
 
 public class keyManager
 {
-    private static readonly byte[] KeyFileMagic = [0x53, 0x50, 0x4B, 0x31]; // SPK1
+    private static readonly byte[] KeyFileMagic = [0x53, 0x50, 0x4B, 0x31];
+    private static readonly ArgonParameters TransferArgonParameters =
+        EncryptionFunctions.GetArgonParameters(OSType.Android);
 
     private readonly string _keyFilePath;
     private byte[]? _salt;
     private byte[]? _encryptedDek;
     private byte[]? _dek;
+    private string? _loadedPassword;
 
     public int KeyVersion { get; private set; }
 
@@ -23,6 +26,7 @@ public class keyManager
 
         byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, GetPlatformType());
         _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out _, out _);
+        _loadedPassword = password;
         KeyVersion++;
 
         SaveKeyFile();
@@ -35,6 +39,8 @@ public class keyManager
 
         byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, _salt, argonParameters);
         _dek = EncryptionFunctions.DecryptDEK(kek, _encryptedDek);
+        _loadedPassword = password;
+        NormalizeKeyFileForCurrentPlatform(argonParameters, password);
         KeyVersion++;
     }
 
@@ -46,6 +52,7 @@ public class keyManager
     public void ClearLoadedKey()
     {
         _dek = null;
+        _loadedPassword = null;
         KeyVersion++;
     }
 
@@ -59,12 +66,10 @@ public class keyManager
 
     public byte[] ExportKeyFileForTransfer()
     {
-        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath));
-        if (HasPortableHeader(keyFileBytes))
-            return keyFileBytes;
+        if (_dek is null || _dek.Length == 0 || _loadedPassword is null)
+            throw new InvalidOperationException("DEK was not loaded. Call LoadKeyFile first.");
 
-        ReadLegacyKeyFile(keyFileBytes, out var salt, out var encryptedDek);
-        return PackKeyFile(salt, encryptedDek, EncryptionFunctions.GetArgonParameters(GetPlatformType()));
+        return CreatePackedKeyFile(_dek, _loadedPassword, TransferArgonParameters);
     }
 
     public void ChangePassword(string newPassword)
@@ -75,6 +80,7 @@ public class keyManager
         _salt = EncryptionFunctions.GenerateSalt();
         byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(newPassword, _salt, GetPlatformType());
         _encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(_dek, kek, out _, out _);
+        _loadedPassword = newPassword;
         SaveKeyFile();
     }
 
@@ -94,6 +100,34 @@ public class keyManager
             _encryptedDek,
             EncryptionFunctions.GetArgonParameters(GetPlatformType()));
         FileWorker.writeFile(keyFileBytes, Path.GetFileName(_keyFilePath));
+    }
+
+    private void NormalizeKeyFileForCurrentPlatform(ArgonParameters loadedArgonParameters, string password)
+    {
+        ArgonParameters currentArgonParameters = EncryptionFunctions.GetArgonParameters(GetPlatformType());
+        if (AreSameArgonParameters(loadedArgonParameters, currentArgonParameters))
+            return;
+
+        if (_dek is null || _dek.Length == 0)
+            return;
+
+        byte[] keyFileBytes = CreatePackedKeyFile(_dek, password, currentArgonParameters);
+        FileWorker.writeFile(keyFileBytes, Path.GetFileName(_keyFilePath));
+    }
+
+    private static byte[] CreatePackedKeyFile(byte[] dek, string password, ArgonParameters argonParameters)
+    {
+        byte[] salt = EncryptionFunctions.GenerateSalt(16);
+        byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, salt, argonParameters);
+        byte[] encryptedDek = EncryptionFunctions.EncryptDEKwithGCM(dek, kek, out _, out _);
+        return PackKeyFile(salt, encryptedDek, argonParameters);
+    }
+
+    private static bool AreSameArgonParameters(ArgonParameters left, ArgonParameters right)
+    {
+        return left.MemorySize == right.MemorySize &&
+            left.Iterations == right.Iterations &&
+            left.ParallelismDegree == right.ParallelismDegree;
     }
 
     private static void ReadKeyFile(byte[] keyFileBytes, out byte[] salt, out byte[] encryptedDek, out ArgonParameters argonParameters)

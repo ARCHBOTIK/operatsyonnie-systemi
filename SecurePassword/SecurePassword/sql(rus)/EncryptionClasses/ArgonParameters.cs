@@ -1,9 +1,9 @@
 namespace SecurePassword;
-public struct ArgonParameters // ласс дл€ удобства установки параметров при использовании Argon
+public struct ArgonParameters
 {
-    public int MemorySize { get; } //–азмер занимаемой пам€ти
-    public int Iterations { get; } // оличество итераций
-    public int ParallelismDegree { get; } //—тепень параллелизма, используютс€ только геттеры потому что это структура дл€ использовани€ вместо кортежей
+    public int MemorySize { get; }
+    public int Iterations { get; }
+    public int ParallelismDegree { get; }
 
     public ArgonParameters(int memorySize, int iterations, int parallelismDegree) 
     {

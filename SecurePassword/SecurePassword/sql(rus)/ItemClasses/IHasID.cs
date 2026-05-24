@@ -1,5 +1,5 @@
 namespace SecurePassword;
-public interface IHasID //Интерфейс для шаблона
+public interface IHasID
 {
     int Id { get; set; }
 }

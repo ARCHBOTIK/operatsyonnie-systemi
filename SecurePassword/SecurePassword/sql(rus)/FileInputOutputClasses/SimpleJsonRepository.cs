@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text.Json;
 namespace SecurePassword;
 
-public class SimpleJsonRepository<T> where T : IHasID //Класс для обычной работы с файлами JSON, без шифрования. Для тестов, а лучше вообще не трогать
+public class SimpleJsonRepository<T> where T : IHasID
 {
     private readonly string _filename;
     private List<T> _items;
@@ -15,18 +15,18 @@ public class SimpleJsonRepository<T> where T : IHasID //Класс для обычной работы
         Load();
     }
 
-    private void Load() //Функция для загрузки данных из файла
+    private void Load()
     {
         try
         {
-            byte[] bytes = FileWorker.readFile(_filename); //Через вспомогательный класс читаем байтовый массив
-            _items = JsonSerializer.Deserialize<List<T>>(bytes) ?? new List<T>(); //Десереализуем байтовый массив, либо создаем новый пустой, если там null
+            byte[] bytes = FileWorker.readFile(_filename);
+            _items = JsonSerializer.Deserialize<List<T>>(bytes) ?? new List<T>();
         }
-        catch (FileNotFoundException) //Если файла нет, создаём пустой массив (модно изменить действия, если надо)
+        catch (FileNotFoundException)
         {
             _items = new List<T>();
         }
-        catch (JsonException ex) //Отлов исключений JSON
+        catch (JsonException ex)
         {
             throw new InvalidOperationException($"File {_filename} is corrupted (wrong JSON)!", ex);
         }
@@ -40,37 +40,37 @@ public class SimpleJsonRepository<T> where T : IHasID //Класс для обычной работы
         }
     }
 
-    public void Save() //Вызывать каждый раз вручную, но можно добавить автосозранение в остальные операции, если нужно будет - обновлю
+    public void Save()
     {
-        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(_items); //Сериализуем данные
-        FileWorker.writeFile(bytes, _filename); //С помощью вспомогательного класса записываем в файл
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(_items);
+        FileWorker.writeFile(bytes, _filename);
     }
 
     public T GetItemById(int id)
     {
-        return _items.FirstOrDefault(x => x.Id == id); //Получаем объект по айди, могу поменять реализацию, просто так выглядит круто типа предикаты всё такое
+        return _items.FirstOrDefault(x => x.Id == id);
     }
 
-    public IEnumerable<T> GetAll() => _items; //Взять все элементы массива
+    public IEnumerable<T> GetAll() => _items;
 
     public void Add(T newItem)
     {
-        if (_items.Any(x => x.Id == newItem.Id)) throw new InvalidOperationException($"Element with ID = {newItem.Id} exists already!"); //Выброс исключений если есть элемент с таким ID
-        _items.Add(newItem); //Используем метод Add для List
+        if (_items.Any(x => x.Id == newItem.Id)) throw new InvalidOperationException($"Element with ID = {newItem.Id} exists already!");
+        _items.Add(newItem);
     }
 
     public bool Remove(int id)
     {
-        var item = GetItemById(id); //Берём элемент по айди
-        if (item != null) //Если нашёлся такой элемент
+        var item = GetItemById(id);
+        if (item != null)
         {
-            _items.Remove(item); //Удаляем
-            return true; //Показываем вызывающему коду, что нашли такой элемент и удалили
+            _items.Remove(item);
+            return true;
         }
-        return false; //Иначе показываем вызывающему коду, что не нашли такой
+        return false;
     }
 
-    public void Update(T newItem) //Функция для замены объекта с конкретным ID
+    public void Update(T newItem)
     {
         var oldItem = GetItemById(newItem.Id);
         if (oldItem == null) throw new KeyNotFoundException($"Element with ID = {newItem.Id} not found!");

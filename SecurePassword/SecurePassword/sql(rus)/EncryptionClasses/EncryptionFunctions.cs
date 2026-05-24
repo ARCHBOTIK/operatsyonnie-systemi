@@ -12,14 +12,14 @@ public class EncryptionFunctions : IEncryptionFunctions
         var salt = new byte[size];
         using (var rng = RandomNumberGenerator.Create())
         {
-            rng.GetBytes(salt); //Использование криптографически устойчивого генератора
+            rng.GetBytes(salt);
         }
         return salt;
     }
 
     public static byte[] GenerateKEKwArgon2id(string password, byte[] salt, OSType SystemType, int keyLength = 32)
     {
-        var req = GetArgonParameters(SystemType); //В зависимости от типа системы мы получаем нужные параметры для алгоритма
+        var req = GetArgonParameters(SystemType);
         return GenerateKEKwArgon2id(password, salt, req, keyLength);
     }
 
@@ -31,11 +31,11 @@ public class EncryptionFunctions : IEncryptionFunctions
         int parallelismDegree = req.ParallelismDegree;
         using (var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password)))
         {
-            argon2.Salt = salt; //Установка параметров в алгоритм шифрования
+            argon2.Salt = salt;
             argon2.MemorySize = memorySize;
             argon2.Iterations = iterations;
             argon2.DegreeOfParallelism = parallelismDegree;
-            return argon2.GetBytes(keyLength); //Применение самого алгоритма
+            return argon2.GetBytes(keyLength);
         }
     }
 
@@ -43,9 +43,9 @@ public class EncryptionFunctions : IEncryptionFunctions
     {
         return type switch
         {
-            OSType.Windows => new ArgonParameters(262144, 3, 3), //Для виндоус испольуем 256 Мб, 3 итерации, 3 степень параллелизма
-            OSType.Android => new ArgonParameters(2048, 2, 1), //Для андроид испольуем 8 Мб, 2 итераций, 1 степень параллелизма
-            _ => throw new ArgumentOutOfRangeException() //Исключение, если выпало что-то другое
+            OSType.Windows => new ArgonParameters(262144, 3, 3),
+            OSType.Android => new ArgonParameters(2048, 2, 1),
+            _ => throw new ArgumentOutOfRangeException()
         };
     }
 
@@ -54,22 +54,22 @@ public class EncryptionFunctions : IEncryptionFunctions
         byte[] dek = new byte[keySize];
         using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
         {
-            rng.GetBytes(dek); //Да, реализация та же самая, что и у генератора соли, только другое значение. Я не уверен, подойдёт ли эта реализация и применю ли я эту функцию вообще
+            rng.GetBytes(dek);
         }
         return dek;
     }
 
     public static byte[] EncryptDEKwithGCM(byte[] dek, byte[] kek, out byte[] nonce, out byte[] tag, int DEKsize = 32)
     {
-        nonce = new byte[12]; //Вектор шифрования, который каждый раз должен обновляться при шифровке-расшивровке через AESGCM
+        nonce = new byte[12];
         RandomNumberGenerator.Fill(nonce);
-        byte[] ciphertext = new byte[dek.Length]; //Зашифрованный DEK
-        tag = new byte[16]; //Тег аутентификации
+        byte[] ciphertext = new byte[dek.Length];
+        tag = new byte[16];
         using (var aesGcm = new AesGcm(kek, tag.Length))
         {
-            aesGcm.Encrypt(nonce, dek, ciphertext, tag); //Применение самого алгоритма шифрования
+            aesGcm.Encrypt(nonce, dek, ciphertext, tag);
         }
-        byte[] encryptedDEK = PackAESGCMData(nonce, tag, ciphertext); //Объединение данных в одну структуру чтобы не терять ее и шифровать как одно поле
+        byte[] encryptedDEK = PackAESGCMData(nonce, tag, ciphertext);
         return encryptedDEK;
     }
 
@@ -78,11 +78,11 @@ public class EncryptionFunctions : IEncryptionFunctions
         byte[] nonce = new byte[12];
         byte[] tag = new byte[16];
         byte[] ciphertext = new byte[encryptedDEK.Length - 12 - 16];
-        UnpackAESGCMData(encryptedDEK, out nonce, out tag, out ciphertext); //Распаковка данных о зашифрованном DEK
+        UnpackAESGCMData(encryptedDEK, out nonce, out tag, out ciphertext);
         byte[] dek = new byte[encryptedDEK.Length - 12 - 16];
         using (var aesGcm = new AesGcm(kek, tag.Length))
         {
-            aesGcm.Decrypt(nonce, ciphertext, tag, dek); //Расшифровка с учётом полученных данных
+            aesGcm.Decrypt(nonce, ciphertext, tag, dek);
         }
         return dek;
     }
@@ -90,8 +90,8 @@ public class EncryptionFunctions : IEncryptionFunctions
     public static byte[] PackAESGCMData(byte[] nonce, byte[] tag, byte[] ciphertext)
     {
         byte[] pack = new byte[nonce.Length + tag.Length + ciphertext.Length];
-        Buffer.BlockCopy(nonce, 0, pack, 0, nonce.Length); //По сути просто записали данные подряд в одну байтовую строчку
-        Buffer.BlockCopy(tag, 0, pack, nonce.Length, tag.Length); //Можно сделать и под динамические размеры, но для начала проще работать с фиксированными
+        Buffer.BlockCopy(nonce, 0, pack, 0, nonce.Length);
+        Buffer.BlockCopy(tag, 0, pack, nonce.Length, tag.Length);
         Buffer.BlockCopy(ciphertext, 0, pack, nonce.Length + tag.Length, ciphertext.Length); 
         return pack;
     }
@@ -101,15 +101,15 @@ public class EncryptionFunctions : IEncryptionFunctions
         nonce = new byte[12];
         tag = new byte[16];
         ciphertext = new byte[pack.Length - 12 - 16];
-        Buffer.BlockCopy(pack, 0, nonce, 0, 12); //Аналогично упаковке, просто читаем байты от нужного места до нужного
+        Buffer.BlockCopy(pack, 0, nonce, 0, 12);
         Buffer.BlockCopy(pack, 12, tag, 0, 16);
         Buffer.BlockCopy(pack, 12 + 16, ciphertext, 0, ciphertext.Length);
     }
 
-    public static byte[] EncryptData(byte[] dek, byte[] plaintext) //Та же самая функция для шифрования, только для данных произвольной длины. Может, объединю потом
+    public static byte[] EncryptData(byte[] dek, byte[] plaintext)
     {
         byte[] dataNonce = RandomNumberGenerator.GetBytes(12);
-        byte[] ciphertextData = new byte[plaintext.Length]; //Длина уже не обязательно 32 байта
+        byte[] ciphertextData = new byte[plaintext.Length];
         byte[] dataTag = new byte[16];
         using (var aes = new AesGcm(dek, dataTag.Length))
         {
@@ -119,7 +119,7 @@ public class EncryptionFunctions : IEncryptionFunctions
         return encryptedData;
     }
 
-    public static byte[] DecryptData(byte[] dek, byte[] encryptedData) //Аналогично, функция для расшифровки данных произвольного размера с помощью AESGCM
+    public static byte[] DecryptData(byte[] dek, byte[] encryptedData)
     {
         byte[] nonce = new byte[12];
         byte[] tag = new byte[16];

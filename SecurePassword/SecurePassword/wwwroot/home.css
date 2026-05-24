@@ -115,7 +115,7 @@ body {
     background: rgba(91, 240, 208, .20);
 }
 
-/* Top bar */
+
 .appbar {
     flex: 0 0 auto;
     height: 74px;
@@ -208,7 +208,7 @@ body {
     font-weight: 600;
 }
 
-/* Content area leaves room for bottom nav */
+
 .content {
     flex: 1 1 auto;
     min-height: 0;
@@ -217,7 +217,7 @@ body {
     padding: 10px var(--pad) calc(var(--nav-h) + 20px);
 }
 
-/* Section label */
+
 .section-label {
     font-size: 12px;
     letter-spacing: .5px;
@@ -226,7 +226,7 @@ body {
     margin: 10px 4px 8px;
 }
 
-/* Card */
+
 .card {
     background: linear-gradient( 180deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,.16) 100% );
     border-radius: var(--radius-lg);
@@ -247,7 +247,7 @@ body {
         pointer-events: none;
     }
 
-/* Rows */
+
 .row {
     display: flex;
     align-items: center;
@@ -260,7 +260,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    min-width: 0; /* allows ellipsis */
+    min-width: 0; 
 }
 
 .row-title {
@@ -292,7 +292,7 @@ body {
     background: linear-gradient( 90deg, transparent, rgba(255,255,255,.20), transparent );
 }
 
-/* Small black icons for types */
+
 .ico img {
     width: 24px;
     height: 24px;
@@ -309,7 +309,7 @@ body {
     opacity: .92;
 }
 
-/* Brands */
+
 .brand {
     width: 42px;
     height: 42px;
@@ -328,7 +328,7 @@ body {
 .brand-vk {
     background: #1976d2;
 }
-/* VK */
+
 .brand-sb {
     background: #2e7d32;
 }
@@ -340,9 +340,9 @@ body {
 .brand-gh {
     background: #111;
 }
-/* GitHub */
 
-/* Kebab menu */
+
+
 .kebab {
     width: 38px;
     height: 38px;
@@ -363,7 +363,7 @@ body {
         margin: 2px 0;
     }
 
-/* Floating action button */
+
 .fab-container {
     position: fixed;
     left: 50%;

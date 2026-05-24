@@ -20,7 +20,7 @@ namespace SecurePassword
             BlazorWebViewInitializingEventArgs e)
         {
 #if WINDOWS
-            // Пока можно оставить пустым или добавить Windows-логику
+
 #endif
         }
 
