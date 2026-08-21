@@ -1,4 +1,4 @@
-@inject IJSRuntime JS
+@inject ISecureClipboardService SecureClipboard
 
 <div class="detail-overlay" @onclick="OnClose">
     <div class="detail-container" @onclick:stopPropagation="true">
@@ -8,7 +8,7 @@
             </div>
             <h2>@GetTitle()</h2>
             <button class="close-button" @onclick="OnClose">
-                <img src="icons/close.svg" alt="Р—Р°РєСЂС‹С‚СЊ" />
+                <img src="icons/close.svg" alt="Закрыть" />
             </button>
         </div>
 
@@ -17,29 +17,29 @@
             {
                 <div class="detail-section">
                     <div class="detail-field">
-                        <label>РќР°Р·РІР°РЅРёРµ</label>
+                        <label>Название</label>
                         <div class="field-value">@PasswordData.Title</div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Р›РѕРіРёРЅ</label>
-                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(PasswordData.Login))">
+                        <label>Логин</label>
+                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(PasswordData.Login, false))">
                             @PasswordData.Login
-                            <img src="icons/copy.svg" class="copy-icon" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
                         </div>
                     </div>
 
                     <div class="detail-field">
-                        <label>РџР°СЂРѕР»СЊ</label>
+                        <label>Пароль</label>
                         <div class="field-value password-field">
                             <span class="@(showPassword ? "" : "password-hidden")">
-                                @(showPassword ? PasswordData.Password : "вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў")
+                                @(showPassword ? PasswordData.Password : "••••••••")
                             </span>
                             <button class="icon-button-small" @onclick="TogglePasswordVisibility">
-                                <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" alt="РџРѕРєР°Р·Р°С‚СЊ/СЃРєСЂС‹С‚СЊ" />
+                                <img src="@(showPassword ? "icons/eye-off.svg" : "icons/eye.svg")" alt="Показать/скрыть" />
                             </button>
-                            <button class="icon-button-small" @onclick="@(() => CopyToClipboard(PasswordData.Password))">
-                                <img src="icons/copy.svg" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
+                            <button class="icon-button-small" @onclick="@(() => CopyToClipboard(PasswordData.Password, true))">
+                                <img src="icons/copy.svg" alt="Копировать" />
                             </button>
                         </div>
                     </div>
@@ -53,40 +53,40 @@
                         <div class="card-number-large">@FormatCardNumber(CardData.CardNumber)</div>
                         <div class="card-meta-large">
                             <div>
-                                <label>Р’Р»Р°РґРµР»РµС†</label>
+                                <label>Владелец</label>
                                 <div>@CardData.CardHolder.ToUpperInvariant()</div>
                             </div>
                             <div>
-                                <label>РЎСЂРѕРє</label>
+                                <label>Срок</label>
                                 <div>@CardData.ExpiryDate</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="detail-field">
-                        <label>РќР°Р·РІР°РЅРёРµ РєР°СЂС‚С‹</label>
+                        <label>Название карты</label>
                         <div class="field-value">@CardData.Title</div>
                     </div>
 
                     <div class="detail-field">
-                        <label>РќРѕРјРµСЂ РєР°СЂС‚С‹</label>
-                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardNumber))">
+                        <label>Номер карты</label>
+                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardNumber, true))">
                             @FormatCardNumber(CardData.CardNumber)
-                            <img src="icons/copy.svg" class="copy-icon" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
                         </div>
                     </div>
 
                     <div class="detail-field">
-                        <label>Р’Р»Р°РґРµР»РµС†</label>
-                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardHolder))">
+                        <label>Владелец</label>
+                        <div class="field-value copyable" @onclick="@(() => CopyToClipboard(CardData.CardHolder, false))">
                             @CardData.CardHolder.ToUpperInvariant()
-                            <img src="icons/copy.svg" class="copy-icon" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
                         </div>
                     </div>
 
                     <div class="detail-row">
                         <div class="detail-field">
-                            <label>РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ</label>
+                            <label>Срок действия</label>
                             <div class="field-value">@CardData.ExpiryDate</div>
                         </div>
 
@@ -94,13 +94,13 @@
                             <label>CVV</label>
                             <div class="field-value password-field">
                                 <span class="@(showCvv ? "" : "password-hidden")">
-                                    @(showCvv ? CardData.Cvv : "вЂўвЂўвЂў")
+                                    @(showCvv ? CardData.Cvv : "•••")
                                 </span>
                                 <button class="icon-button-small" @onclick="ToggleCvvVisibility">
-                                    <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" alt="РџРѕРєР°Р·Р°С‚СЊ/СЃРєСЂС‹С‚СЊ" />
+                                    <img src="@(showCvv ? "icons/eye-off.svg" : "icons/eye.svg")" alt="Показать/скрыть" />
                                 </button>
-                                <button class="icon-button-small" @onclick="@(() => CopyToClipboard(CardData.Cvv))">
-                                    <img src="icons/copy.svg" alt="РљРѕРїРёСЂРѕРІР°С‚СЊ" />
+                                <button class="icon-button-small" @onclick="@(() => CopyToClipboard(CardData.Cvv, true))">
+                                    <img src="icons/copy.svg" alt="Копировать" />
                                 </button>
                             </div>
                         </div>
@@ -111,13 +111,16 @@
             {
                 <div class="detail-section">
                     <div class="detail-field">
-                        <label>РќР°Р·РІР°РЅРёРµ Р·Р°РјРµС‚РєРё</label>
+                        <label>Название заметки</label>
                         <div class="field-value">@NoteData.Title</div>
                     </div>
 
                     <div class="detail-field">
-                        <label>РЎРѕРґРµСЂР¶Р°РЅРёРµ</label>
-                        <div class="field-value note-content">@NoteData.Content</div>
+                        <label>Содержание</label>
+                        <div class="field-value note-content copyable" @onclick="@(() => CopyToClipboard(NoteData.Content, true))">
+                            @NoteData.Content
+                            <img src="icons/copy.svg" class="copy-icon" alt="Копировать" />
+                        </div>
                     </div>
                 </div>
             }
@@ -125,12 +128,12 @@
 
         <div class="detail-footer">
             <button class="btn btn-secondary" @onclick="OnEdit">
-                <img src="icons/edit.svg" alt="Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ" />
-                <span>Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ</span>
+                <img src="icons/edit.svg" alt="Редактировать" />
+                <span>Редактировать</span>
             </button>
             <button class="btn btn-danger" @onclick="OnDelete">
-                <img src="icons/delete.svg" alt="РЈРґР°Р»РёС‚СЊ" />
-                <span>РЈРґР°Р»РёС‚СЊ</span>
+                <img src="icons/delete.svg" alt="Удалить" />
+                <span>Удалить</span>
             </button>
         </div>
     </div>
@@ -196,11 +199,14 @@
     private void TogglePasswordVisibility() => showPassword = !showPassword;
     private void ToggleCvvVisibility() => showCvv = !showCvv;
 
-    private async Task CopyToClipboard(string text)
+    private async Task CopyToClipboard(string? text, bool isSensitive = true)
     {
+        if (string.IsNullOrEmpty(text))
+            return;
+
         try
         {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            await SecureClipboard.CopyToClipboardAsync(text, isSensitive);
         }
         catch
         {

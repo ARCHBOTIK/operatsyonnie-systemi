@@ -19,8 +19,8 @@ public sealed class SyncOperationResult
 
 public sealed class TcpBridge
 {
-    private static readonly string[] VaultFiles = ["keys.dat", "passwords.dat", "cards.dat", "notes.dat"];
-    private static readonly string[] DataFiles = ["passwords.dat", "cards.dat", "notes.dat"];
+    public static readonly string[] VaultFiles = VaultImportTransaction.VaultFiles;
+    public static readonly string[] DataFiles = VaultImportTransaction.DataFiles;
 
     private readonly NetworkService _networkService;
     private readonly keyManager _keyManager;
@@ -66,10 +66,17 @@ public sealed class TcpBridge
             : $"Адрес этого устройства: {ipAddress}";
     }
 
-    public async Task<SyncOperationResult> SendVaultToPeerAsync(string host, CancellationToken token = default)
+    public async Task<SyncOperationResult> SendVaultToPeerAsync(
+        string host,
+        string pairingCode,
+        CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(host))
             return Error(SyncTransferMode.Upload, "Укажите IP-адрес устройства-получателя.");
+
+        string normalizedCode = PairingSecret.Normalize(pairingCode);
+        if (string.IsNullOrWhiteSpace(normalizedCode))
+            return Error(SyncTransferMode.Upload, "Укажите одноразовый код сопряжения.");
 
         if (!HasTransferableVault())
             return Error(SyncTransferMode.Upload, "Локальная база пуста или ещё не создана.");
@@ -77,8 +84,8 @@ public sealed class TcpBridge
         try
         {
             byte[] bundle = CreateVaultBundle();
-            await _networkService.SendFlow(host.Trim(), bundle, token);
-            return Success(SyncTransferMode.Upload, "База успешно передана на другое устройство.");
+            await _networkService.SendVaultFlowAsync(host.Trim(), normalizedCode, bundle, token);
+            return Success(SyncTransferMode.Upload, "База успешно зашифрована и передана на устройство.");
         }
         catch (OperationCanceledException)
         {
@@ -94,23 +101,61 @@ public sealed class TcpBridge
         }
     }
 
-    public async Task<SyncOperationResult> ReceiveVaultFromPeerAsync(CancellationToken token = default)
+    public async Task<SyncOperationResult> ReceiveVaultFromPeerAsync(
+        PairingSecret pairingSecret,
+        CancellationToken token = default)
     {
+        ArgumentNullException.ThrowIfNull(pairingSecret);
+
+        VaultImportTransaction? transaction = null;
+
         try
         {
-            byte[] bundle = await _networkService.ReceiveFlow(token);
-            ExtractVaultBundle(bundle);
+            byte[] bundle = await _networkService.StartReceiverFlowAsync(pairingSecret, token);
+
+            transaction = new VaultImportTransaction();
+            transaction.Prepare(bundle);
+            transaction.Commit();
+
             _keyManager.ClearLoadedKey();
-            return Success(SyncTransferMode.Download, "База успешно принята с другого устройства. Введите мастер-пароль повторно.");
+            return Success(SyncTransferMode.Download, "База успешно принята и установлена. Введите мастер-пароль повторно.");
         }
         catch (OperationCanceledException)
         {
+            transaction?.Rollback();
             return Cancelled(SyncTransferMode.Download);
         }
         catch (Exception exception)
         {
+            transaction?.Rollback();
             return Error(SyncTransferMode.Download, $"Не удалось принять базу: {exception.Message}");
         }
+    }
+
+    public byte[] CreateVaultBundle()
+    {
+        using var memoryStream = new MemoryStream();
+        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (string fileName in VaultFiles)
+            {
+                string fullPath = GetVaultFilePath(fileName);
+                if (!File.Exists(fullPath))
+                {
+                    WriteDiagnostic($"Skip missing file in sync bundle: {fileName}");
+                    continue;
+                }
+
+                var entry = archive.CreateEntry(fileName, CompressionLevel.Fastest);
+                using var entryStream = entry.Open();
+                using var fileStream = File.OpenRead(fullPath);
+                fileStream.CopyTo(entryStream);
+                WriteDiagnostic($"Added {fileName} to sync bundle, size={fileStream.Length} bytes.");
+            }
+        }
+
+        WriteDiagnostic($"Created sync bundle, size={memoryStream.Length} bytes.");
+        return memoryStream.ToArray();
     }
 
     private static SyncOperationResult Success(SyncTransferMode mode, string message)
@@ -143,181 +188,9 @@ public sealed class TcpBridge
         };
     }
 
-    private byte[] CreateVaultBundle()
-    {
-        using var memoryStream = new MemoryStream();
-        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
-        {
-            foreach (string fileName in VaultFiles)
-            {
-                string fullPath = GetVaultFilePath(fileName);
-                if (!File.Exists(fullPath))
-                {
-                    WriteDiagnostic($"Skip missing file in sync bundle: {fileName}");
-                    continue;
-                }
-
-                var entry = archive.CreateEntry(fileName, CompressionLevel.Fastest);
-                using var entryStream = entry.Open();
-
-                if (string.Equals(fileName, "keys.dat", StringComparison.OrdinalIgnoreCase))
-                {
-                    byte[] keyFileBytes = _keyManager.ExportKeyFileForTransfer();
-                    entryStream.Write(keyFileBytes);
-                    WriteDiagnostic($"Added keys.dat to sync bundle, size={keyFileBytes.Length} bytes.");
-                    continue;
-                }
-
-                using var fileStream = File.OpenRead(fullPath);
-                fileStream.CopyTo(entryStream);
-                WriteDiagnostic($"Added {fileName} to sync bundle, size={fileStream.Length} bytes.");
-            }
-        }
-
-        WriteDiagnostic($"Created sync bundle, size={memoryStream.Length} bytes.");
-        return memoryStream.ToArray();
-    }
-
-    private static void ExtractVaultBundle(byte[] bundle)
-    {
-        using var memoryStream = new MemoryStream(bundle);
-        using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
-
-        if (archive.Entries.Count == 0)
-            throw new InvalidOperationException("Получена пустая база данных.");
-
-        ValidateVaultBundle(archive);
-
-        string tempDirectory = Path.Combine(FileSystem.CacheDirectory, $"vault-import-{Guid.NewGuid():N}");
-        string backupDirectory = Path.Combine(FileSystem.CacheDirectory, $"vault-backup-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDirectory);
-        Directory.CreateDirectory(backupDirectory);
-
-        foreach (var entry in archive.Entries)
-        {
-            if (string.IsNullOrWhiteSpace(entry.Name))
-                continue;
-
-            if (!VaultFiles.Contains(entry.Name, StringComparer.OrdinalIgnoreCase))
-                continue;
-
-            string tempPath = Path.Combine(tempDirectory, entry.Name);
-            using var entryStream = entry.Open();
-            using var fileStream = File.Create(tempPath);
-            entryStream.CopyTo(fileStream);
-            WriteDiagnostic($"Extracted {entry.Name} to temp, size={fileStream.Length} bytes.");
-        }
-
-        try
-        {
-            BackupLocalVaultFiles(backupDirectory);
-            RestoreImportedVaultFiles(tempDirectory);
-
-            string keyPath = GetVaultFilePath("keys.dat");
-            WriteDiagnostic($"Import finished. keys.dat exists={File.Exists(keyPath)}, size={GetFileSize(keyPath)} bytes.");
-        }
-        catch
-        {
-            RestoreBackup(backupDirectory);
-            throw;
-        }
-        finally
-        {
-            TryDeleteDirectory(tempDirectory);
-            TryDeleteDirectory(backupDirectory);
-        }
-    }
-
-    private static void ValidateVaultBundle(ZipArchive archive)
-    {
-        var allowedEntries = archive.Entries
-            .Where(entry => !string.IsNullOrWhiteSpace(entry.Name))
-            .Where(entry => VaultFiles.Contains(entry.Name, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
-        WriteDiagnostic("Received sync bundle entries: " +
-            string.Join(", ", allowedEntries.Select(entry => $"{entry.Name}={entry.Length} bytes")));
-
-        var keyEntry = allowedEntries.FirstOrDefault(entry =>
-            string.Equals(entry.Name, "keys.dat", StringComparison.OrdinalIgnoreCase));
-        if (keyEntry is null || keyEntry.Length == 0)
-            throw new InvalidOperationException("Полученная база не содержит keys.dat.");
-
-        bool hasDataFile = allowedEntries.Any(entry =>
-            DataFiles.Contains(entry.Name, StringComparer.OrdinalIgnoreCase) &&
-            entry.Length > 0);
-
-        if (!hasDataFile)
-            throw new InvalidOperationException("Получена пустая база без файлов данных.");
-    }
-
-    private static void BackupLocalVaultFiles(string backupDirectory)
-    {
-        foreach (string fileName in VaultFiles)
-        {
-            string destinationPath = GetVaultFilePath(fileName);
-            if (!File.Exists(destinationPath))
-                continue;
-
-            string backupPath = Path.Combine(backupDirectory, fileName);
-            File.Move(destinationPath, backupPath, overwrite: true);
-            WriteDiagnostic($"Backed up local {fileName}, size={GetFileSize(backupPath)} bytes.");
-        }
-    }
-
-    private static void RestoreImportedVaultFiles(string tempDirectory)
-    {
-        foreach (string fileName in VaultFiles)
-        {
-            string tempPath = Path.Combine(tempDirectory, fileName);
-            if (!File.Exists(tempPath))
-                continue;
-
-            string destinationPath = GetVaultFilePath(fileName);
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-            File.Move(tempPath, destinationPath, overwrite: true);
-            WriteDiagnostic($"Restored imported {fileName}, size={GetFileSize(destinationPath)} bytes.");
-        }
-    }
-
-    private static void RestoreBackup(string backupDirectory)
-    {
-        foreach (string fileName in VaultFiles)
-        {
-            string backupPath = Path.Combine(backupDirectory, fileName);
-            if (!File.Exists(backupPath))
-                continue;
-
-            string destinationPath = GetVaultFilePath(fileName);
-            if (File.Exists(destinationPath))
-                File.Delete(destinationPath);
-
-            File.Move(backupPath, destinationPath, overwrite: true);
-            WriteDiagnostic($"Rolled back {fileName} from backup.");
-        }
-    }
-
-    private static void TryDeleteDirectory(string directory)
-    {
-        try
-        {
-            if (Directory.Exists(directory))
-                Directory.Delete(directory, recursive: true);
-        }
-        catch (Exception exception)
-        {
-            WriteDiagnostic($"Failed to delete temporary sync directory {directory}: {exception.Message}");
-        }
-    }
-
-    private static long GetFileSize(string path)
-    {
-        return File.Exists(path) ? new FileInfo(path).Length : 0;
-    }
-
     private static string GetVaultFilePath(string fileName)
     {
-        return Path.Combine(FileSystem.AppDataDirectory, fileName);
+        return Path.Combine(FileWorker.GetAppDataDirectory(), fileName);
     }
 
     private static void WriteDiagnostic(string message)

@@ -2,6 +2,7 @@
 @inject TcpBridge SyncBridge
 @inject NavigationManager Navigation
 @inject MasterPasswordPage MasterPasswordPage
+@implements IDisposable
 
 <div class="screen sync-page">
     <header class="appbar">
@@ -12,8 +13,8 @@
         <div class="sync-auth-container">
             <div class="sync-auth-card">
                 <div class="sync-auth-header">
-                    <h2>Перенос базы между устройствами</h2>
-                    <p class="subtitle">Выберите действие и следуйте подсказкам на обоих устройствах.</p>
+                    <h2>Безопасный перенос базы</h2>
+                    <p class="subtitle">Используется сквозное шифрование и одноразовый код сопряжения.</p>
                 </div>
 
                 <div class="sync-actions mode-buttons">
@@ -29,8 +30,13 @@
                     @if (selectedMode == SyncTransferMode.Upload)
                     {
                         <div class="form-group">
-                            <label>Адрес устройства-получателя</label>
+                            <label>IP-адрес устройства-получателя</label>
                             <input type="text" class="form-control" @bind="peerAddress" placeholder="Например: 192.168.0.15" />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Одноразовый код сопряжения (с экрана получателя)</label>
+                            <input type="text" class="form-control" @bind="peerPairingCode" placeholder="XXXX-XXXX-XXXX" />
                         </div>
 
                         @if (!hasTransferableVault)
@@ -47,11 +53,22 @@
                             <p>@addressHint</p>
                         </div>
 
+                        @if (receiverPairingSecret is not null)
+                        {
+                            <div class="form-group text-center" style="margin: 16px 0;">
+                                <label style="font-weight: bold; margin-bottom: 6px; display: block;">Одноразовый код сопряжения:</label>
+                                <div style="font-size: 1.4rem; font-family: monospace; letter-spacing: 2px; font-weight: bold; padding: 10px; background: rgba(23, 191, 166, 0.1); border-radius: 8px; border: 1px dashed #17BFA6;">
+                                    @receiverPairingSecret.FormattedCode
+                                </div>
+                                <small style="display: block; margin-top: 4px; color: #888;">Действителен 3 минуты. Введите его на передающем устройстве.</small>
+                            </div>
+                        }
+
                         @if (hasLocalVault)
                         {
                             <div class="sync-result warning">
                                 <span>•</span>
-                                <span>Локальная база будет заменена принятой копией. После импорта приложение запросит повторный вход.</span>
+                                <span>Локальная база будет атомарно заменена принятой копией. После импорта приложение запросит повторный вход.</span>
                             </div>
                         }
                     }
@@ -87,7 +104,7 @@
 
                     <div class="sync-actions">
                         <button class="sync-button primary" @onclick="StartSyncAsync" disabled="@isSyncing">
-                            @(selectedMode == SyncTransferMode.Upload ? "Передать базу" : "Принять базу")
+                            @(selectedMode == SyncTransferMode.Upload ? "Передать базу" : "Ожидать и принять базу")
                         </button>
 
                         @if (isSyncing)
@@ -103,12 +120,14 @@
 
 @code {
     private string peerAddress = string.Empty;
+    private string peerPairingCode = string.Empty;
     private string validationError = string.Empty;
     private string addressHint = string.Empty;
     private string progressTitle = "Подготовка...";
     private SyncTransferMode selectedMode;
     private SyncOperationResult? syncResult;
     private CancellationTokenSource? syncCancellation;
+    private PairingSecret? receiverPairingSecret;
     private bool isSyncing;
     private bool hasTransferableVault;
     private bool hasLocalVault;
@@ -126,6 +145,12 @@
         hasLocalVault = SyncBridge.LocalVaultExists();
         addressHint = SyncBridge.GetPeerAddressHint();
         validationError = string.Empty;
+
+        if (selectedMode == SyncTransferMode.Download && (receiverPairingSecret is null || receiverPairingSecret.IsExpired))
+        {
+            receiverPairingSecret?.Dispose();
+            receiverPairingSecret = PairingSecret.Generate();
+        }
     }
 
     private void SelectMode(SyncTransferMode mode)
@@ -152,24 +177,38 @@
 
             if (string.IsNullOrWhiteSpace(peerAddress))
             {
-                validationError = "Введите адрес устройства-получателя.";
+                validationError = "Введите IP-адрес устройства-получателя.";
                 return;
+            }
+
+            if (string.IsNullOrWhiteSpace(peerPairingCode))
+            {
+                validationError = "Введите одноразовый код сопряжения с экрана получателя.";
+                return;
+            }
+        }
+        else
+        {
+            if (receiverPairingSecret is null || receiverPairingSecret.IsExpired)
+            {
+                receiverPairingSecret?.Dispose();
+                receiverPairingSecret = PairingSecret.Generate();
             }
         }
 
         isSyncing = true;
         progressPercent = 20;
         progressTitle = selectedMode == SyncTransferMode.Upload
-            ? "Подключаемся к устройству-получателю..."
-            : "Ожидаем подключение второго устройства...";
+            ? "Выполняем безопасное подключение..."
+            : "Ожидаем подключение и проверку кода сопряжения...";
         syncCancellation = new CancellationTokenSource();
 
         try
         {
             progressPercent = 55;
             syncResult = selectedMode == SyncTransferMode.Upload
-                ? await SyncBridge.SendVaultToPeerAsync(peerAddress.Trim(), syncCancellation.Token)
-                : await SyncBridge.ReceiveVaultFromPeerAsync(syncCancellation.Token);
+                ? await SyncBridge.SendVaultToPeerAsync(peerAddress.Trim(), peerPairingCode.Trim(), syncCancellation.Token)
+                : await SyncBridge.ReceiveVaultFromPeerAsync(receiverPairingSecret!, syncCancellation.Token);
 
             progressPercent = syncResult.Success ? 100 : progressPercent;
 
@@ -199,5 +238,13 @@
         };
         isSyncing = false;
         progressPercent = 0;
+    }
+
+    public void Dispose()
+    {
+        syncCancellation?.Cancel();
+        syncCancellation?.Dispose();
+        receiverPairingSecret?.Dispose();
+        receiverPairingSecret = null;
     }
 }

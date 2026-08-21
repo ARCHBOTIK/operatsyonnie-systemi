@@ -8,6 +8,9 @@ public sealed class VaultSessionService
     private const string LockOnMinimizePreferenceKey = "lock_on_minimize";
     private const string LockOnTimerPreferenceKey = "lock_on_timer";
 
+    private bool _lockOnExit = true;
+    private bool _lockOnMinimize = true;
+    private bool _lockOnTimer = true;
     private DateTimeOffset _lastActivityUtc = DateTimeOffset.UtcNow;
 
     public event Action? StateChanged;
@@ -16,35 +19,50 @@ public sealed class VaultSessionService
 
     public bool LockOnExit
     {
-        get => Preferences.Default.Get(LockOnExitPreferenceKey, true);
+        get
+        {
+            try { return Preferences.Default.Get(LockOnExitPreferenceKey, _lockOnExit); }
+            catch { return _lockOnExit; }
+        }
         set
         {
-            Preferences.Default.Set(LockOnExitPreferenceKey, value);
+            _lockOnExit = value;
+            try { Preferences.Default.Set(LockOnExitPreferenceKey, value); } catch { }
             NotifyStateChanged();
         }
     }
 
     public bool LockOnMinimize
     {
-        get => Preferences.Default.Get(LockOnMinimizePreferenceKey, true);
+        get
+        {
+            try { return Preferences.Default.Get(LockOnMinimizePreferenceKey, _lockOnMinimize); }
+            catch { return _lockOnMinimize; }
+        }
         set
         {
-            Preferences.Default.Set(LockOnMinimizePreferenceKey, value);
+            _lockOnMinimize = value;
+            try { Preferences.Default.Set(LockOnMinimizePreferenceKey, value); } catch { }
             NotifyStateChanged();
         }
     }
 
     public bool LockOnTimer
     {
-        get => Preferences.Default.Get(LockOnTimerPreferenceKey, false);
+        get
+        {
+            try { return Preferences.Default.Get(LockOnTimerPreferenceKey, _lockOnTimer); }
+            catch { return _lockOnTimer; }
+        }
         set
         {
-            Preferences.Default.Set(LockOnTimerPreferenceKey, value);
+            _lockOnTimer = value;
+            try { Preferences.Default.Set(LockOnTimerPreferenceKey, value); } catch { }
             NotifyStateChanged();
         }
     }
 
-    public TimeSpan InactivityTimeout { get; } = TimeSpan.FromMinutes(2);
+    public TimeSpan InactivityTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
     public void MarkAuthenticated()
     {

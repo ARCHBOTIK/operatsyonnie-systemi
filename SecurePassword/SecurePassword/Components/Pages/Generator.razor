@@ -1,4 +1,5 @@
 @page "/generator"
+@inject ISecureClipboardService SecureClipboard
 
 <div class="screen">
     <header class="appbar">
@@ -123,7 +124,7 @@
         if (!HasEvaluatedPassword)
             return;
 
-        await Clipboard.SetTextAsync(generatedPassword);
+        await SecureClipboard.CopyToClipboardAsync(generatedPassword, isSensitive: true);
         copied = true;
         StateHasChanged();
 

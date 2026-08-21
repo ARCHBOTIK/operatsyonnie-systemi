@@ -10,3 +10,5 @@ SecurePassword/.vs/SecurePassword.slnx/v17/.futdcache.v2
 SecurePassword/.vs/SecurePassword.slnx/v17/DocumentLayout.backup.json
 SecurePassword/.vs/SecurePassword.slnx/v17/DocumentLayout.json
 SecurePassword/SecurePassword/SecurePassword.csproj.user
+/SecurePassword.Tests/bin
+/SecurePassword.Tests/obj

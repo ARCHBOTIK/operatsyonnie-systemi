@@ -271,19 +271,24 @@ public partial class MasterPasswordPage : ContentPage
             HideSyncStatus();
     }
 
+    private PairingSecret? _activeReceiverSecret;
+
     private async void OnReceiveDatabaseClicked(object sender, EventArgs e)
     {
         HideSyncStatus();
         UpdateImportHint();
 
+        _activeReceiverSecret?.Dispose();
+        _activeReceiverSecret = PairingSecret.Generate();
+
         SyncButton.IsEnabled = false;
         SyncCancelButton.IsVisible = true;
         _syncCancellation = new CancellationTokenSource();
-        ShowSyncStatus("Ожидание второго устройства...");
+        ShowSyncStatus($"Код: {_activeReceiverSecret.FormattedCode}. Ожидание подключения...");
 
         try
         {
-            var result = await _tcpBridge.ReceiveVaultFromPeerAsync(_syncCancellation.Token);
+            var result = await _tcpBridge.ReceiveVaultFromPeerAsync(_activeReceiverSecret, _syncCancellation.Token);
             if (result.Success)
             {
                 SetMode(MasterPasswordMode.Login);
@@ -297,6 +302,8 @@ public partial class MasterPasswordPage : ContentPage
         }
         finally
         {
+            _activeReceiverSecret?.Dispose();
+            _activeReceiverSecret = null;
             _syncCancellation?.Dispose();
             _syncCancellation = null;
             SyncButton.IsEnabled = true;
@@ -306,6 +313,8 @@ public partial class MasterPasswordPage : ContentPage
 
     private void OnCancelSyncClicked(object sender, EventArgs e)
     {
+        _activeReceiverSecret?.Dispose();
+        _activeReceiverSecret = null;
         _syncCancellation?.Cancel();
         ShowSyncStatus("Приём базы отменён.");
     }
@@ -443,8 +452,21 @@ public partial class MasterPasswordPage : ContentPage
         {
             string path = Path.Combine(FileSystem.AppDataDirectory, file);
             if (File.Exists(path))
-                File.Delete(path);
+            {
+                try { File.Delete(path); } catch { }
+            }
         }
+
+        FileWorker.CleanupLeftoverTempFiles();
+        try
+        {
+            var txDirs = Directory.GetDirectories(FileSystem.AppDataDirectory, ".vault-import-*");
+            foreach (var dir in txDirs)
+            {
+                try { Directory.Delete(dir, recursive: true); } catch { }
+            }
+        }
+        catch { }
     }
 
     private void OnToggleLoginPasswordClicked(object sender, EventArgs e)

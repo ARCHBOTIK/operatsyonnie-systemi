@@ -7,6 +7,9 @@ namespace SecurePassword;
 
 public class EncryptionFunctions : IEncryptionFunctions
 {
+    public const int MinimumSafeMemorySize = 65536; // 64 MB
+    public const int MinimumSafeIterations = 3;
+
     public static byte[] GenerateSalt(int size = 16) 
     {
         var salt = new byte[size];
@@ -25,17 +28,21 @@ public class EncryptionFunctions : IEncryptionFunctions
 
     public static byte[] GenerateKEKwArgon2id(string password, byte[] salt, ArgonParameters parameters, int keyLength = 32)
     {
-        var req = parameters;
-        int memorySize = req.MemorySize;
-        int iterations = req.Iterations;
-        int parallelismDegree = req.ParallelismDegree;
-        using (var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password)))
+        byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+        try
         {
-            argon2.Salt = salt;
-            argon2.MemorySize = memorySize;
-            argon2.Iterations = iterations;
-            argon2.DegreeOfParallelism = parallelismDegree;
+            using var argon2 = new Argon2id(passwordBytes)
+            {
+                Salt = salt,
+                MemorySize = parameters.MemorySize,
+                Iterations = parameters.Iterations,
+                DegreeOfParallelism = parameters.ParallelismDegree
+            };
             return argon2.GetBytes(keyLength);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(passwordBytes);
         }
     }
 
@@ -43,10 +50,15 @@ public class EncryptionFunctions : IEncryptionFunctions
     {
         return type switch
         {
-            OSType.Windows => new ArgonParameters(262144, 3, 3),
-            OSType.Android => new ArgonParameters(2048, 2, 1),
-            _ => throw new ArgumentOutOfRangeException()
+            OSType.Windows => new ArgonParameters(262144, 3, 3), // 256 MB, 3 iter, 3 lanes
+            OSType.Android => new ArgonParameters(65536, 3, 2),  // 64 MB, 3 iter, 2 lanes
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unsupported OS type.")
         };
+    }
+
+    public static bool NeedsKdfUpgrade(ArgonParameters parameters)
+    {
+        return parameters.MemorySize < MinimumSafeMemorySize || parameters.Iterations < MinimumSafeIterations;
     }
 
     public static byte[] GenerateDEK(int keySize = 32)

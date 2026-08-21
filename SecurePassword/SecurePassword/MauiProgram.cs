@@ -14,6 +14,9 @@ public static class MauiProgram
         VelopackApp.Build().Run();
 #endif
 
+        FileWorker.CleanupLeftoverTempFiles();
+        VaultImportTransaction.RecoverPendingTransactions();
+
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -36,6 +39,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<VaultSessionService>();
         builder.Services.AddSingleton<NetworkService>();
         builder.Services.AddSingleton<TcpBridge>();
+
+#if ANDROID
+        builder.Services.AddSingleton<IClipboardBackend, AndroidClipboardBackend>();
+#else
+        builder.Services.AddSingleton<IClipboardBackend, MauiClipboardBackend>();
+#endif
+        builder.Services.AddSingleton<ISecureClipboardService, SecureClipboardService>();
 
         builder.Services.AddSingleton<SecureRepository<PasswordEntry>>(sp =>
             new SecureRepository<PasswordEntry>(
