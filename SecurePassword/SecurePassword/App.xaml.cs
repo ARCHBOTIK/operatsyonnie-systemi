@@ -5,39 +5,44 @@ using WinRT.Interop;
 using Windows.Graphics;
 #endif
 
+using SecurePassword.Navigation;
+
 namespace SecurePassword;
 
 public partial class App : Application
 {
-    private readonly MasterPasswordPage _masterPasswordPage;
+    private readonly IAppRootNavigator _rootNavigator;
     private readonly VaultSessionService _vaultSession;
 
-    public App(MasterPasswordPage masterPasswordPage, VaultSessionService vaultSession)
+    public App(IAppRootNavigator rootNavigator, VaultSessionService vaultSession)
     {
         InitializeComponent();
-        _masterPasswordPage = masterPasswordPage;
-        _vaultSession = vaultSession;
+        _rootNavigator = rootNavigator ?? throw new ArgumentNullException(nameof(rootNavigator));
+        _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var window = new Window(_masterPasswordPage)
+        var window = new Window(_rootNavigator.GetInitialRoot())
         {
             Title = "VaultPass"
         };
+
+        _rootNavigator.AttachWindow(window);
 
         window.Activated += (_, _) => _vaultSession.RecordActivity();
         window.Resumed += (_, _) => _vaultSession.RecordActivity();
         window.Stopped += (_, _) =>
         {
             if (_vaultSession.LockOnMinimize)
-                _masterPasswordPage.PrepareForLock();
+                _vaultSession.Lock();
         };
         window.Destroying += (_, _) =>
         {
             if (_vaultSession.LockOnExit)
-                _masterPasswordPage.PrepareForLock();
+                _vaultSession.Lock();
         };
+
 
 #if WINDOWS
         window.Created += async (_, _) =>

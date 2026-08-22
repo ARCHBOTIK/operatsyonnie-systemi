@@ -1,0 +1,353 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SecurePassword.ViewModels.Vault"
+             xmlns:converters="clr-namespace:SecurePassword.Converters"
+             x:Class="SecurePassword.Views.Vault.ItemEditPage"
+             x:DataType="vm:ItemEditViewModel"
+             Title="{Binding PageTitle}"
+             NavigationPage.HasNavigationBar="False"
+             Background="{StaticResource PageBackgroundBrush}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:BoolToVisibilityTextConverter x:Key="BoolToVisibilityTextConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,10,16,16">
+
+        <!-- 1. Header Bar -->
+        <Border Grid.Row="0"
+                BackgroundColor="#33FFFFFF"
+                StrokeThickness="0"
+                Padding="0,0,0,10">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <Label Grid.Column="0"
+                       Text="{Binding PageTitle}"
+                       Style="{StaticResource HeaderTitleStyle}"
+                       FontSize="20"
+                       VerticalOptions="Center" />
+
+                <Button Grid.Column="1"
+                        Text="✕"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        HeightRequest="38"
+                        WidthRequest="38"
+                        Padding="0"
+                        Command="{Binding CancelCommand}"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Отменить редактирование" />
+            </Grid>
+        </Border>
+
+        <!-- 2. Type Selector (visible only when adding new item) & Validation Banner -->
+        <VerticalStackLayout Grid.Row="1" Spacing="8" Margin="0,4,0,8">
+
+            <!-- Type Selector Buttons -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" IsVisible="{Binding CanChangeType}">
+                <!-- Password Type -->
+                <Button Text="🔑 Пароль"
+                        Command="{Binding SelectTypeCommand}"
+                        CommandParameter="Password"
+                        AutomationProperties.Name="Выбрать тип: Пароль">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsPasswordType}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <!-- Card Type -->
+                <Button Text="💳 Карта"
+                        Command="{Binding SelectTypeCommand}"
+                        CommandParameter="Card"
+                        AutomationProperties.Name="Выбрать тип: Банковская карта">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsCardType}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <!-- Note Type -->
+                <Button Text="📝 Заметка"
+                        Command="{Binding SelectTypeCommand}"
+                        CommandParameter="Note"
+                        AutomationProperties.Name="Выбрать тип: Защищённая заметка">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsNoteType}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+
+            <!-- Validation Error Banner -->
+            <Border BackgroundColor="{StaticResource DangerBackground}"
+                    Stroke="{StaticResource DangerBorder}"
+                    StrokeThickness="1"
+                    Padding="12,8"
+                    StrokeShape="RoundRectangle 12"
+                    IsVisible="{Binding HasValidationError}">
+                <Label Text="{Binding ValidationError}"
+                       TextColor="{StaticResource Danger}"
+                       FontSize="13"
+                       FontAttributes="Bold" />
+            </Border>
+
+        </VerticalStackLayout>
+
+        <!-- 3. Form Content -->
+        <ScrollView Grid.Row="2" Margin="0,4,0,10">
+            <VerticalStackLayout Spacing="12">
+
+                <!-- ═════ PASSWORD FORM ═════ -->
+                <VerticalStackLayout IsVisible="{Binding IsPasswordType}" Spacing="10">
+
+                    <!-- Title -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Название *" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding PasswordTitle}"
+                                   Placeholder="Например: Рабочий аккаунт"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода названия" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Service / Website -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Сервис или сайт" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding ServiceName}"
+                                   Placeholder="Например: GitHub"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода сервиса" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Login -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Логин или Email *" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding Login}"
+                                   Placeholder="ivan.ivanov@mail.ru"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   Keyboard="Email"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода логина" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Password + Generate Button -->
+                    <VerticalStackLayout Spacing="4">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Пароль *" Style="{StaticResource FieldLabelStyle}" />
+                            <Button Grid.Column="1"
+                                    Text="🎲 Сгенерировать"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding GeneratePasswordCommand}"
+                                    AutomationProperties.Name="Сгенерировать случайный пароль" />
+                        </Grid>
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <Entry Grid.Column="0"
+                                       Text="{Binding Password}"
+                                       Placeholder="••••••••"
+                                       PlaceholderColor="{StaticResource TextMuted}"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       IsPassword="{Binding ShowPassword, Converter={StaticResource InverseBoolConverter}}"
+                                       HeightRequest="46"
+                                       AutomationProperties.Name="Поле ввода пароля" />
+                                <Button Grid.Column="1"
+                                        Text="👁"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding TogglePasswordVisibilityCommand}"
+                                        VerticalOptions="Center"
+                                        AutomationProperties.Name="Переключить видимость пароля" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+
+                <!-- ═════ CARD FORM ═════ -->
+                <VerticalStackLayout IsVisible="{Binding IsCardType}" Spacing="10">
+
+                    <!-- Card Title -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Название карты *" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding CardTitle}"
+                                   Placeholder="Например: Зарплатная"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода названия карты" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Card Number -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Номер карты *" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding CardNumber}"
+                                   Placeholder="1234 5678 9012 3456"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   Keyboard="Numeric"
+                                   MaxLength="19"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода номера карты" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Card Holder -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Имя на карте (Владелец)" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding CardHolder}"
+                                   Placeholder="IVAN IVANOV"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода владельца карты" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Expiry & CVV Row -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+
+                        <!-- Expiry Date -->
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label Text="Срок действия" Style="{StaticResource FieldLabelStyle}" />
+                            <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                                <Entry Text="{Binding ExpiryDate}"
+                                       Placeholder="MM/YY"
+                                       PlaceholderColor="{StaticResource TextMuted}"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       Keyboard="Numeric"
+                                       MaxLength="5"
+                                       HeightRequest="46"
+                                       AutomationProperties.Name="Поле ввода срока действия" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- CVV -->
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label Text="CVV / CVC" Style="{StaticResource FieldLabelStyle}" />
+                            <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                                    <Entry Grid.Column="0"
+                                           Text="{Binding Cvv}"
+                                           Placeholder="•••"
+                                           PlaceholderColor="{StaticResource TextMuted}"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           Keyboard="Numeric"
+                                           MaxLength="4"
+                                           IsPassword="{Binding ShowCvv, Converter={StaticResource InverseBoolConverter}}"
+                                           HeightRequest="46"
+                                           AutomationProperties.Name="Поле ввода кода CVV" />
+                                    <Button Grid.Column="1"
+                                            Text="👁"
+                                            Style="{StaticResource InlineSmallButtonStyle}"
+                                            Command="{Binding ToggleCvvVisibilityCommand}"
+                                            VerticalOptions="Center"
+                                            AutomationProperties.Name="Переключить видимость CVV" />
+                                </Grid>
+                            </Border>
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                    <!-- Bank Name -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Банк" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding BankName}"
+                                   Placeholder="Например: Сбербанк, Т-Банк"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода банка" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+
+                <!-- ═════ NOTE FORM ═════ -->
+                <VerticalStackLayout IsVisible="{Binding IsNoteType}" Spacing="10">
+
+                    <!-- Note Title -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Название заметки" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,0">
+                            <Entry Text="{Binding NoteTitle}"
+                                   Placeholder="Например: Важные мысли"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HeightRequest="46"
+                                   AutomationProperties.Name="Поле ввода названия заметки" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Note Content -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Содержание заметки" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="12,8">
+                            <Editor Text="{Binding NoteContent}"
+                                    Placeholder="Введите защищённый текст..."
+                                    PlaceholderColor="{StaticResource TextMuted}"
+                                    TextColor="{StaticResource TextPrimary}"
+                                    AutoSize="Disabled"
+                                    HeightRequest="180"
+                                    AutomationProperties.Name="Поле ввода текста заметки" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- 4. Footer Action Buttons -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,10,0,0">
+            <Button Grid.Column="0"
+                    Text="Отмена"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding CancelCommand}"
+                    AutomationProperties.Name="Отменить сохранение" />
+
+            <Button Grid.Column="1"
+                    Text="{Binding SaveButtonText}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Command="{Binding SaveCommand}"
+                    AutomationProperties.Name="Сохранить запись" />
+        </Grid>
+
+    </Grid>
+</ContentPage>

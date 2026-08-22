@@ -4,18 +4,6 @@ namespace SecurePassword;
 
 public static class ServiceImageGenerator
 {
-    private static readonly Dictionary<string, string> KnownIcons = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["yandex"] = "/passwords/yandex.png",
-        ["vk"] = "/passwords/vk.jpg",
-        ["vkontakte"] = "/passwords/vk.jpg",
-        ["sber"] = "/passwords/sber.jpg",
-        ["sberbank"] = "/passwords/sber.jpg",
-        ["google"] = "/passwords/google.webp",
-        ["gmail"] = "/passwords/google.webp",
-        ["github"] = "/passwords/github.jpg"
-    };
-
     public static string GetServiceIconPath(string? serviceName)
     {
         return GetServiceIconSource(serviceName);
@@ -24,13 +12,6 @@ public static class ServiceImageGenerator
     public static string GetServiceIconSource(string? serviceName, string? fallbackText = null)
     {
         string key = BuildLookupValue(serviceName, fallbackText);
-
-        foreach (var knownIcon in KnownIcons)
-        {
-            if (key.Contains(knownIcon.Key, StringComparison.OrdinalIgnoreCase))
-                return knownIcon.Value;
-        }
-
         string displayText = GetDisplayLetters(string.IsNullOrWhiteSpace(serviceName) ? fallbackText ?? "?" : serviceName);
         byte[] imageBytes = GenerateServiceImage(displayText, key, 200, 200);
         return $"data:image/png;base64,{Convert.ToBase64String(imageBytes)}";

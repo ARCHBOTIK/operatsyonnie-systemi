@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SecurePassword.ViewModels.Vault"
+             xmlns:converters="clr-namespace:SecurePassword.Converters"
+             x:Class="SecurePassword.Views.Vault.ItemDetailPage"
+             x:DataType="vm:ItemDetailViewModel"
+             Title="Просмотр записи"
+             NavigationPage.HasNavigationBar="False"
+             Background="{StaticResource PageBackgroundBrush}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="16,10,16,16">
+
+        <!-- 1. Header Bar -->
+        <Border Grid.Row="0"
+                BackgroundColor="#33FFFFFF"
+                StrokeThickness="0"
+                Padding="0,0,0,10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                <!-- Type Icon -->
+                <Border Grid.Column="0"
+                        HeightRequest="44"
+                        WidthRequest="44"
+                        StrokeThickness="0"
+                        BackgroundColor="#1519A38C"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="6"
+                        VerticalOptions="Center">
+                    <Image Source="{Binding IconSource, Converter={StaticResource StringToImageSourceConverter}}"
+                           Aspect="AspectFit"
+                           HeightRequest="30"
+                           WidthRequest="30" />
+                </Border>
+
+                <!-- Title & Type Subtitle -->
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                    <Label Text="{Binding Title}"
+                           Style="{StaticResource HeaderTitleStyle}"
+                           FontSize="20"
+                           LineBreakMode="TailTruncation"
+                           MaxLines="1" />
+                    <Label Text="{Binding TypeDisplayName}"
+                           Style="{StaticResource HintLabelStyle}" />
+                </VerticalStackLayout>
+
+                <!-- Close Button -->
+                <Button Grid.Column="2"
+                        Text="✕"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        HeightRequest="38"
+                        WidthRequest="38"
+                        Padding="0"
+                        Command="{Binding CloseCommand}"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Закрыть просмотр" />
+            </Grid>
+        </Border>
+
+        <!-- 2. Scrollable Detail Fields -->
+        <ScrollView Grid.Row="1" Margin="0,10,0,10">
+            <VerticalStackLayout Spacing="10">
+
+                <!-- ═════ PASSWORD FIELDS ═════ -->
+                <VerticalStackLayout IsVisible="{Binding IsPasswordType}" Spacing="10">
+
+                    <!-- Login / Email -->
+                    <Border Style="{StaticResource DetailFieldBorderStyle}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Логин / Email" Style="{StaticResource FieldLabelStyle}" />
+                                <Label Text="{Binding Login}" FontSize="15" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1"
+                                    Text="📋"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding CopyLoginCommand}"
+                                    VerticalOptions="Center"
+                                    AutomationProperties.Name="Копировать логин" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Password -->
+                    <Border Style="{StaticResource DetailFieldBorderStyle}">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Пароль" Style="{StaticResource FieldLabelStyle}" />
+                                <Label Text="{Binding MaskedPassword}"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="16"
+                                       TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+
+                            <!-- Show/Hide Button -->
+                            <Button Grid.Column="1"
+                                    Text="{Binding ShowPassword, Converter={StaticResource InverseBoolConverter}, StringFormat='👁'}"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding TogglePasswordVisibilityCommand}"
+                                    VerticalOptions="Center"
+                                    AutomationProperties.Name="{Binding PasswordToggleAccessibleText}" />
+
+                            <!-- Copy Password Button -->
+                            <Button Grid.Column="2"
+                                    Text="📋"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding CopyPasswordCommand}"
+                                    VerticalOptions="Center"
+                                    AutomationProperties.Name="Копировать пароль" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Service Name -->
+                    <Border Style="{StaticResource DetailFieldBorderStyle}"
+                            IsVisible="{Binding ServiceName, Converter={StaticResource BoolToVisibilityTextConverter}}">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Сервис" Style="{StaticResource FieldLabelStyle}" />
+                            <Label Text="{Binding ServiceName}" FontSize="15" TextColor="{StaticResource TextPrimary}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <!-- ═════ CARD FIELDS ═════ -->
+                <VerticalStackLayout IsVisible="{Binding IsCardType}" Spacing="10">
+
+                    <!-- Visual Card Preview Banner -->
+                    <Border Style="{StaticResource CardPreviewLargeBorderStyle}">
+                        <Grid RowDefinitions="Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="💳 BANK CARD" TextColor="#D0FFFFFF" FontSize="12" FontAttributes="Bold" />
+                                <Label Grid.Column="1" Text="{Binding BankName}" TextColor="White" FontSize="13" FontAttributes="Bold" />
+                            </Grid>
+                            <Label Grid.Row="1"
+                                   Text="{Binding CardNumberDisplay}"
+                                   TextColor="White"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   FontFamily="Consolas, monospace"
+                                   VerticalOptions="Center" />
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0">
+                                    <Label Text="CARD HOLDER" TextColor="#B0FFFFFF" FontSize="9" />
+                                    <Label Text="{Binding CardHolder}" TextColor="White" FontSize="13" FontAttributes="Bold" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label Text="EXPIRES" TextColor="#B0FFFFFF" FontSize="9" />
+                                    <Label Text="{Binding ExpiryDate}" TextColor="White" FontSize="13" FontAttributes="Bold" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Card Number Row -->
+                    <Border Style="{StaticResource DetailFieldBorderStyle}">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Номер карты" Style="{StaticResource FieldLabelStyle}" />
+                                <Label Text="{Binding CardNumberDisplay}"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="15"
+                                       TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1"
+                                    Text="👁"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding ToggleCardNumberVisibilityCommand}"
+                                    VerticalOptions="Center"
+                                    AutomationProperties.Name="{Binding CardNumberToggleAccessibleText}" />
+                            <Button Grid.Column="2"
+                                    Text="📋"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding CopyCardNumberCommand}"
+                                    VerticalOptions="Center"
+                                    AutomationProperties.Name="Копировать номер карты" />
+                        </Grid>
+                    </Border>
+
+
+                    <!-- Card Holder Row -->
+                    <Border Style="{StaticResource DetailFieldBorderStyle}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Владелец карты" Style="{StaticResource FieldLabelStyle}" />
+                                <Label Text="{Binding CardHolder}" FontSize="15" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1"
+                                    Text="📋"
+                                    Style="{StaticResource InlineSmallButtonStyle}"
+                                    Command="{Binding CopyCardHolderCommand}"
+                                    VerticalOptions="Center"
+                                    AutomationProperties.Name="Копировать имя владельца" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Expiry & CVV Grid -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+
+                        <!-- Expiry -->
+                        <Border Grid.Column="0" Style="{StaticResource DetailFieldBorderStyle}">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Срок действия" Style="{StaticResource FieldLabelStyle}" />
+                                <Label Text="{Binding ExpiryDate}" FontSize="15" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <!-- CVV -->
+                        <Border Grid.Column="1" Style="{StaticResource DetailFieldBorderStyle}">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                    <Label Text="CVV / CVC" Style="{StaticResource FieldLabelStyle}" />
+                                    <Label Text="{Binding MaskedCvv}"
+                                           FontFamily="Consolas, monospace"
+                                           FontSize="15"
+                                           TextColor="{StaticResource TextPrimary}" />
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1"
+                                        Text="👁"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding ToggleCvvVisibilityCommand}"
+                                        VerticalOptions="Center"
+                                        AutomationProperties.Name="{Binding CvvToggleAccessibleText}" />
+                                <Button Grid.Column="2"
+                                        Text="📋"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding CopyCvvCommand}"
+                                        VerticalOptions="Center"
+                                        AutomationProperties.Name="Копировать CVV" />
+                            </Grid>
+                        </Border>
+
+                    </Grid>
+
+                </VerticalStackLayout>
+
+                <!-- ═════ NOTE FIELDS ═════ -->
+                <VerticalStackLayout IsVisible="{Binding IsNoteType}" Spacing="10">
+
+                    <!-- Note Content (Plain text) -->
+                    <Border Style="{StaticResource DetailFieldBorderStyle}">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="Содержимое заметки" Style="{StaticResource FieldLabelStyle}" />
+                                <Button Grid.Column="1"
+                                        Text="📋 Копировать"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding CopyNoteContentCommand}"
+                                        AutomationProperties.Name="Копировать текст заметки" />
+                            </Grid>
+                            <Label Text="{Binding NoteContent}"
+                                   FontSize="15"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- 3. Bottom Action Buttons: Edit & Delete -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,10,0,0">
+            <Button Grid.Column="0"
+                    Text="✏️ Редактировать"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding EditCommand}"
+                    AutomationProperties.Name="Редактировать запись" />
+
+            <Button Grid.Column="1"
+                    Text="🗑️ Удалить"
+                    Style="{StaticResource DangerButtonStyle}"
+                    Command="{Binding DeleteCommand}"
+                    AutomationProperties.Name="Удалить запись" />
+        </Grid>
+
+    </Grid>
+</ContentPage>

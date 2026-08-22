@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Primary Brand Palette -->
+    <Color x:Key="Primary">#19A38C</Color>
+    <Color x:Key="PrimaryLight">#41C7B2</Color>
+    <Color x:Key="PrimaryDark">#138F7A</Color>
+    <Color x:Key="Accent">#17BFA6</Color>
+
+    <!-- Backgrounds -->
+    <Color x:Key="PageBackground1">#DFF7F2</Color>
+    <Color x:Key="PageBackground2">#CDEEE8</Color>
+    <Color x:Key="PageBackground3">#EDF8FF</Color>
+
+    <!-- Cards & Borders -->
+    <Color x:Key="CardBackground">#55FFFFFF</Color>
+    <Color x:Key="CardBackgroundSolid">#CCFFFFFF</Color>
+    <Color x:Key="CardStroke">#66FFFFFF</Color>
+    <Color x:Key="FieldBorder">#D9ECE7</Color>
+    <Color x:Key="Divider">#33FFFFFF</Color>
+
+    <!-- Typography -->
+    <Color x:Key="TextPrimary">#0F1720</Color>
+    <Color x:Key="TextSecondary">#60707A</Color>
+    <Color x:Key="TextMuted">#8A98A3</Color>
+
+    <!-- Interactive & Feedback -->
+    <Color x:Key="Success">#26B050</Color>
+    <Color x:Key="Danger">#B12D2D</Color>
+    <Color x:Key="DangerBackground">#FFF4F4</Color>
+    <Color x:Key="DangerBorder">#F1D1D1</Color>
+
+    <!-- Password Strength Colors -->
+    <Color x:Key="StrengthWeak">#E53935</Color>
+    <Color x:Key="StrengthMedium">#FB8C00</Color>
+    <Color x:Key="StrengthStrong">#43A047</Color>
+    <Color x:Key="StrengthExcellent">#19A38C</Color>
+
+    <!-- Gradients -->
+    <LinearGradientBrush x:Key="PageBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource PageBackground1}" Offset="0.00" />
+        <GradientStop Color="{StaticResource PageBackground2}" Offset="0.52" />
+        <GradientStop Color="{StaticResource PageBackground3}" Offset="1.00" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Primary}" Offset="0.0" />
+        <GradientStop Color="{StaticResource PrimaryLight}" Offset="1.0" />
+    </LinearGradientBrush>
+
+</ResourceDictionary>

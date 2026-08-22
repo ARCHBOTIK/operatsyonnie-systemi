@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SecurePassword.ViewModels.Vault"
+             xmlns:converters="clr-namespace:SecurePassword.Converters"
+             x:Class="SecurePassword.Views.Vault.VaultPage"
+             x:DataType="vm:VaultViewModel"
+             Title="Хранилище"
+             NavigationPage.HasNavigationBar="False"
+             Background="{StaticResource PageBackgroundBrush}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="0">
+
+        <!-- 1. Header Bar -->
+        <Border Grid.Row="0"
+                BackgroundColor="#33FFFFFF"
+                StrokeThickness="0"
+                Padding="16,10,16,10">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                    <Label Text="Хранилище"
+                           Style="{StaticResource HeaderTitleStyle}" />
+                    <Label Text="{Binding SortIndicatorText, StringFormat='Сортировка: {0}'}"
+                           Style="{StaticResource HintLabelStyle}" />
+                </VerticalStackLayout>
+
+                <!-- Sort Toggle Button -->
+                <Button Grid.Column="1"
+                        Text="⇅ Сорт."
+                        Style="{StaticResource InlineSmallButtonStyle}"
+                        Command="{Binding ToggleSortCommand}"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Изменить порядок сортировки" />
+
+                <!-- Close Modal Button -->
+                <Button Grid.Column="2"
+                        Text="✕"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        HeightRequest="38"
+                        WidthRequest="38"
+                        Padding="0"
+                        Clicked="OnCloseClicked"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Закрыть экран" />
+            </Grid>
+        </Border>
+
+        <!-- 2. Search Bar -->
+        <Border Grid.Row="1"
+                Style="{StaticResource FieldBorderStyle}"
+                Margin="16,8,16,4"
+                Padding="12,0">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Label Grid.Column="0"
+                       Text="🔍"
+                       FontSize="16"
+                       VerticalOptions="Center" />
+
+                <Entry Grid.Column="1"
+                       Text="{Binding SearchQuery}"
+                       Placeholder="Поиск записей..."
+                       PlaceholderColor="{StaticResource TextMuted}"
+                       TextColor="{StaticResource TextPrimary}"
+                       ReturnType="Search"
+                       ClearButtonVisibility="WhileEditing"
+                       HeightRequest="46"
+                       VerticalOptions="Center"
+                       AutomationProperties.Name="Строка поиска по хранилищу" />
+
+                <Button Grid.Column="2"
+                        Text="✕"
+                        FontSize="12"
+                        Style="{StaticResource InlineSmallButtonStyle}"
+                        HeightRequest="28"
+                        WidthRequest="28"
+                        Padding="0"
+                        Command="{Binding ClearSearchCommand}"
+                        IsVisible="{Binding IsSearchActive}"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Очистить поиск" />
+            </Grid>
+        </Border>
+
+        <!-- 3. Category Filter Chips (Horizontal Scroll) -->
+        <ScrollView Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalScrollBarVisibility="Never"
+                    Padding="16,6,16,6">
+            <HorizontalStackLayout Spacing="8">
+
+                <!-- Filter: All -->
+                <Button Text="{Binding TotalCount, StringFormat='Все ({0})'}"
+                        Command="{Binding SetFilterCommand}"
+                        CommandParameter="all"
+                        AutomationProperties.Name="Фильтр: Все элементы">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsFilterAll}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <!-- Filter: Passwords -->
+                <Button Text="{Binding PasswordsCount, StringFormat='🔑 Пароли ({0})'}"
+                        Command="{Binding SetFilterCommand}"
+                        CommandParameter="password"
+                        AutomationProperties.Name="Фильтр: Пароли">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsFilterPassword}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <!-- Filter: Cards -->
+                <Button Text="{Binding CardsCount, StringFormat='💳 Карты ({0})'}"
+                        Command="{Binding SetFilterCommand}"
+                        CommandParameter="card"
+                        AutomationProperties.Name="Фильтр: Карты">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsFilterCard}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <!-- Filter: Notes -->
+                <Button Text="{Binding NotesCount, StringFormat='📝 Заметки ({0})'}"
+                        Command="{Binding SetFilterCommand}"
+                        CommandParameter="note"
+                        AutomationProperties.Name="Фильтр: Заметки">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsFilterNote}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- 4. Main Content: RefreshView + CollectionView + FAB -->
+        <Grid Grid.Row="3">
+
+            <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                         Command="{Binding RefreshCommand}"
+                         RefreshColor="{StaticResource Primary}">
+
+                <CollectionView ItemsSource="{Binding DisplayedItems}"
+                                SelectionMode="None"
+                                EmptyView="{Binding .}"
+                                Margin="16,0,16,0">
+
+                    <!-- Data Template for Items -->
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VaultListItemViewModel">
+                            <Border Style="{StaticResource VaultListItemCardStyle}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VaultViewModel}}, Path=SelectItemCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                                    <!-- Item Icon -->
+                                    <Border Grid.Column="0"
+                                            HeightRequest="42"
+                                            WidthRequest="42"
+                                            StrokeThickness="0"
+                                            BackgroundColor="#1519A38C"
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="4"
+                                            VerticalOptions="Center">
+                                        <Image Source="{Binding IconSource, Converter={StaticResource StringToImageSourceConverter}}"
+                                               Aspect="AspectFit"
+                                               HeightRequest="32"
+                                               WidthRequest="32" />
+                                    </Border>
+
+                                    <!-- Item Texts -->
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                        <Label Text="{Binding Title}"
+                                               FontSize="15"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               LineBreakMode="TailTruncation"
+                                               MaxLines="1" />
+                                        <Label Text="{Binding Subtitle}"
+                                               FontSize="13"
+                                               TextColor="{StaticResource TextSecondary}"
+                                               LineBreakMode="TailTruncation"
+                                               MaxLines="1" />
+                                    </VerticalStackLayout>
+
+                                    <!-- Right Type Badge & Chevron -->
+                                    <HorizontalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                                        <Border BackgroundColor="#10000000"
+                                                StrokeThickness="0"
+                                                StrokeShape="RoundRectangle 8"
+                                                Padding="8,3">
+                                            <Label Text="{Binding TypeDisplayName}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextSecondary}" />
+                                        </Border>
+                                        <Label Text="›"
+                                               FontSize="20"
+                                               TextColor="{StaticResource TextMuted}"
+                                               VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                    <!-- Empty View Template -->
+                    <CollectionView.EmptyViewTemplate>
+                        <DataTemplate x:DataType="vm:VaultViewModel">
+                            <VerticalStackLayout HorizontalOptions="Center"
+                                                 VerticalOptions="Center"
+                                                 Spacing="14"
+                                                 Padding="24,60">
+
+                                <Label Text="🔒"
+                                       FontSize="48"
+                                       HorizontalOptions="Center" />
+
+                                <Label Text="Хранилище пусто"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       HorizontalOptions="Center"
+                                       IsVisible="{Binding IsEmpty}" />
+
+                                <Label Text="Нажмите кнопку «+» ниже, чтобы добавить первую запись в хранилище."
+                                       Style="{StaticResource HintLabelStyle}"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       IsVisible="{Binding IsEmpty}" />
+
+                                <Label Text="Ничего не найдено"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       HorizontalOptions="Center"
+                                       IsVisible="{Binding HasNoSearchResults}" />
+
+                                <Label Text="Попробуйте изменить поисковый запрос или выбрать другой фильтр."
+                                       Style="{StaticResource HintLabelStyle}"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       IsVisible="{Binding HasNoSearchResults}" />
+
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </CollectionView.EmptyViewTemplate>
+
+                </CollectionView>
+            </RefreshView>
+
+            <!-- Floating Action Button (FAB) for Add Item -->
+            <Button Text="+"
+                    Style="{StaticResource FloatingActionButtonStyle}"
+                    Command="{Binding AddNewItemCommand}"
+                    HorizontalOptions="End"
+                    VerticalOptions="End"
+                    Margin="0,0,24,24"
+                    AutomationProperties.Name="Добавить новую запись в хранилище" />
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

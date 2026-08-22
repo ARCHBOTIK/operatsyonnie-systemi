@@ -25,12 +25,10 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
 
-        builder.Services.AddMauiBlazorWebView();
-
 #if DEBUG
-        builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
+
 
         builder.Services.AddSingleton<keyManager>(_ =>
             new keyManager(Path.Combine(FileSystem.AppDataDirectory, "keys.dat")));
@@ -62,7 +60,25 @@ public static class MauiProgram
                 Path.Combine(FileSystem.AppDataDirectory, "notes.dat"),
                 sp.GetRequiredService<keyManager>()));
 
-        builder.Services.AddSingleton<MasterPasswordPage>();
+        builder.Services.AddSingleton<SecurePassword.Navigation.IAppRootNavigator, SecurePassword.Navigation.AppRootNavigator>();
+        builder.Services.AddTransient<AppShell>();
+        builder.Services.AddTransient<MasterPasswordPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Generator.GeneratorViewModel>();
+
+        builder.Services.AddTransient<SecurePassword.Views.Generator.GeneratorPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Settings.SettingsViewModel>();
+        builder.Services.AddTransient<SecurePassword.Views.Settings.SettingsPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Sync.SyncViewModel>();
+        builder.Services.AddTransient<SecurePassword.Views.Sync.SyncPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Vault.VaultViewModel>();
+        builder.Services.AddTransient<SecurePassword.Views.Vault.VaultPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Vault.ItemDetailViewModel>();
+        builder.Services.AddTransient<SecurePassword.Views.Vault.ItemDetailPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Vault.ItemEditViewModel>();
+        builder.Services.AddTransient<SecurePassword.Views.Vault.ItemEditPage>();
+
+
+
 
 #if ANDROID
         builder.ConfigureLifecycleEvents(events =>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -9,10 +9,10 @@ namespace SecurePassword
         private readonly keyManager _keyManager;
         private readonly string _keyFilePath;
 
-        public MasterPasswordService(keyManager keyManager)
+        public MasterPasswordService(keyManager keyManager, string? keyFilePath = null)
         {
             _keyManager = keyManager;
-            _keyFilePath = Path.Combine(FileSystem.AppDataDirectory, "keys.dat");
+            _keyFilePath = keyFilePath ?? FileWorker.ResolvePath("keys.dat");
         }
 
         public bool KeyFileExists()

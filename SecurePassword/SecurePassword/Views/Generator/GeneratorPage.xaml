@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SecurePassword.ViewModels.Generator"
+             xmlns:converters="clr-namespace:SecurePassword.Converters"
+             x:Class="SecurePassword.Views.Generator.GeneratorPage"
+             x:DataType="vm:GeneratorViewModel"
+             Title="Генератор паролей"
+             NavigationPage.HasNavigationBar="False"
+             Background="{StaticResource PageBackgroundBrush}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:StringToColorConverter x:Key="StringToColorConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- App Header Bar -->
+        <Border Grid.Row="0"
+                BackgroundColor="#33FFFFFF"
+                StrokeThickness="0"
+                Padding="20,12,20,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="Генератор паролей"
+                       Style="{StaticResource HeaderTitleStyle}"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="✕"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        HeightRequest="40"
+                        WidthRequest="40"
+                        Padding="0"
+                        Clicked="OnCloseClicked"
+                        VerticalOptions="Center"
+                        AutomationProperties.Name="Закрыть экран" />
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <ScrollView Grid.Row="1" Padding="16,12,16,24">
+            <VerticalStackLayout Spacing="16" MaximumWidthRequest="520" HorizontalOptions="Center">
+
+                <!-- Generated Password Display Card -->
+                <Border Style="{StaticResource GlassCardStyle}">
+                    <VerticalStackLayout Spacing="16">
+                        <!-- Password Text Box -->
+                        <Border Style="{StaticResource FieldBorderStyle}" Padding="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0"
+                                       Text="{Binding GeneratedPassword}"
+                                       FontSize="16"
+                                       FontFamily="Monospace"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       LineBreakMode="CharacterWrap"
+                                       VerticalOptions="Center" />
+
+                                <Button Grid.Column="1"
+                                        Text="Копировать"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding CopyCommand}"
+                                        IsEnabled="{Binding HasEvaluatedPassword}"
+                                        VerticalOptions="Center"
+                                        AutomationProperties.Name="Копировать сгенерированный пароль" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Copy Feedback Toast -->
+                        <Border IsVisible="{Binding Copied}"
+                                BackgroundColor="#E8F8F5"
+                                Stroke="{StaticResource PrimaryLight}"
+                                StrokeThickness="1"
+                                Padding="12,8"
+                                HorizontalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12" />
+                            </Border.StrokeShape>
+                            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                                <Label Text="✓" TextColor="{StaticResource Primary}" FontAttributes="Bold" />
+                                <Label Text="Пароль скопирован в буфер" TextColor="{StaticResource PrimaryDark}" FontSize="13" FontAttributes="Bold" />
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Generate Button -->
+                        <Button Text="Сгенерировать"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding GenerateCommand}"
+                                AutomationProperties.Name="Сгенерировать пароль" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Password Options Card -->
+                <Border Style="{StaticResource GlassCardStyle}">
+                    <VerticalStackLayout Spacing="16">
+                        <Label Text="Настройки пароля" Style="{StaticResource SectionHeaderStyle}" />
+
+                        <!-- Length Control -->
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0"
+                                       Text="Длина пароля (4–255)"
+                                       Style="{StaticResource FieldLabelStyle}"
+                                       VerticalOptions="Center" />
+                                <Border Grid.Column="1"
+                                        Style="{StaticResource FieldBorderStyle}"
+                                        Padding="8,2"
+                                        HeightRequest="36"
+                                        WidthRequest="64"
+                                        VerticalOptions="Center">
+                                    <Entry Text="{Binding PasswordLength, Mode=TwoWay}"
+                                           Keyboard="Numeric"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource PrimaryDark}"
+                                           HorizontalTextAlignment="Center"
+                                           VerticalTextAlignment="Center"
+                                           BackgroundColor="Transparent"
+                                           Margin="0" />
+                                </Border>
+                            </Grid>
+
+                            <Slider Style="{StaticResource AppSliderStyle}"
+                                    Minimum="4"
+                                    Maximum="255"
+                                    Value="{Binding PasswordLengthDouble, Mode=TwoWay}"
+                                    AutomationProperties.Name="Ползунок длины пароля" />
+                        </VerticalStackLayout>
+
+                        <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                        <!-- Option: Digits -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="Цифры (0-9)"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   FontSize="15"
+                                   VerticalOptions="Center" />
+                            <Switch Grid.Column="1"
+                                    Style="{StaticResource AppSwitchStyle}"
+                                    IsToggled="{Binding IncludeDigits, Mode=TwoWay}"
+                                    AutomationProperties.Name="Включить цифры" />
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                        <!-- Option: Lowercase -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="Строчные буквы (a-z)"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   FontSize="15"
+                                   VerticalOptions="Center" />
+                            <Switch Grid.Column="1"
+                                    Style="{StaticResource AppSwitchStyle}"
+                                    IsToggled="{Binding IncludeLowercase, Mode=TwoWay}"
+                                    AutomationProperties.Name="Включить строчные буквы" />
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                        <!-- Option: Uppercase -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="Прописные буквы (A-Z)"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   FontSize="15"
+                                   VerticalOptions="Center" />
+                            <Switch Grid.Column="1"
+                                    Style="{StaticResource AppSwitchStyle}"
+                                    IsToggled="{Binding IncludeUppercase, Mode=TwoWay}"
+                                    AutomationProperties.Name="Включить прописные буквы" />
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                        <!-- Option: Special Characters -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="Специальные символы (!@#$%^&amp;*)"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   FontSize="15"
+                                   VerticalOptions="Center" />
+                            <Switch Grid.Column="1"
+                                    Style="{StaticResource AppSwitchStyle}"
+                                    IsToggled="{Binding IncludeSpecial, Mode=TwoWay}"
+                                    AutomationProperties.Name="Включить специальные символы" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Password Strength Card -->
+                <Border Style="{StaticResource GlassCardStyle}"
+                        IsVisible="{Binding HasEvaluatedPassword}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="Сила пароля"
+                                   Style="{StaticResource SectionHeaderStyle}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding StrengthText}"
+                                   FontSize="15"
+                                   FontAttributes="Bold"
+                                   TextColor="{Binding StrengthColorHex, Converter={StaticResource StringToColorConverter}}" />
+                        </Grid>
+
+                        <ProgressBar Style="{StaticResource AppProgressBarStyle}"
+                                     Progress="{Binding StrengthProgress}"
+                                     ProgressColor="{Binding StrengthColorHex, Converter={StaticResource StringToColorConverter}}" />
+
+                        <Label Text="{Binding EntropyText}"
+                               Style="{StaticResource HintLabelStyle}" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

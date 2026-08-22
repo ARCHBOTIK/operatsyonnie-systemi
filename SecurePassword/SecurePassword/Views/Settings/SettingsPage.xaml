@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SecurePassword.ViewModels.Settings"
+             xmlns:converters="clr-namespace:SecurePassword.Converters"
+             x:Class="SecurePassword.Views.Settings.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="Настройки"
+             NavigationPage.HasNavigationBar="False"
+             Background="{StaticResource PageBackgroundBrush}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:BoolToVisibilityTextConverter x:Key="BoolToVisibilityTextConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid>
+        <!-- Main Scrollable Page Content -->
+        <Grid RowDefinitions="Auto,*">
+            <!-- App Header Bar -->
+            <Border Grid.Row="0"
+                    BackgroundColor="#33FFFFFF"
+                    StrokeThickness="0"
+                    Padding="20,12,20,12">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0"
+                           Text="Настройки"
+                           Style="{StaticResource HeaderTitleStyle}"
+                           VerticalOptions="Center" />
+                    <Button Grid.Column="1"
+                            Text="✕"
+                            FontSize="16"
+                            FontAttributes="Bold"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            HeightRequest="40"
+                            WidthRequest="40"
+                            Padding="0"
+                            Clicked="OnCloseClicked"
+                            VerticalOptions="Center"
+                            AutomationProperties.Name="Закрыть экран" />
+                </Grid>
+            </Border>
+
+            <ScrollView Grid.Row="1" Padding="16,12,16,24">
+                <VerticalStackLayout Spacing="16" MaximumWidthRequest="520" HorizontalOptions="Center">
+
+                    <!-- Card 1: Change Master Password Action -->
+                    <Border Style="{StaticResource GlassCardStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenChangePasswordCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Label Grid.Column="0" Text="🔒" FontSize="20" VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Сменить мастер-пароль"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Card 2: Auto-Lock Options -->
+                    <Border Style="{StaticResource GlassCardStyle}">
+                        <VerticalStackLayout Spacing="14">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Label Grid.Column="0" Text="🛡" FontSize="20" VerticalOptions="Center" />
+                                <Label Grid.Column="1"
+                                       Text="Автоблокировка"
+                                       Style="{StaticResource SectionHeaderStyle}"
+                                       VerticalOptions="Center" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                            <!-- Lock on Exit -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="При выходе из приложения"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           FontSize="15"
+                                           FontAttributes="Bold" />
+                                    <Label Text="Следующий запуск потребует повторную авторизацию"
+                                           Style="{StaticResource HintLabelStyle}" />
+                                </VerticalStackLayout>
+                                <Switch Grid.Column="1"
+                                        Style="{StaticResource AppSwitchStyle}"
+                                        IsToggled="{Binding LockOnExit, Mode=TwoWay}"
+                                        AutomationProperties.Name="Блокировать при выходе" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                            <!-- Lock on Minimize -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="При сворачивании"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           FontSize="15"
+                                           FontAttributes="Bold" />
+                                    <Label Text="Скрытие окна возвращает на экран мастер-пароля"
+                                           Style="{StaticResource HintLabelStyle}" />
+                                </VerticalStackLayout>
+                                <Switch Grid.Column="1"
+                                        Style="{StaticResource AppSwitchStyle}"
+                                        IsToggled="{Binding LockOnMinimize, Mode=TwoWay}"
+                                        AutomationProperties.Name="Блокировать при сворачивании" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="{StaticResource Divider}" />
+
+                            <!-- Lock on Timer -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Через 5 минут бездействия"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           FontSize="15"
+                                           FontAttributes="Bold" />
+                                    <Label Text="При отсутствии активности потребуется повторная авторизация"
+                                           Style="{StaticResource HintLabelStyle}" />
+                                </VerticalStackLayout>
+                                <Switch Grid.Column="1"
+                                        Style="{StaticResource AppSwitchStyle}"
+                                        IsToggled="{Binding LockOnTimer, Mode=TwoWay}"
+                                        AutomationProperties.Name="Блокировать по таймеру" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Card 3: Lock Now Action -->
+                    <Border Style="{StaticResource GlassCardStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding LockNowCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Label Grid.Column="0" Text="⏱" FontSize="20" VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Заблокировать сейчас"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Card 4: Delete All Data Action -->
+                    <Border Style="{StaticResource GlassCardStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenDeleteModalCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Label Grid.Column="0" Text="🗑" FontSize="20" TextColor="{StaticResource Danger}" VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Очистить все данные"
+                                   FontSize="17"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Danger}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" TextColor="{StaticResource Danger}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Card 5: P2P Sync Action -->
+                    <Border Style="{StaticResource GlassCardStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding NavigateToSyncCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Label Grid.Column="0" Text="🔄" FontSize="20" VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Обмен данными"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+
+        <!-- Change Master Password Modal Overlay -->
+        <Grid IsVisible="{Binding IsChangePasswordModalVisible}"
+              BackgroundColor="#80000000"
+              Padding="18">
+            <Border Style="{StaticResource GlassCardStyle}"
+                    BackgroundColor="#F4FAF8"
+                    MaximumWidthRequest="460"
+                    VerticalOptions="Center"
+                    Padding="22">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Смена мастер-пароля"
+                           Style="{StaticResource HeaderTitleStyle}"
+                           HorizontalOptions="Start" />
+
+                    <!-- Current Password -->
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Текущий пароль" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}">
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,0,6,0">
+                                <Entry Grid.Column="0"
+                                       Text="{Binding CurrentPassword, Mode=TwoWay}"
+                                       IsPassword="{Binding IsCurrentPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
+                                       Placeholder="••••••••"
+                                       FontSize="15"
+                                       BackgroundColor="Transparent"
+                                       Margin="12,0,0,0"
+                                       HeightRequest="48"
+                                       ClearButtonVisibility="WhileEditing" />
+                                <Button Grid.Column="1"
+                                        Text="{Binding IsCurrentPasswordVisible, Converter={StaticResource BoolToVisibilityTextConverter}}"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding ToggleCurrentPasswordVisibilityCommand}"
+                                        VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- New Password -->
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Новый пароль" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}">
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,0,6,0">
+                                <Entry Grid.Column="0"
+                                       Text="{Binding NewPassword, Mode=TwoWay}"
+                                       IsPassword="{Binding IsNewPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
+                                       Placeholder="••••••••"
+                                       FontSize="15"
+                                       BackgroundColor="Transparent"
+                                       Margin="12,0,0,0"
+                                       HeightRequest="48"
+                                       ClearButtonVisibility="WhileEditing" />
+                                <Button Grid.Column="1"
+                                        Text="{Binding IsNewPasswordVisible, Converter={StaticResource BoolToVisibilityTextConverter}}"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding ToggleNewPasswordVisibilityCommand}"
+                                        VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Confirm Password -->
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Подтверждение" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Style="{StaticResource FieldBorderStyle}">
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,0,6,0">
+                                <Entry Grid.Column="0"
+                                       Text="{Binding ConfirmPassword, Mode=TwoWay}"
+                                       IsPassword="{Binding IsConfirmPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
+                                       Placeholder="••••••••"
+                                       FontSize="15"
+                                       BackgroundColor="Transparent"
+                                       Margin="12,0,0,0"
+                                       HeightRequest="48"
+                                       ClearButtonVisibility="WhileEditing" />
+                                <Button Grid.Column="1"
+                                        Text="{Binding IsConfirmPasswordVisible, Converter={StaticResource BoolToVisibilityTextConverter}}"
+                                        Style="{StaticResource InlineSmallButtonStyle}"
+                                        Command="{Binding ToggleConfirmPasswordVisibilityCommand}"
+                                        VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Error Text -->
+                    <Label IsVisible="{Binding HasChangePasswordError}"
+                           Text="{Binding ChangePasswordError}"
+                           TextColor="{StaticResource Danger}"
+                           FontSize="13" />
+
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                        <Button Grid.Column="0"
+                                Text="Подтвердить"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding ChangePasswordCommand}"
+                                IsEnabled="{Binding IsNotBusy}"
+                                HeightRequest="48" />
+                        <Button Grid.Column="1"
+                                Text="Отмена"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CloseChangePasswordCommand}"
+                                HeightRequest="48" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- Delete Database Modal Overlay -->
+        <Grid IsVisible="{Binding IsDeleteModalVisible}"
+              BackgroundColor="#80000000"
+              Padding="18">
+            <Border Style="{StaticResource GlassCardStyle}"
+                    BackgroundColor="#FFF8F8"
+                    MaximumWidthRequest="420"
+                    VerticalOptions="Center"
+                    Padding="22">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Очистить базу данных"
+                           Style="{StaticResource HeaderTitleStyle}"
+                           TextColor="{StaticResource Danger}"
+                           HorizontalOptions="Start" />
+
+                    <Label Text="Все сохранённые пароли, карты и заметки будут безвозвратно удалены."
+                           FontSize="15"
+                           TextColor="{StaticResource TextPrimary}" />
+
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                        <Button Grid.Column="0"
+                                Text="Удалить всё"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Command="{Binding DeleteDatabaseCommand}"
+                                IsEnabled="{Binding IsNotBusy}"
+                                HeightRequest="48" />
+                        <Button Grid.Column="1"
+                                Text="Отмена"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CloseDeleteModalCommand}"
+                                HeightRequest="48" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+
+</ContentPage>

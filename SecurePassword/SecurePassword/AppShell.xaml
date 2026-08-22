@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="SecurePassword.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewsVault="clr-namespace:SecurePassword.Views.Vault"
+    xmlns:viewsSync="clr-namespace:SecurePassword.Views.Sync"
+    xmlns:viewsGen="clr-namespace:SecurePassword.Views.Generator"
+    xmlns:viewsSet="clr-namespace:SecurePassword.Views.Settings"
+    Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarBackgroundColor="#F8FDFB"
+    Shell.TabBarForegroundColor="#19A38C"
+    Shell.TabBarTitleColor="#19A38C"
+    Shell.TabBarUnselectedColor="#71828D"
+    Title="VaultPass">
+
+    <TabBar>
+        <Tab Title="Хранилище" Icon="icon_login.png" Route="vault">
+            <ShellContent ContentTemplate="{DataTemplate viewsVault:VaultPage}" />
+        </Tab>
+        <Tab Title="Синхронизация" Icon="icon_sync.png" Route="sync">
+            <ShellContent ContentTemplate="{DataTemplate viewsSync:SyncPage}" />
+        </Tab>
+        <Tab Title="Генератор" Icon="icon_plus.png" Route="generator">
+            <ShellContent ContentTemplate="{DataTemplate viewsGen:GeneratorPage}" />
+        </Tab>
+        <Tab Title="Настройки" Icon="icon_settings.png" Route="settings">
+            <ShellContent ContentTemplate="{DataTemplate viewsSet:SettingsPage}" />
+        </Tab>
+
+    </TabBar>
+
+</Shell>

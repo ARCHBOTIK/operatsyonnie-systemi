@@ -62,12 +62,16 @@ public sealed class VaultSessionService
         }
     }
 
+    private CancellationTokenSource? _inactivityCts;
+    private bool _disposed;
+
     public TimeSpan InactivityTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
     public void MarkAuthenticated()
     {
         IsAuthenticated = true;
         RecordActivity();
+        StartInactivityMonitor();
         NotifyStateChanged();
     }
 
@@ -77,6 +81,7 @@ public sealed class VaultSessionService
             return;
 
         IsAuthenticated = false;
+        StopInactivityMonitor();
         NotifyStateChanged();
     }
 
@@ -92,8 +97,59 @@ public sealed class VaultSessionService
             DateTimeOffset.UtcNow - _lastActivityUtc >= InactivityTimeout;
     }
 
+    private void StartInactivityMonitor()
+    {
+        StopInactivityMonitor();
+        var cts = new CancellationTokenSource();
+        _inactivityCts = cts;
+        var token = cts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested && IsAuthenticated)
+            {
+                try
+                {
+                    await Task.Delay(100, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
+                if (ShouldLockForInactivity())
+                {
+                    Lock();
+                    break;
+                }
+            }
+        }, token);
+    }
+
+    private void StopInactivityMonitor()
+    {
+        try
+        {
+            _inactivityCts?.Cancel();
+            _inactivityCts?.Dispose();
+        }
+        catch { }
+        finally
+        {
+            _inactivityCts = null;
+        }
+    }
+
     private void NotifyStateChanged()
     {
         StateChanged?.Invoke();
     }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        StopInactivityMonitor();
+    }
 }
+

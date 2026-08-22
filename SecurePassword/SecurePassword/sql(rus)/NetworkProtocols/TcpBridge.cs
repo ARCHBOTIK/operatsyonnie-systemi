@@ -31,6 +31,17 @@ public sealed class TcpBridge
         _keyManager = keyManager;
     }
 
+    /// <summary>
+    /// Proxies status messages from the underlying <see cref="NetworkService"/> for UI progress updates.
+    /// This keeps NetworkService internal implementation details encapsulated.
+    /// </summary>
+    public event Action<string>? StatusChanged
+    {
+        add => _networkService.StatusChanged += value;
+        remove => _networkService.StatusChanged -= value;
+    }
+
+
     public SyncTransferMode GetPreferredMode()
     {
         return LocalVaultExists() ? SyncTransferMode.Upload : SyncTransferMode.Download;
