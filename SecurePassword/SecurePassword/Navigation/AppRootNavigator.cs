@@ -1,3 +1,5 @@
+using SecurePassword;
+
 namespace SecurePassword.Navigation;
 
 public sealed class AppRootNavigator : IAppRootNavigator
@@ -87,12 +89,14 @@ public sealed class AppRootNavigator : IAppRootNavigator
         if (LockedPageFactory is not null)
             return LockedPageFactory();
 
-        var pageType = Type.GetType("SecurePassword.MasterPasswordPage, SecurePassword");
-        if (pageType is not null)
-        {
-            var resolved = _services.GetService(pageType) as Page;
-            if (resolved is not null) return resolved;
-        }
+        var pageType = Type.GetType("SecurePassword.MasterPasswordPage, VaultPass")
+            ?? Type.GetType("SecurePassword.MasterPasswordPage, SecurePassword")
+            ?? AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("SecurePassword.MasterPasswordPage"))
+                .FirstOrDefault(t => t is not null);
+
+        if (pageType is not null && _services.GetService(pageType) is Page resolved)
+            return resolved;
 
         return null!;
     }
@@ -102,12 +106,14 @@ public sealed class AppRootNavigator : IAppRootNavigator
         if (UnlockedPageFactory is not null)
             return UnlockedPageFactory();
 
-        var shellType = Type.GetType("SecurePassword.AppShell, SecurePassword");
-        if (shellType is not null)
-        {
-            var resolved = _services.GetService(shellType) as Page;
-            if (resolved is not null) return resolved;
-        }
+        var shellType = Type.GetType("SecurePassword.AppShell, VaultPass")
+            ?? Type.GetType("SecurePassword.AppShell, SecurePassword")
+            ?? AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("SecurePassword.AppShell"))
+                .FirstOrDefault(t => t is not null);
+
+        if (shellType is not null && _services.GetService(shellType) is Page resolved)
+            return resolved;
 
         return null!;
     }

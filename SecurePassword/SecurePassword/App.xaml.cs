@@ -62,24 +62,31 @@ public partial class App : Application
 #if WINDOWS
     private static void ConfigureWindowsWindow(Window mauiWindow)
     {
-        var nativeWindow = mauiWindow.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
-        if (nativeWindow is null)
-            return;
-
-        IntPtr hwnd = WindowNative.GetWindowHandle(nativeWindow);
-        var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
-        var appWindow = AppWindow.GetFromWindowId(windowId);
-
-        if (appWindow.Presenter is OverlappedPresenter presenter)
+        try
         {
-            presenter.Restore();
-            presenter.IsMaximizable = true;
-            presenter.IsMinimizable = true;
-            presenter.IsResizable = true;
-        }
+            var nativeWindow = mauiWindow.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
+            if (nativeWindow is null)
+                return;
 
-        appWindow.MoveAndResize(new RectInt32(100, 100, 420, 860));
-        SetMinWindowSize(hwnd, 360, 700);
+            IntPtr hwnd = WindowNative.GetWindowHandle(nativeWindow);
+            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.Restore();
+                presenter.IsMaximizable = true;
+                presenter.IsMinimizable = true;
+                presenter.IsResizable = true;
+            }
+
+            appWindow.MoveAndResize(new RectInt32(100, 100, 420, 860));
+            SetMinWindowSize(hwnd, 360, 700);
+        }
+        catch
+        {
+            // Fallback if window handle/presenter is not available yet
+        }
     }
 
     private static int _minWidth = 360;
