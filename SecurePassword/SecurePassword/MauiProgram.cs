@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
+using ZXing.Net.Maui.Controls;
 #if WINDOWS
 using Velopack;
 #endif
@@ -20,6 +21,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseBarcodeReader()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -37,6 +39,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<VaultSessionService>();
         builder.Services.AddSingleton<NetworkService>();
         builder.Services.AddSingleton<TcpBridge>();
+        builder.Services.AddSingleton<IImportReceiverService>(sp => sp.GetRequiredService<TcpBridge>());
 
 #if ANDROID
         builder.Services.AddSingleton<IClipboardBackend, AndroidClipboardBackend>();
@@ -70,6 +73,8 @@ public static class MauiProgram
         builder.Services.AddTransient<SecurePassword.Views.Settings.SettingsPage>();
         builder.Services.AddTransient<SecurePassword.ViewModels.Sync.SyncViewModel>();
         builder.Services.AddTransient<SecurePassword.Views.Sync.SyncPage>();
+        builder.Services.AddTransient<SecurePassword.ViewModels.Import.ImportViewModel>();
+        builder.Services.AddTransient<SecurePassword.Views.Import.ImportPage>();
         builder.Services.AddTransient<SecurePassword.ViewModels.Vault.VaultViewModel>();
         builder.Services.AddTransient<SecurePassword.Views.Vault.VaultPage>();
         builder.Services.AddTransient<SecurePassword.ViewModels.Vault.ItemDetailViewModel>();

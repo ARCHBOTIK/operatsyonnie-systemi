@@ -17,7 +17,20 @@ public sealed class SyncOperationResult
     public SyncTransferMode Mode { get; init; }
 }
 
-public sealed class TcpBridge
+public interface IPendingVaultImport
+{
+    void Commit();
+    void Rollback();
+}
+
+public interface IImportReceiverService
+{
+    string? GetLocalPeerAddress();
+    bool LocalVaultExists();
+    Task<IPendingVaultImport> ReceiveVaultForConfirmationAsync(PairingSecret pairingSecret, CancellationToken token = default);
+}
+
+public sealed class TcpBridge : IImportReceiverService
 {
     public static readonly string[] VaultFiles = VaultImportTransaction.VaultFiles;
     public static readonly string[] DataFiles = VaultImportTransaction.DataFiles;
@@ -69,6 +82,8 @@ public sealed class TcpBridge
         return string.IsNullOrWhiteSpace(ipAddress) ? [] : [ipAddress];
     }
 
+    public string? GetLocalPeerAddress() => _networkService.GetLocalIpAddress();
+
     public string GetPeerAddressHint()
     {
         string? ipAddress = _networkService.GetLocalIpAddress();
@@ -118,28 +133,50 @@ public sealed class TcpBridge
     {
         ArgumentNullException.ThrowIfNull(pairingSecret);
 
-        VaultImportTransaction? transaction = null;
-
         try
         {
-            byte[] bundle = await _networkService.StartReceiverFlowAsync(pairingSecret, token);
-
-            transaction = new VaultImportTransaction();
-            transaction.Prepare(bundle);
-            transaction.Commit();
-
-            _keyManager.ClearLoadedKey();
+            IPendingVaultImport pendingImport = await ReceiveVaultForConfirmationAsync(pairingSecret, token);
+            pendingImport.Commit();
             return Success(SyncTransferMode.Download, "База успешно принята и установлена. Введите мастер-пароль повторно.");
         }
         catch (OperationCanceledException)
         {
-            transaction?.Rollback();
             return Cancelled(SyncTransferMode.Download);
         }
         catch (Exception exception)
         {
-            transaction?.Rollback();
             return Error(SyncTransferMode.Download, $"Не удалось принять базу: {exception.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Receives and validates the encrypted SPP1 payload, but leaves its crash-safe
+    /// transaction prepared until the user explicitly confirms the replacement.
+    /// </summary>
+    public async Task<IPendingVaultImport> ReceiveVaultForConfirmationAsync(
+        PairingSecret pairingSecret,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(pairingSecret);
+        VaultImportTransaction? transaction = null;
+        byte[]? bundle = null;
+
+        try
+        {
+            bundle = await _networkService.StartReceiverFlowAsync(pairingSecret, token);
+            transaction = new VaultImportTransaction();
+            transaction.Prepare(bundle);
+            return new PendingVaultImport(transaction, _keyManager);
+        }
+        catch
+        {
+            transaction?.Rollback();
+            throw;
+        }
+        finally
+        {
+            if (bundle is not null)
+                System.Security.Cryptography.CryptographicOperations.ZeroMemory(bundle);
         }
     }
 
@@ -167,6 +204,38 @@ public sealed class TcpBridge
 
         WriteDiagnostic($"Created sync bundle, size={memoryStream.Length} bytes.");
         return memoryStream.ToArray();
+    }
+
+    private sealed class PendingVaultImport : IPendingVaultImport
+    {
+        private readonly VaultImportTransaction _transaction;
+        private readonly keyManager _keyManager;
+        private bool _completed;
+
+        public PendingVaultImport(VaultImportTransaction transaction, keyManager keyManager)
+        {
+            _transaction = transaction;
+            _keyManager = keyManager;
+        }
+
+        public void Commit()
+        {
+            if (_completed)
+                throw new InvalidOperationException("Import has already completed.");
+
+            _transaction.Commit();
+            _keyManager.ClearLoadedKey();
+            _completed = true;
+        }
+
+        public void Rollback()
+        {
+            if (_completed)
+                return;
+
+            _transaction.Rollback();
+            _completed = true;
+        }
     }
 
     private static SyncOperationResult Success(SyncTransferMode mode, string message)

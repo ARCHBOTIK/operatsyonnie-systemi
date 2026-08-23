@@ -160,7 +160,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- Card 5: P2P Sync Action -->
+                    <!-- Card 5: Send vault -->
                     <Border Style="{StaticResource GlassCardStyle}">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding NavigateToSyncCommand}" />
@@ -168,7 +168,22 @@
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                             <Label Grid.Column="0" Text="🔄" FontSize="20" VerticalOptions="Center" />
                             <Label Grid.Column="1"
-                                   Text="Обмен данными"
+                                   Text="Передать данные"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Card 6: Import vault -->
+                    <Border Style="{StaticResource GlassCardStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding NavigateToImportCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Label Grid.Column="0" Text="📥" FontSize="20" VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Импортировать данные"
                                    Style="{StaticResource SectionHeaderStyle}"
                                    VerticalOptions="Center" />
                             <Label Grid.Column="2" Text="›" FontSize="22" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />

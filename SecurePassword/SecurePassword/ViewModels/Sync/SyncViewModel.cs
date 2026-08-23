@@ -45,6 +45,8 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
     private bool _hasTransferableVault;
     private bool _hasLocalVault;
     private double _progressValue;
+    private bool _showManualEntry = !OperatingSystem.IsAndroid();
+    private bool _isScannerVisible;
 
     // Sensitive: PairingSecret holds zeroed secret bytes on Dispose
     private PairingSecret? _receiverPairingSecret;
@@ -68,7 +70,14 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
         SelectUploadModeCommand = new RelayCommand(() => SelectMode(SyncTransferMode.Upload));
         SelectDownloadModeCommand = new RelayCommand(() => SelectMode(SyncTransferMode.Download));
         StartSyncCommand = new AsyncRelayCommand(StartSyncAsync, () => CanStart);
+        StartSendCommand = new AsyncRelayCommand(StartSendAsync, () => CanStart);
         CancelSyncCommand = new RelayCommand(CancelCurrentOperation, () => CanCancel);
+        ToggleManualEntryCommand = new RelayCommand(() =>
+        {
+            ShowManualEntry = !ShowManualEntry;
+            if (ShowManualEntry)
+                SelectMode(SyncTransferMode.Upload);
+        });
 
         InitialiseState();
     }
@@ -77,7 +86,9 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
     public ICommand SelectUploadModeCommand { get; }
     public ICommand SelectDownloadModeCommand { get; }
     public ICommand StartSyncCommand { get; }
+    public ICommand StartSendCommand { get; }
     public ICommand CancelSyncCommand { get; }
+    public ICommand ToggleManualEntryCommand { get; }
 
     // ─── Mode ─────────────────────────────────────────────────────────────────
     public SyncTransferMode SelectedMode
@@ -139,6 +150,57 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
     {
         get => _peerPairingCode;
         set => SetProperty(ref _peerPairingCode, value);
+    }
+
+    /// <summary>Windows and denied-camera users always retain this manual fallback.</summary>
+    public bool ShowManualEntry
+    {
+        get => _showManualEntry;
+        set => SetProperty(ref _showManualEntry, value);
+    }
+
+    public bool IsScannerVisible
+    {
+        get => _isScannerVisible;
+        private set => SetProperty(ref _isScannerVisible, value);
+    }
+
+    public bool CanScanQr => OperatingSystem.IsAndroid();
+
+    public void BeginQrScan()
+    {
+        if (!CanScanQr || IsOperationActive)
+            return;
+
+        ValidationError = string.Empty;
+        IsScannerVisible = true;
+    }
+
+    /// <summary>
+    /// Accepts one scanner result only. Raw QR text is never retained after this method returns.
+    /// </summary>
+    public void ApplyScannedQr(string? rawPayload)
+    {
+        IsScannerVisible = false;
+        if (!QrPairingPayload.TryParse(rawPayload, out QrPairingPayload? payload, out string error))
+        {
+            ValidationError = error;
+            ShowManualEntry = true;
+            return;
+        }
+
+        SelectMode(SyncTransferMode.Upload);
+        PeerAddress = payload!.Host;
+        PeerPairingCode = payload.PairingCode;
+        ValidationError = string.Empty;
+        ShowManualEntry = true;
+    }
+
+    public void CameraPermissionDenied()
+    {
+        IsScannerVisible = false;
+        ShowManualEntry = true;
+        ValidationError = "Камера недоступна. Введите IP-адрес и код сопряжения вручную.";
     }
 
     // ─── Receiver display ──────────────────────────────────────────────────────
@@ -322,6 +384,18 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
         ApplyResult(result);
     }
 
+    /// <summary>
+    /// The dedicated SyncPage is sender-only in Stage 8B. Keeping StartSyncAsync
+    /// preserves the legacy receiver orchestration used by existing callers/tests.
+    /// </summary>
+    public async Task StartSendAsync()
+    {
+        if (SelectedMode != SyncTransferMode.Upload)
+            SelectMode(SyncTransferMode.Upload);
+
+        await StartSyncAsync();
+    }
+
     private bool ValidateInputs()
     {
         if (SelectedMode == SyncTransferMode.Upload)
@@ -385,6 +459,7 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
     // ─── Sensitive data ────────────────────────────────────────────────────────
     public void ClearSensitiveData()
     {
+        IsScannerVisible = false;
         PeerPairingCode = string.Empty;
         ClearReceiverPairingSecret();
         ValidationError = string.Empty;
@@ -460,6 +535,7 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
     private void RaiseCommandsCanExecuteChanged()
     {
         ((AsyncRelayCommand)StartSyncCommand).RaiseCanExecuteChanged();
+        ((AsyncRelayCommand)StartSendCommand).RaiseCanExecuteChanged();
         ((RelayCommand)CancelSyncCommand).RaiseCanExecuteChanged();
     }
 

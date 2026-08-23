@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:SecurePassword.ViewModels.Vault"
@@ -50,7 +50,8 @@
             <!-- Type Selector Buttons -->
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" IsVisible="{Binding CanChangeType}">
                 <!-- Password Type -->
-                <Button Text="🔑 Пароль"
+                <Button Grid.Column="0"
+                        Text="🔑 Пароль"
                         Command="{Binding SelectTypeCommand}"
                         CommandParameter="Password"
                         AutomationProperties.Name="Выбрать тип: Пароль">
@@ -67,7 +68,8 @@
                 </Button>
 
                 <!-- Card Type -->
-                <Button Text="💳 Карта"
+                <Button Grid.Column="1"
+                        Text="💳 Карта"
                         Command="{Binding SelectTypeCommand}"
                         CommandParameter="Card"
                         AutomationProperties.Name="Выбрать тип: Банковская карта">
@@ -84,7 +86,8 @@
                 </Button>
 
                 <!-- Note Type -->
-                <Button Text="📝 Заметка"
+                <Button Grid.Column="2"
+                        Text="📝 Заметка"
                         Command="{Binding SelectTypeCommand}"
                         CommandParameter="Note"
                         AutomationProperties.Name="Выбрать тип: Защищённая заметка">

@@ -30,6 +30,7 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
     public Action? RequestLockAction { get; set; }
     public Action? NavigateToSyncAction { get; set; }
+    public Action? NavigateToImportAction { get; set; }
 
     public SettingsViewModel(
         VaultSessionService vaultSession,
@@ -56,6 +57,7 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
         LockNowCommand = new RelayCommand(LockApplication);
         NavigateToSyncCommand = new RelayCommand(NavigateToSync);
+        NavigateToImportCommand = new RelayCommand(NavigateToImport);
     }
 
     public ICommand OpenChangePasswordCommand { get; }
@@ -69,6 +71,7 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
     public ICommand DeleteDatabaseCommand { get; }
     public ICommand LockNowCommand { get; }
     public ICommand NavigateToSyncCommand { get; }
+    public ICommand NavigateToImportCommand { get; }
 
     public bool IsNotBusy => !IsBusy;
 
@@ -302,7 +305,14 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
     public void NavigateToSync()
     {
+        _vaultSession.RecordActivity();
         NavigateToSyncAction?.Invoke();
+    }
+
+    public void NavigateToImport()
+    {
+        _vaultSession.RecordActivity();
+        NavigateToImportAction?.Invoke();
     }
 
     public void ClearSensitiveData()

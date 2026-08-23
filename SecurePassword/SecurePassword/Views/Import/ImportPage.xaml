@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SecurePassword.ViewModels.Import"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
+             x:Class="SecurePassword.Views.Import.ImportPage"
+             x:DataType="vm:ImportViewModel"
+             Title="Импортировать данные"
+             NavigationPage.HasNavigationBar="False"
+             Background="{StaticResource PageBackgroundBrush}">
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" BackgroundColor="#33FFFFFF" StrokeThickness="0" Padding="20,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Импортировать данные" Style="{StaticResource HeaderTitleStyle}" VerticalOptions="Center" />
+                <Button Grid.Column="1" Text="&#x2715;" FontSize="16" FontAttributes="Bold"
+                        Style="{StaticResource SecondaryButtonStyle}" HeightRequest="40" WidthRequest="40" Padding="0"
+                        Clicked="OnCloseClicked" AutomationProperties.Name="Закрыть экран импорта" />
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1" Padding="16,12,16,24">
+            <VerticalStackLayout Spacing="16" MaximumWidthRequest="520" HorizontalOptions="Center">
+                <Border Style="{StaticResource GlassCardStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Получить с другого устройства" Style="{StaticResource SectionHeaderStyle}" />
+                        <Label Text="Создайте одноразовый QR-код, отсканируйте его на устройстве-отправителе и подтвердите импорт только после проверки передачи."
+                               Style="{StaticResource HintLabelStyle}" />
+                        <Button Text="Получить с другого устройства" Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding StartReceiverCommand}" AutomationProperties.Name="Создать QR для получения" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource GlassCardStyle}" IsVisible="{Binding HasActiveQr}">
+                    <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                        <Label Text="QR-код получателя" Style="{StaticResource SectionHeaderStyle}" HorizontalOptions="Center" />
+                        <zxing:BarcodeGeneratorView HeightRequest="250" WidthRequest="250" Value="{Binding QrPayload}"
+                                                    Format="QrCode" ForegroundColor="#12333A" BackgroundColor="White"
+                                                    AutomationProperties.Name="Одноразовый QR-код сопряжения" />
+                        <Label Text="{Binding ReceiverAddress}" FontAttributes="Bold" FontSize="18" HorizontalOptions="Center"
+                               AutomationProperties.Name="IP-адрес получателя" />
+                        <Border BackgroundColor="#EAF8F5" Stroke="#B2EBD7" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="18,12">
+                            <Label Text="{Binding PairingCode}" FontSize="24" FontAttributes="Bold" CharacterSpacing="2"
+                                   TextColor="{StaticResource PrimaryDark}" HorizontalOptions="Center"
+                                   AutomationProperties.Name="Код сопряжения для ручного ввода" />
+                        </Border>
+                        <Label Text="{Binding ExpiresAtText, StringFormat='Действует до {0}. Не передавайте QR третьим лицам.'}"
+                               Style="{StaticResource HintLabelStyle}" HorizontalOptions="Center" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Grid.Column="0" Text="Создать новый QR" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding CreateNewQrCommand}" />
+                            <Button Grid.Column="1" Text="Отменить" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding CancelReceiverCommand}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border IsVisible="{Binding HasLocalVault}" BackgroundColor="#FFF7E6" Stroke="#FADFA1" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12" Padding="14,10">
+                    <Label Text="Импорт заменит текущее локальное хранилище." TextColor="#9A6700" FontSize="13"
+                           AutomationProperties.Name="Предупреждение о замене хранилища" />
+                </Border>
+
+                <Border IsVisible="{Binding HasError}" BackgroundColor="#FFF4F4" Stroke="{StaticResource DangerBorder}" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12" Padding="14,10">
+                    <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" FontSize="13"
+                           AutomationProperties.Name="Ошибка импорта" />
+                </Border>
+
+                <Border IsVisible="{Binding IsWaitingForSender}" Style="{StaticResource GlassCardStyle}">
+                    <Label Text="{Binding StatusMessage}" Style="{StaticResource HintLabelStyle}" />
+                </Border>
+
+                <Border IsVisible="{Binding IsAwaitingConfirmation}" BackgroundColor="#FFF7E6" Stroke="#FADFA1" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Подтвердите импорт" Style="{StaticResource SectionHeaderStyle}" />
+                        <Label Text="{Binding StatusMessage}" TextColor="#9A6700" FontSize="13" />
+                        <Label Text="Импорт заменит текущее локальное хранилище. После подтверждения потребуется повторный вход."
+                               TextColor="#9A6700" FontSize="13" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Grid.Column="0" Text="Подтвердить импорт" Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding ConfirmImportCommand}" />
+                            <Button Grid.Column="1" Text="Отклонить" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding RejectImportCommand}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

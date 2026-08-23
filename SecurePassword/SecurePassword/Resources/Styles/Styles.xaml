@@ -95,6 +95,12 @@
         <Setter Property="ThumbColor" Value="{StaticResource PrimaryDark}" />
     </Style>
 
+    <!-- Progress Bar Style -->
+    <Style x:Key="AppProgressBarStyle" TargetType="ProgressBar">
+        <Setter Property="HeightRequest" Value="8" />
+        <Setter Property="ProgressColor" Value="{StaticResource Primary}" />
+    </Style>
+
     <!-- Danger Button Style -->
     <Style x:Key="DangerButtonStyle" TargetType="Button">
         <Setter Property="HeightRequest" Value="52" />

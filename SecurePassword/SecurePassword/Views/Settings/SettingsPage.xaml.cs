@@ -23,6 +23,38 @@ public partial class SettingsPage : ContentPage
                 }
             });
         };
+
+        _viewModel.NavigateToSyncAction = async () =>
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                if (Navigation.ModalStack.Count > 0)
+                {
+                    await Navigation.PopModalAsync();
+                }
+
+                if (Shell.Current != null)
+                {
+                    await Shell.Current.GoToAsync("//sync");
+                }
+            });
+        };
+
+        _viewModel.NavigateToImportAction = async () =>
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                if (Navigation.ModalStack.Count > 0)
+                {
+                    await Navigation.PopModalAsync();
+                }
+
+                if (Shell.Current != null)
+                {
+                    await Shell.Current.GoToAsync("import");
+                }
+            });
+        };
     }
 
     protected override bool OnBackButtonPressed()

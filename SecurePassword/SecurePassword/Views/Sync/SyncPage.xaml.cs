@@ -1,10 +1,18 @@
 ﻿using SecurePassword.ViewModels.Sync;
 
+#if ANDROID
+using ZXing.Net.Maui;
+using ZXing.Net.Maui.Controls;
+#endif
+
 namespace SecurePassword.Views.Sync;
 
 public partial class SyncPage : ContentPage
 {
     private readonly SyncViewModel _viewModel;
+#if ANDROID
+    private CameraBarcodeReaderView? _cameraReader;
+#endif
 
     public SyncPage(SyncViewModel viewModel)
     {
@@ -38,9 +46,83 @@ public partial class SyncPage : ContentPage
             await Navigation.PopModalAsync();
     }
 
+    private async void OnScanQrClicked(object? sender, EventArgs e)
+    {
+#if ANDROID
+        if (!BarcodeScanning.IsSupported)
+        {
+            _viewModel.CameraPermissionDenied();
+            return;
+        }
+
+        PermissionStatus permission = await Permissions.RequestAsync<Permissions.Camera>();
+        if (permission != PermissionStatus.Granted)
+        {
+            _viewModel.CameraPermissionDenied();
+            return;
+        }
+
+        _viewModel.BeginQrScan();
+        EnsureCameraReader();
+#else
+        _viewModel.CameraPermissionDenied();
+#endif
+    }
+
+#if ANDROID
+    private void EnsureCameraReader()
+    {
+        if (_cameraReader is not null)
+        {
+            _cameraReader.IsDetecting = true;
+            return;
+        }
+
+        _cameraReader = new CameraBarcodeReaderView
+        {
+            IsDetecting = true,
+            Options = new BarcodeReaderOptions
+            {
+                Formats = BarcodeFormats.TwoDimensional,
+                AutoRotate = true,
+                Multiple = false
+            }
+        };
+        _cameraReader.BarcodesDetected += OnBarcodesDetected;
+        ScannerHost.Content = _cameraReader;
+    }
+
+    private void OnBarcodesDetected(object? sender, BarcodeDetectionEventArgs e)
+    {
+        string? payload = e.Results.FirstOrDefault()?.Value;
+        if (_cameraReader is not null)
+            _cameraReader.IsDetecting = false;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            DisposeCameraReader();
+            _viewModel.ApplyScannedQr(payload);
+        });
+    }
+
+    private void DisposeCameraReader()
+    {
+        if (_cameraReader is null)
+            return;
+
+        _cameraReader.BarcodesDetected -= OnBarcodesDetected;
+        _cameraReader.IsDetecting = false;
+        ScannerHost.Content = null;
+        _cameraReader = null;
+    }
+#endif
+
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+#if ANDROID
+        DisposeCameraReader();
+#endif
         _viewModel.ClearSensitiveData();
     }
 }

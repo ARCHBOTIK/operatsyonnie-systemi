@@ -1,319 +1,107 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:SecurePassword.ViewModels.Sync"
              xmlns:converters="clr-namespace:SecurePassword.Converters"
              x:Class="SecurePassword.Views.Sync.SyncPage"
              x:DataType="vm:SyncViewModel"
-             Title="Обмен"
+             Title="Передать данные"
              NavigationPage.HasNavigationBar="False"
              Background="{StaticResource PageBackgroundBrush}">
-
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid>
-        <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" BackgroundColor="#33FFFFFF" StrokeThickness="0" Padding="20,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Передать данные" Style="{StaticResource HeaderTitleStyle}" VerticalOptions="Center" />
+                <Button Grid.Column="1" Text="&#x2715;" FontSize="16" FontAttributes="Bold"
+                        Style="{StaticResource SecondaryButtonStyle}" HeightRequest="40" WidthRequest="40" Padding="0"
+                        Clicked="OnCloseClicked" AutomationProperties.Name="Закрыть экран передачи" />
+            </Grid>
+        </Border>
 
-            <!-- App Header Bar -->
-            <Border Grid.Row="0"
-                    BackgroundColor="#33FFFFFF"
-                    StrokeThickness="0"
-                    Padding="20,12,20,12">
-                <Grid ColumnDefinitions="*,Auto">
-                    <Label Grid.Column="0"
-                           Text="Обмен"
-                           Style="{StaticResource HeaderTitleStyle}"
-                           VerticalOptions="Center" />
-                    <Button Grid.Column="1"
-                            Text="&#x2715;"
-                            FontSize="16"
-                            FontAttributes="Bold"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            HeightRequest="40"
-                            WidthRequest="40"
-                            Padding="0"
-                            Clicked="OnCloseClicked"
-                            VerticalOptions="Center"
-                            AutomationProperties.Name="Закрыть экран" />
-                </Grid>
-            </Border>
-
-            <ScrollView Grid.Row="1" Padding="16,12,16,24">
-                <VerticalStackLayout Spacing="16" MaximumWidthRequest="520" HorizontalOptions="Center">
-
-                    <!-- Header Card -->
-                    <Border Style="{StaticResource GlassCardStyle}">
-                        <VerticalStackLayout Spacing="4">
-                            <Label Text="Безопасный перенос базы"
-                                   Style="{StaticResource SectionHeaderStyle}" />
-                            <Label Text="Используется сквозное шифрование и одноразовый код сопряжения."
-                                   Style="{StaticResource HintLabelStyle}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Mode Selection Card -->
-                    <Border Style="{StaticResource GlassCardStyle}">
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <Button Grid.Column="0"
-                                    Text="Передать базу"
-                                    Command="{Binding SelectUploadModeCommand}"
-                                    IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
-                                    AutomationProperties.Name="Режим передачи базы">
-                                <Button.Triggers>
-                                    <DataTrigger TargetType="Button" Binding="{Binding IsUploadMode}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                        <Setter Property="TextColor" Value="White" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Button" Binding="{Binding IsUploadMode}" Value="False">
-                                        <Setter Property="Background" Value="#EAF8F5" />
-                                        <Setter Property="TextColor" Value="{StaticResource PrimaryDark}" />
-                                    </DataTrigger>
-                                </Button.Triggers>
-                            </Button>
-
-                            <Button Grid.Column="1"
-                                    Text="Принять базу"
-                                    Command="{Binding SelectDownloadModeCommand}"
-                                    IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
-                                    AutomationProperties.Name="Режим приёма базы">
-                                <Button.Triggers>
-                                    <DataTrigger TargetType="Button" Binding="{Binding IsDownloadMode}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                        <Setter Property="TextColor" Value="White" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Button" Binding="{Binding IsDownloadMode}" Value="False">
-                                        <Setter Property="Background" Value="#EAF8F5" />
-                                        <Setter Property="TextColor" Value="{StaticResource PrimaryDark}" />
-                                    </DataTrigger>
-                                </Button.Triggers>
-                            </Button>
-                        </Grid>
-                    </Border>
-
-                    <!-- Upload Mode: Inputs Card -->
-                    <Border Style="{StaticResource GlassCardStyle}"
-                            IsVisible="{Binding IsUploadMode}">
-                        <VerticalStackLayout Spacing="12">
-
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="IP-адрес устройства-получателя"
-                                       Style="{StaticResource FieldLabelStyle}" />
-                                <Border Style="{StaticResource FieldBorderStyle}" Padding="16,0">
-                                    <Entry Text="{Binding PeerAddress}"
-                                           Placeholder="Например: 192.168.0.15"
-                                           PlaceholderColor="{StaticResource TextMuted}"
-                                           TextColor="{StaticResource TextPrimary}"
-                                           Keyboard="Url"
-                                           ReturnType="Next"
-                                           IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
-                                           AutomationProperties.Name="IP-адрес получателя"
-                                           HeightRequest="50" />
-                                </Border>
-                            </VerticalStackLayout>
-
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="Одноразовый код сопряжения (с экрана получателя)"
-                                       Style="{StaticResource FieldLabelStyle}" />
-                                <Border Style="{StaticResource FieldBorderStyle}" Padding="16,0">
-                                    <Entry Text="{Binding PeerPairingCode}"
-                                           Placeholder="XXXX-XXXX-XXXX"
-                                           PlaceholderColor="{StaticResource TextMuted}"
-                                           TextColor="{StaticResource TextPrimary}"
-                                           Keyboard="Text"
-                                           ReturnType="Done"
-                                           IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
-                                           AutomationProperties.Name="Код сопряжения для передающего"
-                                           HeightRequest="50" />
-                                </Border>
-                            </VerticalStackLayout>
-
-                            <!-- No transferable vault warning -->
-                            <Border IsVisible="{Binding HasTransferableVault, Converter={StaticResource InverseBoolConverter}}"
-                                    BackgroundColor="#FFF7E6"
-                                    StrokeThickness="1"
-                                    Stroke="#FADFA1"
-                                    StrokeShape="RoundRectangle 12"
-                                    Padding="14,10">
-                                <Label Text="&#x2022; На этом устройстве пока нет готовой базы для передачи."
-                                       TextColor="#9A6700"
-                                       FontSize="13"
-                                       AutomationProperties.Name="Предупреждение: нет базы для передачи" />
-                            </Border>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Download Mode: Pairing Code Display Card -->
-                    <Border Style="{StaticResource GlassCardStyle}"
-                            IsVisible="{Binding IsDownloadMode}">
-                        <VerticalStackLayout Spacing="12">
-
-                            <!-- Address hint -->
-                            <Border BackgroundColor="#EEF8FF"
-                                    StrokeThickness="1"
-                                    Stroke="#BEE3F8"
-                                    StrokeShape="RoundRectangle 12"
-                                    Padding="14,10">
-                                <Label Text="{Binding AddressHint}"
-                                       TextColor="#1D4ED8"
-                                       FontSize="13"
-                                       AutomationProperties.Name="Адрес этого устройства" />
-                            </Border>
-
-                            <!-- Pairing code display -->
-                            <VerticalStackLayout Spacing="6">
-                                <Label Text="Одноразовый код сопряжения:"
-                                       Style="{StaticResource FieldLabelStyle}"
-                                       HorizontalOptions="Center" />
-                                <Border BackgroundColor="#1017BFA6"
-                                        StrokeThickness="1"
-                                        Stroke="#17BFA6"
-                                        StrokeShape="RoundRectangle 12"
-                                        Padding="20,14"
-                                        HorizontalOptions="Center">
-                                    <Label Text="{Binding ReceiverPairingCode}"
-                                           FontSize="26"
-                                           FontAttributes="Bold"
-                                           TextColor="{StaticResource PrimaryDark}"
-                                           CharacterSpacing="3"
-                                           HorizontalOptions="Center"
-                                           AutomationProperties.Name="Код сопряжения для получателя" />
-                                </Border>
-                                <Label Text="Действителен 3 минуты. Введите его на передающем устройстве."
-                                       Style="{StaticResource HintLabelStyle}"
-                                       HorizontalOptions="Center" />
-                            </VerticalStackLayout>
-
-                            <!-- Local vault overwrite warning -->
-                            <Border IsVisible="{Binding HasLocalVault}"
-                                    BackgroundColor="#FFF7E6"
-                                    StrokeThickness="1"
-                                    Stroke="#FADFA1"
-                                    StrokeShape="RoundRectangle 12"
-                                    Padding="14,10">
-                                <Label Text="&#x2022; Локальная база будет атомарно заменена принятой копией. После импорта приложение запросит повторный вход."
-                                       TextColor="#9A6700"
-                                       FontSize="13"
-                                       AutomationProperties.Name="Предупреждение о замене локальной базы" />
-                            </Border>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Validation Error Banner -->
-                    <Border IsVisible="{Binding HasValidationError}"
-                            BackgroundColor="#FFF4F4"
-                            StrokeThickness="1"
-                            Stroke="{StaticResource DangerBorder}"
-                            StrokeShape="RoundRectangle 12"
-                            Padding="14,10">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                            <Label Grid.Column="0"
-                                   Text="&#x2716;"
-                                   TextColor="{StaticResource Danger}"
-                                   FontSize="14"
-                                   VerticalOptions="Center" />
-                            <Label Grid.Column="1"
-                                   Text="{Binding ValidationError}"
-                                   TextColor="{StaticResource Danger}"
-                                   FontSize="13"
-                                   AutomationProperties.Name="Ошибка ввода" />
-                        </Grid>
-                    </Border>
-
-                    <!-- Result Banner (Success / Warning / Error) -->
-                    <Border IsVisible="{Binding ShowResultBanner}"
-                            StrokeShape="RoundRectangle 12"
-                            Padding="14,10"
-                            StrokeThickness="1">
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding ResultIsSuccess}" Value="True">
-                                <Setter Property="BackgroundColor" Value="#ECFFF8" />
-                                <Setter Property="Stroke" Value="#B2EBD7" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding ResultIsCancelled}" Value="True">
-                                <Setter Property="BackgroundColor" Value="#FFF7E6" />
-                                <Setter Property="Stroke" Value="#FADFA1" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsFailed}" Value="True">
-                                <Setter Property="BackgroundColor" Value="#FFF4F4" />
-                                <Setter Property="Stroke" Value="{StaticResource DangerBorder}" />
-                            </DataTrigger>
-                        </Border.Triggers>
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                            <Label Grid.Column="0"
-                                   Text="&#x2714;"
-                                   FontSize="14"
-                                   VerticalOptions="Center"
-                                   TextColor="{StaticResource Success}">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding ResultIsCancelled}" Value="True">
-                                        <Setter Property="Text" Value="&#x2022;" />
-                                        <Setter Property="TextColor" Value="#9A6700" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsFailed}" Value="True">
-                                        <Setter Property="Text" Value="&#x2716;" />
-                                        <Setter Property="TextColor" Value="{StaticResource Danger}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                            <Label Grid.Column="1"
-                                   Text="{Binding ResultMessage}"
-                                   FontSize="13"
-                                   TextColor="{StaticResource Success}"
-                                   AutomationProperties.Name="Результат операции">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding ResultIsCancelled}" Value="True">
-                                        <Setter Property="TextColor" Value="#9A6700" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsFailed}" Value="True">
-                                        <Setter Property="TextColor" Value="{StaticResource Danger}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                        </Grid>
-                    </Border>
-
-                    <!-- Progress Section -->
-                    <Border Style="{StaticResource GlassCardStyle}"
-                            IsVisible="{Binding ShowProgress}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="{Binding StatusMessage}"
-                                   FontSize="13"
-                                   TextColor="{StaticResource TextSecondary}"
-                                   AutomationProperties.Name="Статус операции" />
-                            <ProgressBar Progress="{Binding ProgressValue}"
-                                         ProgressColor="{StaticResource Primary}"
-                                         HeightRequest="6" />
-                            <Label Text="Операцию можно отменить в любой момент."
-                                   Style="{StaticResource HintLabelStyle}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Action Buttons -->
-                    <VerticalStackLayout Spacing="8">
-                        <Button Style="{StaticResource PrimaryButtonStyle}"
-                                Command="{Binding StartSyncCommand}"
-                                AutomationProperties.Name="Начать операцию синхронизации"
-                                Text="Передать базу">
-                            <Button.Triggers>
-                                <DataTrigger TargetType="Button" Binding="{Binding IsDownloadMode}" Value="True">
-                                    <Setter Property="Text" Value="Ожидать и принять базу" />
-                                </DataTrigger>
-                            </Button.Triggers>
-                        </Button>
-
-                        <Button Text="Отменить"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Command="{Binding CancelSyncCommand}"
-                                IsVisible="{Binding IsOperationActive}"
-                                AutomationProperties.Name="Отменить синхронизацию" />
+        <ScrollView Grid.Row="1" Padding="16,12,16,24">
+            <VerticalStackLayout Spacing="16" MaximumWidthRequest="520" HorizontalOptions="Center">
+                <Border Style="{StaticResource GlassCardStyle}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Передать защищённое хранилище" Style="{StaticResource SectionHeaderStyle}" />
+                        <Label Text="Отсканируйте QR получателя или укажите данные вручную. Передача выполняется через существующее SPP1-сопряжение."
+                               Style="{StaticResource HintLabelStyle}" />
                     </VerticalStackLayout>
+                </Border>
 
+                <Border Style="{StaticResource GlassCardStyle}" IsVisible="{Binding CanScanQr}">
+                    <VerticalStackLayout Spacing="12">
+                        <Button Text="Сканировать QR получателя" Style="{StaticResource PrimaryButtonStyle}"
+                                Clicked="OnScanQrClicked" IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
+                                AutomationProperties.Name="Сканировать QR получателя" />
+                        <Grid IsVisible="{Binding IsScannerVisible}" HeightRequest="280">
+                            <ContentView x:Name="ScannerHost" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button Text="Ввести данные вручную" Style="{StaticResource SecondaryButtonStyle}"
+                        Command="{Binding ToggleManualEntryCommand}"
+                        AutomationProperties.Name="Ввести данные вручную" />
+
+                <Border Style="{StaticResource GlassCardStyle}" IsVisible="{Binding ShowManualEntry}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Данные получателя" Style="{StaticResource SectionHeaderStyle}" />
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="IP-адрес устройства-получателя" Style="{StaticResource FieldLabelStyle}" />
+                            <Border Style="{StaticResource FieldBorderStyle}" Padding="16,0">
+                                <Entry Text="{Binding PeerAddress}" Placeholder="Например: 192.168.0.15"
+                                       PlaceholderColor="{StaticResource TextMuted}" TextColor="{StaticResource TextPrimary}"
+                                       Keyboard="Url" IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
+                                       AutomationProperties.Name="IP-адрес получателя" HeightRequest="50" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Одноразовый код сопряжения" Style="{StaticResource FieldLabelStyle}" />
+                            <Border Style="{StaticResource FieldBorderStyle}" Padding="16,0">
+                                <Entry Text="{Binding PeerPairingCode}" Placeholder="XXXX-XXXX-XXXX"
+                                       PlaceholderColor="{StaticResource TextMuted}" TextColor="{StaticResource TextPrimary}"
+                                       IsEnabled="{Binding IsOperationActive, Converter={StaticResource InverseBoolConverter}}"
+                                       AutomationProperties.Name="Код сопряжения" HeightRequest="50" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border IsVisible="{Binding HasTransferableVault, Converter={StaticResource InverseBoolConverter}}"
+                        BackgroundColor="#FFF7E6" Stroke="#FADFA1" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="14,10">
+                    <Label Text="• На этом устройстве пока нет готового хранилища для передачи." TextColor="#9A6700" FontSize="13" />
+                </Border>
+
+                <Border IsVisible="{Binding HasValidationError}" BackgroundColor="#FFF4F4" Stroke="{StaticResource DangerBorder}"
+                        StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="14,10">
+                    <Label Text="{Binding ValidationError}" TextColor="{StaticResource Danger}" FontSize="13"
+                           AutomationProperties.Name="Ошибка передачи" />
+                </Border>
+
+                <Border IsVisible="{Binding ShowResultBanner}" Style="{StaticResource GlassCardStyle}">
+                    <Label Text="{Binding ResultMessage}" TextColor="{StaticResource TextPrimary}" FontSize="13" />
+                </Border>
+
+                <Border IsVisible="{Binding ShowProgress}" Style="{StaticResource GlassCardStyle}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="{Binding StatusMessage}" Style="{StaticResource HintLabelStyle}" />
+                        <ProgressBar Progress="{Binding ProgressValue}" ProgressColor="{StaticResource Primary}" HeightRequest="6" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout Spacing="8">
+                    <Button Text="Передать хранилище" Style="{StaticResource PrimaryButtonStyle}"
+                            Command="{Binding StartSendCommand}" AutomationProperties.Name="Передать хранилище" />
+                    <Button Text="Отменить" Style="{StaticResource SecondaryButtonStyle}"
+                            Command="{Binding CancelSyncCommand}" IsVisible="{Binding IsOperationActive}" />
                 </VerticalStackLayout>
-            </ScrollView>
-        </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 </ContentPage>
