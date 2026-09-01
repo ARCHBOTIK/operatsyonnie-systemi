@@ -320,6 +320,11 @@
                            FontSize="15"
                            TextColor="{StaticResource TextPrimary}" />
 
+                    <Label IsVisible="{Binding HasDeleteDatabaseError}"
+                           Text="{Binding DeleteDatabaseError}"
+                           TextColor="{StaticResource Danger}"
+                           FontSize="13" />
+
                     <!-- Buttons -->
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
                         <Button Grid.Column="0"

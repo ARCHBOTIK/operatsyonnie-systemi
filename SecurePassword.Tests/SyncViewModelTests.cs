@@ -178,6 +178,29 @@ public class SyncViewModelTests : IDisposable
         Assert.Equal(SyncUiState.Idle, vm.UiState);
     }
 
+    [Theory]
+    [InlineData("8.8.8.8", "ABCD-EFGH-IJKL", "private IPv4")]
+    [InlineData("192.168.0.5", "ABCD", "12")]
+    public async Task StartSync_ManualSender_RejectsInputsQrBootstrapWouldReject(
+        string address,
+        string pairingCode,
+        string expectedError)
+    {
+        _km.CreateKeyFile("TestPassword123!");
+        await File.WriteAllTextAsync(Path.Combine(_testDir, "passwords.dat"), "data");
+
+        using var vm = new SyncViewModel(_tcpBridge, _session);
+        vm.SelectUploadModeCommand.Execute(null);
+        vm.PeerAddress = address;
+        vm.PeerPairingCode = pairingCode;
+
+        await vm.StartSyncAsync();
+
+        Assert.True(vm.HasValidationError);
+        Assert.Contains(expectedError, vm.ValidationError);
+        Assert.Equal(SyncUiState.Idle, vm.UiState);
+    }
+
     [Fact]
     public async Task StartSync_UploadMode_WithoutVault_ShouldShowValidationError()
     {
@@ -362,11 +385,19 @@ public class SyncViewModelTests : IDisposable
 
         // Create, dispose, create again — only one active subscription
         var vm1 = new SyncViewModel(_tcpBridge, _session);
-        vm1.RequestLockAction = () => lockCallCount++;
+        vm1.RequestLockAction = () =>
+        {
+            lockCallCount++;
+            return Task.CompletedTask;
+        };
         vm1.Dispose();
 
         var vm2 = new SyncViewModel(_tcpBridge, _session);
-        vm2.RequestLockAction = () => lockCallCount++;
+        vm2.RequestLockAction = () =>
+        {
+            lockCallCount++;
+            return Task.CompletedTask;
+        };
 
         _session.Lock();
 

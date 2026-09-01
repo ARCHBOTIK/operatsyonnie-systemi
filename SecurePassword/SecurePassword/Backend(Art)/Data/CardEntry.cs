@@ -5,12 +5,12 @@ namespace SecurePassword;
 public class CardEntry : IHasID
 {
     public int Id { get; set; }
-    public byte[] TitleBytes { get; set; }
-    public byte[] CardNumberBytes { get; set; }
-    public byte[] CardHolderBytes { get; set; }
-    public byte[] ExpiryDateBytes { get; set; }
-    public byte[] CvvBytes { get; set; }
-    public byte[] BankNameBytes { get; set; }
+    public byte[]? TitleBytes { get; set; }
+    public byte[]? CardNumberBytes { get; set; }
+    public byte[]? CardHolderBytes { get; set; }
+    public byte[]? ExpiryDateBytes { get; set; }
+    public byte[]? CvvBytes { get; set; }
+    public byte[]? BankNameBytes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

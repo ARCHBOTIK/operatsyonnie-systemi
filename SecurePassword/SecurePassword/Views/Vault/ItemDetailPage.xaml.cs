@@ -14,7 +14,7 @@ public partial class ItemDetailPage : ContentPage
 
         _viewModel.ConfirmDeleteAction = async (title) =>
         {
-            return await DisplayAlert(
+            return await DisplayAlertAsync(
                 "Удаление записи",
                 $"Вы уверены, что хотите удалить запись «{title}»? Это действие нельзя отменить.",
                 "Удалить",

@@ -20,6 +20,37 @@ public class QrPairingPayloadTests
     }
 
     [Fact]
+    public void ReceiverBootstrap_CreatesCanonicalPayloadAndManualFallback()
+    {
+        using var bootstrap = ReceiverPairingBootstrap.Create("192.168.10.25");
+
+        bool parsed = QrPairingPayload.TryParse(
+            bootstrap.QrPayload,
+            out QrPairingPayload? result,
+            out string error);
+
+        Assert.True(parsed, error);
+        Assert.NotNull(result);
+        Assert.Equal(bootstrap.ReceiverAddress, result!.Host);
+        Assert.Equal(bootstrap.PairingCode, result.PairingCode);
+        Assert.Equal(NetworkService.SyncPort, result.Port);
+        Assert.Equal(14, bootstrap.PairingCode.Length);
+    }
+
+    [Fact]
+    public void ReceiverBootstrap_InvalidAddress_DisposesGeneratedSecret()
+    {
+        PairingSecret? generatedSecret = null;
+
+        Assert.Throws<ArgumentException>(() => ReceiverPairingBootstrap.Create(
+            "203.0.113.10",
+            () => generatedSecret = PairingSecret.Generate()));
+
+        Assert.NotNull(generatedSecret);
+        Assert.Throws<ObjectDisposedException>(() => generatedSecret!.GetSecretBytes());
+    }
+
+    [Fact]
     public void QrPayload_InvalidScheme_Rejected() =>
         AssertRejected(ValidPayload().Replace("vaultpass", "other", StringComparison.Ordinal));
 

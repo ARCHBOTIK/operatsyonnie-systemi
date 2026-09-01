@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using SecurePassword.ViewModels.Base;
 
 namespace SecurePassword.ViewModels.Settings;
@@ -15,6 +16,7 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
     private readonly VaultSessionService _vaultSession;
     private readonly MasterPasswordService _masterPasswordService;
     private readonly keyManager _keyManager;
+    private readonly ILogger<SettingsViewModel>? _logger;
 
     private bool _isChangePasswordModalVisible;
     private bool _isDeleteModalVisible;
@@ -23,23 +25,26 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
     private string _newPassword = string.Empty;
     private string _confirmPassword = string.Empty;
     private string _changePasswordError = string.Empty;
+    private string _deleteDatabaseError = string.Empty;
 
     private bool _isCurrentPasswordVisible;
     private bool _isNewPasswordVisible;
     private bool _isConfirmPasswordVisible;
 
-    public Action? RequestLockAction { get; set; }
-    public Action? NavigateToSyncAction { get; set; }
-    public Action? NavigateToImportAction { get; set; }
+    public Func<Task>? RequestLockAction { get; set; }
+    public Func<Task>? NavigateToSyncAction { get; set; }
+    public Func<Task>? NavigateToImportAction { get; set; }
 
     public SettingsViewModel(
         VaultSessionService vaultSession,
         MasterPasswordService masterPasswordService,
-        keyManager keyManager)
+        keyManager keyManager,
+        ILogger<SettingsViewModel>? logger = null)
     {
         _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
         _masterPasswordService = masterPasswordService ?? throw new ArgumentNullException(nameof(masterPasswordService));
         _keyManager = keyManager ?? throw new ArgumentNullException(nameof(keyManager));
+        _logger = logger;
 
         _vaultSession.StateChanged += OnSessionStateChanged;
 
@@ -55,9 +60,9 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
         CloseDeleteModalCommand = new RelayCommand(CloseDeleteModal);
         DeleteDatabaseCommand = new AsyncRelayCommand(DeleteDatabaseAsync, () => !IsBusy);
 
-        LockNowCommand = new RelayCommand(LockApplication);
-        NavigateToSyncCommand = new RelayCommand(NavigateToSync);
-        NavigateToImportCommand = new RelayCommand(NavigateToImport);
+        LockNowCommand = new AsyncRelayCommand(LockApplicationAsync);
+        NavigateToSyncCommand = new AsyncRelayCommand(NavigateToSyncAsync);
+        NavigateToImportCommand = new AsyncRelayCommand(NavigateToImportAsync);
     }
 
     public ICommand OpenChangePasswordCommand { get; }
@@ -158,6 +163,20 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
     public bool HasChangePasswordError => !string.IsNullOrWhiteSpace(ChangePasswordError);
 
+    public string DeleteDatabaseError
+    {
+        get => _deleteDatabaseError;
+        set
+        {
+            if (SetProperty(ref _deleteDatabaseError, value))
+            {
+                OnPropertyChanged(nameof(HasDeleteDatabaseError));
+            }
+        }
+    }
+
+    public bool HasDeleteDatabaseError => !string.IsNullOrWhiteSpace(DeleteDatabaseError);
+
     public bool IsCurrentPasswordVisible
     {
         get => _isCurrentPasswordVisible;
@@ -236,8 +255,9 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
             CloseChangePasswordModal();
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            _logger?.LogError(exception, "Failed to change the master password.");
             if (!_vaultSession.IsAuthenticated)
             {
                 ClearSensitiveData();
@@ -256,12 +276,14 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
     public void OpenDeleteModal()
     {
+        DeleteDatabaseError = string.Empty;
         IsDeleteModalVisible = true;
     }
 
     public void CloseDeleteModal()
     {
         IsDeleteModalVisible = false;
+        DeleteDatabaseError = string.Empty;
     }
 
     public async Task DeleteDatabaseAsync()
@@ -273,21 +295,16 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
 
             await Task.Run(() =>
             {
-                foreach (string file in VaultFiles)
-                {
-                    string filePath = FileWorker.ResolvePath(file);
-                    if (File.Exists(filePath))
-                    {
-                        try { File.Delete(filePath); } catch { }
-                    }
-                }
-
-                FileWorker.CleanupLeftoverTempFiles();
-                VaultImportTransaction.RecoverPendingTransactions();
+                VaultDataDeletion.DeleteAll();
             });
 
             CloseDeleteModal();
-            LockApplication();
+            await LockApplicationAsync();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to delete vault data.");
+            DeleteDatabaseError = "Не удалось удалить базу данных. Закройте другие процессы, использующие файлы, и повторите попытку.";
         }
         finally
         {
@@ -296,23 +313,38 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
         }
     }
 
-    public void LockApplication()
+    public async Task LockApplicationAsync()
     {
         _keyManager.ClearLoadedKey();
         _vaultSession.Lock();
-        RequestLockAction?.Invoke();
+        await InvokeNavigationCallbackAsync(RequestLockAction, "Failed to close settings after session lock.");
     }
 
-    public void NavigateToSync()
+    public async Task NavigateToSyncAsync()
     {
         _vaultSession.RecordActivity();
-        NavigateToSyncAction?.Invoke();
+        await InvokeNavigationCallbackAsync(NavigateToSyncAction, "Failed to navigate from settings to sync.");
     }
 
-    public void NavigateToImport()
+    public async Task NavigateToImportAsync()
     {
         _vaultSession.RecordActivity();
-        NavigateToImportAction?.Invoke();
+        await InvokeNavigationCallbackAsync(NavigateToImportAction, "Failed to navigate from settings to import.");
+    }
+
+    private async Task InvokeNavigationCallbackAsync(Func<Task>? callback, string logMessage)
+    {
+        if (callback is null)
+            return;
+
+        try
+        {
+            await callback.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, logMessage);
+        }
     }
 
     public void ClearSensitiveData()
@@ -321,6 +353,7 @@ public class SettingsViewModel : BaseViewModel, ISensitiveViewModel
         NewPassword = string.Empty;
         ConfirmPassword = string.Empty;
         ChangePasswordError = string.Empty;
+        DeleteDatabaseError = string.Empty;
         IsCurrentPasswordVisible = false;
         IsNewPasswordVisible = false;
         IsConfirmPasswordVisible = false;

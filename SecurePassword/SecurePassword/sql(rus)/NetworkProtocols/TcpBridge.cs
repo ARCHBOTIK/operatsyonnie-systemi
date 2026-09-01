@@ -100,9 +100,11 @@ public sealed class TcpBridge : IImportReceiverService
         if (string.IsNullOrWhiteSpace(host))
             return Error(SyncTransferMode.Upload, "Укажите IP-адрес устройства-получателя.");
 
-        string normalizedCode = PairingSecret.Normalize(pairingCode);
-        if (string.IsNullOrWhiteSpace(normalizedCode))
-            return Error(SyncTransferMode.Upload, "Укажите одноразовый код сопряжения.");
+        if (!PairingSecret.TryNormalize(pairingCode, out string normalizedCode))
+            return Error(SyncTransferMode.Upload, "Код сопряжения должен содержать 12 допустимых символов.");
+
+        if (!QrPairingPayload.IsPrivateIpv4(host.Trim()))
+            return Error(SyncTransferMode.Upload, "Укажите private IPv4-адрес устройства-получателя.");
 
         if (!HasTransferableVault())
             return Error(SyncTransferMode.Upload, "Локальная база пуста или ещё не создана.");

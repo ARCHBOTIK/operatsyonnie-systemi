@@ -40,33 +40,52 @@ public partial class SyncPage : ContentPage
 
     private async void OnCloseClicked(object? sender, EventArgs e)
     {
-        _viewModel.CancelCurrentOperation();
-        _viewModel.Dispose();
-        if (Navigation.ModalStack.Count > 0)
-            await Navigation.PopModalAsync();
+        try
+        {
+            _viewModel.CancelCurrentOperation();
+            _viewModel.Dispose();
+            if (Navigation.ModalStack.Count > 0)
+                await Navigation.PopModalAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "Failed to close sync page. ExceptionType={0}",
+                exception.GetType().FullName);
+        }
     }
 
     private async void OnScanQrClicked(object? sender, EventArgs e)
     {
+        try
+        {
 #if ANDROID
-        if (!BarcodeScanning.IsSupported)
-        {
-            _viewModel.CameraPermissionDenied();
-            return;
-        }
+            if (!BarcodeScanning.IsSupported)
+            {
+                _viewModel.CameraPermissionDenied();
+                return;
+            }
 
-        PermissionStatus permission = await Permissions.RequestAsync<Permissions.Camera>();
-        if (permission != PermissionStatus.Granted)
-        {
-            _viewModel.CameraPermissionDenied();
-            return;
-        }
+            PermissionStatus permission = await Permissions.RequestAsync<Permissions.Camera>();
+            if (permission != PermissionStatus.Granted)
+            {
+                _viewModel.CameraPermissionDenied();
+                return;
+            }
 
-        _viewModel.BeginQrScan();
-        EnsureCameraReader();
+            _viewModel.BeginQrScan();
+            EnsureCameraReader();
 #else
-        _viewModel.CameraPermissionDenied();
+            _viewModel.CameraPermissionDenied();
 #endif
+        }
+        catch (Exception exception)
+        {
+            _viewModel.CameraPermissionDenied();
+            System.Diagnostics.Trace.TraceError(
+                "Failed to start QR scanner. ExceptionType={0}",
+                exception.GetType().FullName);
+        }
     }
 
 #if ANDROID

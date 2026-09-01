@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using SecurePassword.ViewModels.Base;
 
 namespace SecurePassword.ViewModels.Vault;
@@ -15,6 +16,7 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
     private readonly SecureRepository<CardEntry> _cardRepository;
     private readonly SecureRepository<NoteEntry> _noteRepository;
     private readonly VaultSessionService _vaultSession;
+    private readonly ILogger<VaultViewModel>? _logger;
 
     // In-memory cache of decrypted display representations
     private readonly List<VaultListItemViewModel> _allItems = [];
@@ -40,9 +42,9 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
     private bool _disposed;
 
     // Navigation callbacks
-    public Action<VaultListItemViewModel>? NavigateToDetailAction { get; set; }
-    public Action? NavigateToAddItemAction { get; set; }
-    public Action? RequestLockAction { get; set; }
+    public Func<VaultListItemViewModel, Task>? NavigateToDetailAction { get; set; }
+    public Func<Task>? NavigateToAddItemAction { get; set; }
+    public Func<Task>? RequestLockAction { get; set; }
 
     public ObservableCollection<VaultListItemViewModel> DisplayedItems { get; } = [];
     public ObservableCollection<VaultGroupViewModel> GroupedItems { get; } = [];
@@ -51,12 +53,14 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
         SecureRepository<PasswordEntry> passwordRepository,
         SecureRepository<CardEntry> cardRepository,
         SecureRepository<NoteEntry> noteRepository,
-        VaultSessionService vaultSession)
+        VaultSessionService vaultSession,
+        ILogger<VaultViewModel>? logger = null)
     {
         _passwordRepository = passwordRepository ?? throw new ArgumentNullException(nameof(passwordRepository));
         _cardRepository = cardRepository ?? throw new ArgumentNullException(nameof(cardRepository));
         _noteRepository = noteRepository ?? throw new ArgumentNullException(nameof(noteRepository));
         _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
+        _logger = logger;
 
         _vaultSession.StateChanged += OnSessionStateChanged;
 
@@ -64,8 +68,8 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         SetFilterCommand = new RelayCommand(p => SetFilter(p?.ToString()));
         ToggleSortCommand = new RelayCommand(ToggleSort);
-        SelectItemCommand = new RelayCommand(p => SelectItem(p as VaultListItemViewModel));
-        AddNewItemCommand = new RelayCommand(AddNewItem);
+        SelectItemCommand = new AsyncRelayCommand(p => SelectItemAsync(p as VaultListItemViewModel));
+        AddNewItemCommand = new AsyncRelayCommand(AddNewItemAsync);
         ClearSearchCommand = new RelayCommand(ClearSearch);
 
         if (_vaultSession.IsAuthenticated)
@@ -281,10 +285,11 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
         {
             return;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
             // Vault locked or decrypt error
             loadedItems.Clear();
+            _logger?.LogError(exception, "Failed to load the vault item list.");
         }
         finally
         {
@@ -462,18 +467,43 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
         SearchQuery = string.Empty;
     }
 
-    public void SelectItem(VaultListItemViewModel? item)
+    public async Task SelectItemAsync(VaultListItemViewModel? item)
     {
         if (item is null) return;
         RecordUserActivity();
         SelectedItem = item;
-        NavigateToDetailAction?.Invoke(item);
+
+        if (NavigateToDetailAction is null)
+            return;
+
+        try
+        {
+            await NavigateToDetailAction.Invoke(item);
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(
+                exception,
+                "Failed to navigate to vault item details. ItemId={ItemId}, ItemType={ItemType}",
+                item.Id,
+                item.Type);
+        }
     }
 
-    public void AddNewItem()
+    public async Task AddNewItemAsync()
     {
         RecordUserActivity();
-        NavigateToAddItemAction?.Invoke();
+        if (NavigateToAddItemAction is null)
+            return;
+
+        try
+        {
+            await NavigateToAddItemAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to navigate to the add-item page.");
+        }
     }
 
     private void RecordUserActivity()
@@ -537,11 +567,26 @@ public sealed class VaultViewModel : BaseViewModel, ISensitiveViewModel
         if (!_vaultSession.IsAuthenticated)
         {
             ClearSensitiveData();
-            RequestLockAction?.Invoke();
+            _ = InvokeRequestLockAsync();
         }
         else
         {
             _ = LoadVaultAsync();
+        }
+    }
+
+    private async Task InvokeRequestLockAsync()
+    {
+        if (RequestLockAction is null)
+            return;
+
+        try
+        {
+            await RequestLockAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to close the vault UI after session lock.");
         }
     }
 

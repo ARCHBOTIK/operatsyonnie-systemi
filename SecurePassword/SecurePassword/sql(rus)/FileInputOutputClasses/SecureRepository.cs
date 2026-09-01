@@ -86,7 +86,7 @@ public class SecureRepository<T> where T : IHasID
         FileWorker.writeFile(encryptedData, _fileName);
     }
 
-    public T GetItemById(int id)
+    public T? GetItemById(int id)
     {
         return !EnsureLoaded() ? default : _items.FirstOrDefault(x => x.Id == id);
     }

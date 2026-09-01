@@ -5,10 +5,10 @@ namespace SecurePassword;
 public class PasswordEntry : IHasID
 {
     public int Id { get; set; }
-    public byte[] TitleBytes { get; set; }
-    public byte[] LoginBytes { get; set; }
-    public byte[] PasswordBytes { get; set; }
-    public byte[] ServiceNameBytes { get; set; }
+    public byte[]? TitleBytes { get; set; }
+    public byte[]? LoginBytes { get; set; }
+    public byte[]? PasswordBytes { get; set; }
+    public byte[]? ServiceNameBytes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

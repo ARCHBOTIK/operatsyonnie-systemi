@@ -236,7 +236,11 @@ public class SettingsViewModelTests : IDisposable
 
         using var vm = new SettingsViewModel(_session, _mps, _km)
         {
-            RequestLockAction = () => lockRequested = true
+            RequestLockAction = () =>
+            {
+                lockRequested = true;
+                return Task.CompletedTask;
+            }
         };
 
         vm.OpenDeleteModal();
@@ -266,7 +270,11 @@ public class SettingsViewModelTests : IDisposable
         bool lockRequested = false;
         using var vm = new SettingsViewModel(_session, _mps, _km)
         {
-            RequestLockAction = () => lockRequested = true
+            RequestLockAction = () =>
+            {
+                lockRequested = true;
+                return Task.CompletedTask;
+            }
         };
 
         vm.LockNowCommand.Execute(null);
@@ -324,7 +332,11 @@ public class SettingsViewModelTests : IDisposable
         bool syncNavigated = false;
         using var vm = new SettingsViewModel(_session, _mps, _km)
         {
-            NavigateToSyncAction = () => syncNavigated = true
+            NavigateToSyncAction = () =>
+            {
+                syncNavigated = true;
+                return Task.CompletedTask;
+            }
         };
 
         vm.NavigateToSyncCommand.Execute(null);
@@ -388,6 +400,31 @@ public class SettingsViewModelTests : IDisposable
         Assert.False(_km.IsDekLoaded());
         Assert.False(_session.IsAuthenticated);
         Assert.False(vm.IsDeleteModalVisible);
+    }
+
+    [Fact]
+    public async Task DeleteDatabase_WhenAFileIsLocked_ShouldReportFailureAndKeepSessionOpen()
+    {
+        _km.CreateKeyFile("TestPassword123!");
+        _session.MarkAuthenticated();
+        string passwordsPath = FileWorker.ResolvePath("passwords.dat");
+        File.WriteAllText(passwordsPath, "vault data content");
+
+        using var lockedFile = new FileStream(
+            passwordsPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.None);
+        using var vm = new SettingsViewModel(_session, _mps, _km);
+        vm.OpenDeleteModal();
+
+        await vm.DeleteDatabaseAsync();
+
+        Assert.True(vm.IsDeleteModalVisible);
+        Assert.True(vm.HasDeleteDatabaseError);
+        Assert.True(_session.IsAuthenticated);
+        Assert.True(_km.IsDekLoaded());
+        Assert.True(File.Exists(FileWorker.ResolvePath("keys.dat")));
     }
 
     [Fact]

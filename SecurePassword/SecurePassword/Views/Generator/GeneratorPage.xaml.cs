@@ -27,10 +27,19 @@ public partial class GeneratorPage : ContentPage
 
     private async void OnCloseClicked(object? sender, EventArgs e)
     {
-        _viewModel.Dispose();
-        if (Navigation.ModalStack.Count > 0)
+        try
         {
-            await Navigation.PopModalAsync();
+            _viewModel.Dispose();
+            if (Navigation.ModalStack.Count > 0)
+            {
+                await Navigation.PopModalAsync();
+            }
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "Failed to close generator page. ExceptionType={0}",
+                exception.GetType().FullName);
         }
     }
 }

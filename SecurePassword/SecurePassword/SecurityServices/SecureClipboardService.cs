@@ -61,7 +61,7 @@ public class AndroidClipboardBackend : IClipboardBackend
         var clipData = ClipData.NewPlainText(isSensitive ? "password" : "text", text);
         if (isSensitive && clipData != null)
         {
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu) // API 33+
+            if (OperatingSystem.IsAndroidVersionAtLeast(33))
             {
                 var extras = clipData.Description?.Extras ?? new PersistableBundle();
                 extras.PutBoolean("android.content.extra.IS_SENSITIVE", true);
@@ -99,7 +99,7 @@ public class AndroidClipboardBackend : IClipboardBackend
         if (clipboard == null)
             return Task.CompletedTask;
 
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.P) // API 28+
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
         {
             clipboard.ClearPrimaryClip();
         }

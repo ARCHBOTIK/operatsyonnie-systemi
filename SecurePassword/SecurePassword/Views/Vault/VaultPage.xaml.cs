@@ -106,9 +106,18 @@ public partial class VaultPage : ContentPage
 
     private async void OnCloseClicked(object? sender, EventArgs e)
     {
-        _viewModel.Dispose();
-        if (Navigation.ModalStack.Count > 0)
-            await Navigation.PopModalAsync();
+        try
+        {
+            _viewModel.Dispose();
+            if (Navigation.ModalStack.Count > 0)
+                await Navigation.PopModalAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "Failed to close vault page. ExceptionType={0}",
+                exception.GetType().FullName);
+        }
     }
 
     protected override void OnDisappearing()

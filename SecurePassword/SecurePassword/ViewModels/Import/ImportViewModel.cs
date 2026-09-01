@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using SecurePassword.ViewModels.Base;
 
 namespace SecurePassword.ViewModels.Import;
@@ -23,7 +24,8 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
     private readonly IImportReceiverService _receiverService;
     private readonly VaultSessionService _vaultSession;
     private readonly Func<PairingSecret> _pairingSecretFactory;
-    private PairingSecret? _pairingSecret;
+    private readonly ILogger<ImportViewModel>? _logger;
+    private ReceiverPairingBootstrap? _receiverBootstrap;
     private CancellationTokenSource? _receiverCts;
     private IPendingVaultImport? _pendingImport;
     private int _generation;
@@ -43,11 +45,13 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
     public ImportViewModel(
         IImportReceiverService receiverService,
         VaultSessionService vaultSession,
-        Func<PairingSecret>? pairingSecretFactory = null)
+        Func<PairingSecret>? pairingSecretFactory = null,
+        ILogger<ImportViewModel>? logger = null)
     {
         _receiverService = receiverService ?? throw new ArgumentNullException(nameof(receiverService));
         _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
         _pairingSecretFactory = pairingSecretFactory ?? (() => PairingSecret.Generate());
+        _logger = logger;
         _vaultSession.StateChanged += OnSessionStateChanged;
 
         StartReceiverCommand = new AsyncRelayCommand(StartReceiverAsync, () => CanStartReceiver);
@@ -159,33 +163,31 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
             return Task.CompletedTask;
         }
 
-        var pairingSecret = _pairingSecretFactory();
-        QrPairingPayload payload;
+        ReceiverPairingBootstrap bootstrap;
         try
         {
-            payload = QrPairingPayload.Create(localAddress, pairingSecret);
+            bootstrap = ReceiverPairingBootstrap.Create(localAddress, _pairingSecretFactory);
         }
         catch (Exception exception)
         {
-            pairingSecret.Dispose();
             UiState = ImportUiState.Failed;
             ErrorMessage = exception.Message;
             return Task.CompletedTask;
         }
 
-        _pairingSecret = pairingSecret;
+        _receiverBootstrap = bootstrap;
         _receiverCts = new CancellationTokenSource();
-        _receiverCts.CancelAfter(pairingSecret.ExpiresAt - DateTimeOffset.UtcNow);
+        _receiverCts.CancelAfter(bootstrap.ExpiresAt - DateTimeOffset.UtcNow);
 
-        PairingCode = pairingSecret.FormattedCode;
-        ReceiverAddress = localAddress;
-        ExpiresAtText = pairingSecret.ExpiresAt.LocalDateTime.ToString("t");
-        QrPayload = payload.Serialize();
+        PairingCode = bootstrap.PairingCode;
+        ReceiverAddress = bootstrap.ReceiverAddress;
+        ExpiresAtText = bootstrap.ExpiresAt.LocalDateTime.ToString("t");
+        QrPayload = bootstrap.QrPayload;
         StatusMessage = "Ожидание подключения с другого устройства…";
         UiState = ImportUiState.WaitingForSender;
 
         int generation = ++_generation;
-        _ = ReceiveAndPrepareAsync(pairingSecret, generation, _receiverCts.Token);
+        _ = ReceiveAndPrepareAsync(bootstrap.PairingSecret, generation, _receiverCts.Token);
         return Task.CompletedTask;
     }
 
@@ -198,7 +200,7 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
 
             if (!IsCurrent(generation) || token.IsCancellationRequested || !_vaultSession.IsAuthenticated)
             {
-                pendingImport.Rollback();
+                TryRollback(pendingImport);
                 return;
             }
 
@@ -253,10 +255,10 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
             _vaultSession.Lock();
             RequestLockAction?.Invoke();
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            _pendingImport?.Rollback();
-            _pendingImport = null;
+            _logger?.LogError(exception, "Failed to commit received vault import.");
+            TryRollbackPendingImport();
             UiState = ImportUiState.Failed;
             ErrorMessage = "Не удалось завершить импорт. Исходное хранилище не было заменено.";
         }
@@ -272,8 +274,14 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
         if (!CanConfirmImport)
             return;
 
-        _pendingImport?.Rollback();
-        _pendingImport = null;
+        if (!TryRollbackPendingImport())
+        {
+            UiState = ImportUiState.Failed;
+            ErrorMessage = "Не удалось отменить импорт. Перезапустите приложение для безопасного восстановления.";
+            RaiseCommandCanExecuteChanged();
+            return;
+        }
+
         ClearQrDisplayAfterTransfer();
         UiState = ImportUiState.Cancelled;
         StatusMessage = "Импорт отклонён. Локальное хранилище не изменено.";
@@ -290,13 +298,12 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
         try { _receiverCts?.Cancel(); } catch { }
         _receiverCts?.Dispose();
         _receiverCts = null;
-        _pairingSecret?.Dispose();
-        _pairingSecret = null;
+        _receiverBootstrap?.Dispose();
+        _receiverBootstrap = null;
 
         if (rollbackPending)
         {
-            _pendingImport?.Rollback();
-            _pendingImport = null;
+            TryRollbackPendingImport();
         }
 
         QrPayload = string.Empty;
@@ -306,10 +313,31 @@ public sealed class ImportViewModel : BaseViewModel, ISensitiveViewModel
         RaiseCommandCanExecuteChanged();
     }
 
+    private bool TryRollbackPendingImport()
+    {
+        IPendingVaultImport? pendingImport = _pendingImport;
+        _pendingImport = null;
+        return pendingImport is null || TryRollback(pendingImport);
+    }
+
+    private bool TryRollback(IPendingVaultImport pendingImport)
+    {
+        try
+        {
+            pendingImport.Rollback();
+            return true;
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to roll back received vault import.");
+            return false;
+        }
+    }
+
     private void ClearQrDisplayAfterTransfer()
     {
-        _pairingSecret?.Dispose();
-        _pairingSecret = null;
+        _receiverBootstrap?.Dispose();
+        _receiverBootstrap = null;
         _receiverCts?.Dispose();
         _receiverCts = null;
         QrPayload = string.Empty;

@@ -168,8 +168,12 @@ public sealed class NetworkService
         if (string.IsNullOrWhiteSpace(ip))
             throw new ArgumentException("IP-адрес получателя не указан.", nameof(ip));
 
-        if (string.IsNullOrWhiteSpace(rawPairingCode))
-            throw new ArgumentException("Код сопряжения не указан.", nameof(rawPairingCode));
+        string normalizedAddress = ip.Trim();
+        if (!QrPairingPayload.IsPrivateIpv4(normalizedAddress))
+            throw new ArgumentException("Требуется private IPv4-адрес получателя.", nameof(ip));
+
+        if (!PairingSecret.TryNormalize(rawPairingCode, out string normalizedCode))
+            throw new ArgumentException("Код сопряжения должен содержать 12 допустимых символов.", nameof(rawPairingCode));
 
         ArgumentNullException.ThrowIfNull(vaultArchiveBytes);
 
@@ -179,8 +183,8 @@ public sealed class NetworkService
         try
         {
             using var client = new TcpClient();
-            StatusChanged?.Invoke($"Подключение к {ip.Trim()}...");
-            await client.ConnectAsync(ip.Trim(), SyncPort, timeoutCts.Token);
+            StatusChanged?.Invoke($"Подключение к {normalizedAddress}...");
+            await client.ConnectAsync(normalizedAddress, SyncPort, timeoutCts.Token);
             StatusChanged?.Invoke("Соединение установлено. Выполнение аутентификации...");
 
             await using NetworkStream stream = client.GetStream();
@@ -197,7 +201,7 @@ public sealed class NetworkService
             RandomNumberGenerator.Fill(senderNonce);
 
             // Derive Keys
-            byte[] secretBytes = Encoding.UTF8.GetBytes(rawPairingCode);
+            byte[] secretBytes = Encoding.UTF8.GetBytes(normalizedCode);
             byte[] authKey;
             byte[] transportKey;
             try
@@ -258,7 +262,7 @@ public sealed class NetworkService
         }
         catch (SocketException exception)
         {
-            throw new InvalidOperationException($"Не удалось подключиться к {ip.Trim()}:{SyncPort}. Проверьте адрес и сеть.", exception);
+            throw new InvalidOperationException($"Не удалось подключиться к {normalizedAddress}:{SyncPort}. Проверьте адрес и сеть.", exception);
         }
         catch (IOException exception)
         {

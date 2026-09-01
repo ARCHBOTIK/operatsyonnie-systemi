@@ -275,6 +275,7 @@ public class Stage8ARegressionTests : IDisposable
         vm.NavigateToSyncAction = () =>
         {
             navigationInvoked = true;
+            return Task.CompletedTask;
         };
 
         Assert.NotNull(vm.NavigateToSyncCommand);
@@ -302,6 +303,7 @@ public class Stage8ARegressionTests : IDisposable
         vm.NavigateToSyncAction = () =>
         {
             invocationCount++;
+            return Task.CompletedTask;
         };
 
         vm.NavigateToSyncCommand.Execute(null);

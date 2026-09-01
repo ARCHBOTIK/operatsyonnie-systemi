@@ -162,7 +162,7 @@ public sealed class QrPairingPayload
         return true;
     }
 
-    private static bool IsPrivateIpv4(string? value)
+    internal static bool IsPrivateIpv4(string? value)
     {
         if (!IPAddress.TryParse(value, out IPAddress? address) || address.AddressFamily != AddressFamily.InterNetwork)
             return false;

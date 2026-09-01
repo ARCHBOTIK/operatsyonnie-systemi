@@ -69,6 +69,12 @@ public sealed class PairingSecret : IDisposable
         return sb.ToString();
     }
 
+    public static bool TryNormalize(string? input, out string normalizedCode)
+    {
+        normalizedCode = Normalize(input ?? string.Empty);
+        return normalizedCode.Length == SecretLength;
+    }
+
     public byte[] GetSecretBytes()
     {
         if (_disposed || _secretBytes == null)

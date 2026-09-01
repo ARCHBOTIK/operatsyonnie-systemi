@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using SecurePassword.ViewModels.Base;
 
 namespace SecurePassword.ViewModels.Sync;
@@ -29,6 +30,7 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
 {
     private readonly TcpBridge _syncBridge;
     private readonly VaultSessionService _vaultSession;
+    private readonly ILogger<SyncViewModel>? _logger;
 
     private SyncTransferMode _selectedMode;
     private SyncUiState _uiState = SyncUiState.Idle;
@@ -56,12 +58,16 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
     private CancellationTokenSource? _operationCts;
     private bool _disposed;
 
-    public Action? RequestLockAction { get; set; }
+    public Func<Task>? RequestLockAction { get; set; }
 
-    public SyncViewModel(TcpBridge syncBridge, VaultSessionService vaultSession)
+    public SyncViewModel(
+        TcpBridge syncBridge,
+        VaultSessionService vaultSession,
+        ILogger<SyncViewModel>? logger = null)
     {
         _syncBridge = syncBridge ?? throw new ArgumentNullException(nameof(syncBridge));
         _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
+        _logger = logger;
 
         _vaultSession.StateChanged += OnSessionStateChanged;
         _syncBridge.StatusChanged += OnNetworkStatusChanged;
@@ -289,6 +295,12 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
         HasLocalVault = _syncBridge.LocalVaultExists();
         AddressHint = _syncBridge.GetPeerAddressHint();
 
+        if (!_vaultSession.IsAuthenticated)
+        {
+            ClearReceiverPairingSecret();
+            return;
+        }
+
         if (SelectedMode == SyncTransferMode.Download)
         {
             if (_receiverPairingSecret is null || _receiverPairingSecret.IsExpired)
@@ -403,6 +415,8 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
             if (!HasTransferableVault) { ValidationError = "На этом устройстве нет базы для передачи."; return false; }
             if (string.IsNullOrWhiteSpace(PeerAddress)) { ValidationError = "Введите IP-адрес устройства-получателя."; return false; }
             if (string.IsNullOrWhiteSpace(PeerPairingCode)) { ValidationError = "Введите одноразовый код сопряжения с экрана получателя."; return false; }
+            if (!QrPairingPayload.IsPrivateIpv4(PeerAddress.Trim())) { ValidationError = "Укажите private IPv4-адрес устройства-получателя."; return false; }
+            if (!PairingSecret.TryNormalize(PeerPairingCode, out _)) { ValidationError = "Код сопряжения должен содержать 12 допустимых символов."; return false; }
         }
         return true;
     }
@@ -421,7 +435,6 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
                 ClearReceiverPairingSecret();
                 // Lock session and navigate to locked root
                 _vaultSession.Lock();
-                RequestLockAction?.Invoke();
             }
         }
         else if (result.Cancelled)
@@ -497,12 +510,27 @@ public sealed class SyncViewModel : BaseViewModel, ISensitiveViewModel
             ResultIsSuccess = false;
             ResultIsCancelled = false;
             SetState(SyncUiState.Idle, string.Empty, 0);
-            RequestLockAction?.Invoke();
+            _ = InvokeRequestLockAsync();
         }
         else
         {
             RefreshVaultState();
             RaiseCommandsCanExecuteChanged();
+        }
+    }
+
+    private async Task InvokeRequestLockAsync()
+    {
+        if (RequestLockAction is null)
+            return;
+
+        try
+        {
+            await RequestLockAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to close sync UI after session lock.");
         }
     }
 

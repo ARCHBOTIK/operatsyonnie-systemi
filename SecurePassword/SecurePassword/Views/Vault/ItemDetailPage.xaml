@@ -120,7 +120,7 @@
 
                     <!-- Service Name -->
                     <Border Style="{StaticResource DetailFieldBorderStyle}"
-                            IsVisible="{Binding ServiceName, Converter={StaticResource BoolToVisibilityTextConverter}}">
+                            IsVisible="{Binding HasServiceName}">
                         <VerticalStackLayout Spacing="2">
                             <Label Text="Сервис" Style="{StaticResource FieldLabelStyle}" />
                             <Label Text="{Binding ServiceName}" FontSize="15" TextColor="{StaticResource TextPrimary}" />

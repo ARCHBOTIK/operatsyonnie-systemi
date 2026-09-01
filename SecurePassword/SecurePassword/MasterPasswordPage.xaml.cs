@@ -25,7 +25,7 @@ public partial class MasterPasswordPage : ContentPage
 
     private MasterPasswordMode _mode;
     private CancellationTokenSource? _syncCancellation;
-    private PairingSecret? _activeReceiverSecret;
+    private ReceiverPairingBootstrap? _activeReceiverBootstrap;
 
     private bool _loginPasswordVisible;
     private bool _createPasswordVisible;
@@ -76,8 +76,9 @@ public partial class MasterPasswordPage : ContentPage
         _vaultSession.StateChanged -= OnSessionStateChanged;
         _statusTimerStarted = false;
         _syncCancellation?.Cancel();
-        _activeReceiverSecret?.Dispose();
-        _activeReceiverSecret = null;
+        _activeReceiverBootstrap?.Dispose();
+        _activeReceiverBootstrap = null;
+        ClearReceiverBootstrapDisplay();
         ClearPasswordFields();
     }
 
@@ -125,6 +126,7 @@ public partial class MasterPasswordPage : ContentPage
         ResetBlock.IsVisible = mode == MasterPasswordMode.Reset;
         ImportPanel.IsVisible = false;
         HideSyncStatus();
+        ClearReceiverBootstrapDisplay();
 
         if (!preserveFields)
             ClearPasswordFields();
@@ -162,25 +164,50 @@ public partial class MasterPasswordPage : ContentPage
     {
         ImportPanel.IsVisible = !ImportPanel.IsVisible;
         if (!ImportPanel.IsVisible)
+        {
+            _syncCancellation?.Cancel();
+            ClearReceiverBootstrapDisplay();
             HideSyncStatus();
+        }
     }
 
     private async void OnReceiveSyncClicked(object sender, EventArgs e)
     {
         SyncButton.IsEnabled = false;
         SyncCancelButton.IsVisible = true;
-        _activeReceiverSecret?.Dispose();
-        _activeReceiverSecret = PairingSecret.Generate();
-
-
         _syncCancellation?.Cancel();
         _syncCancellation?.Dispose();
+
+        _activeReceiverBootstrap?.Dispose();
+        _activeReceiverBootstrap = null;
+        ClearReceiverBootstrapDisplay();
+
+        ReceiverPairingBootstrap bootstrap;
+        try
+        {
+            string? localAddress = _tcpBridge.GetLocalPeerAddress();
+            bootstrap = ReceiverPairingBootstrap.Create(localAddress);
+            _activeReceiverBootstrap = bootstrap;
+        }
+        catch (Exception)
+        {
+            ShowSyncStatus(
+                "Не удалось создать QR-код получателя. Подключитесь к частной локальной сети и повторите попытку.",
+                isError: true);
+            SyncButton.IsEnabled = true;
+            SyncCancelButton.IsVisible = false;
+            return;
+        }
+
+        ShowReceiverBootstrap(bootstrap);
+
         _syncCancellation = new CancellationTokenSource();
-        ShowSyncStatus($"Код: {_activeReceiverSecret.FormattedCode}. Ожидание подключения...");
+        _syncCancellation.CancelAfter(bootstrap.ExpiresAt - DateTimeOffset.UtcNow);
+        ShowSyncStatus("Ожидание подключения с другого устройства...");
 
         try
         {
-            var result = await _tcpBridge.ReceiveVaultFromPeerAsync(_activeReceiverSecret, _syncCancellation.Token);
+            var result = await _tcpBridge.ReceiveVaultFromPeerAsync(bootstrap.PairingSecret, _syncCancellation.Token);
             if (result.Success)
             {
                 SetMode(MasterPasswordMode.Login);
@@ -192,12 +219,24 @@ public partial class MasterPasswordPage : ContentPage
                 ShowSyncStatus(result.Message, isError: !result.Cancelled);
             }
         }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "Pre-authentication vault receive failed. ExceptionType={0}",
+                exception.GetType().FullName);
+            ShowSyncStatus("Не удалось принять базу. Проверьте локальную сеть и повторите попытку.", isError: true);
+        }
         finally
         {
-            _activeReceiverSecret?.Dispose();
-            _activeReceiverSecret = null;
+            if (ReferenceEquals(_activeReceiverBootstrap, bootstrap))
+            {
+                _activeReceiverBootstrap.Dispose();
+                _activeReceiverBootstrap = null;
+            }
+
             _syncCancellation?.Dispose();
             _syncCancellation = null;
+            ClearReceiverBootstrapDisplay();
             SyncButton.IsEnabled = true;
             SyncCancelButton.IsVisible = false;
         }
@@ -205,9 +244,10 @@ public partial class MasterPasswordPage : ContentPage
 
     private void OnCancelSyncClicked(object sender, EventArgs e)
     {
-        _activeReceiverSecret?.Dispose();
-        _activeReceiverSecret = null;
         _syncCancellation?.Cancel();
+        _activeReceiverBootstrap?.Dispose();
+        _activeReceiverBootstrap = null;
+        ClearReceiverBootstrapDisplay();
         ShowSyncStatus("Приём базы отменён.");
     }
 
@@ -285,8 +325,11 @@ public partial class MasterPasswordPage : ContentPage
             _keyManager.CreateKeyFile(password);
             OpenVault();
         }
-        catch
+        catch (Exception exception)
         {
+            System.Diagnostics.Trace.TraceError(
+                "Vault creation failed. ExceptionType={0}",
+                exception.GetType().FullName);
             ShowError("Не удалось создать хранилище.");
             await Task.CompletedTask;
         }
@@ -299,12 +342,27 @@ public partial class MasterPasswordPage : ContentPage
 
     private async void OnResetCompleted(object sender, EventArgs e)
     {
-        await ConfirmAndResetAsync();
+        await RunResetFromUiAsync();
     }
 
     private async void OnResetClicked(object sender, EventArgs e)
     {
-        await ConfirmAndResetAsync();
+        await RunResetFromUiAsync();
+    }
+
+    private async Task RunResetFromUiAsync()
+    {
+        try
+        {
+            await ConfirmAndResetAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "Vault reset UI flow failed. ExceptionType={0}",
+                exception.GetType().FullName);
+            ShowError("Не удалось сбросить хранилище.");
+        }
     }
 
     private async Task ConfirmAndResetAsync()
@@ -326,38 +384,13 @@ public partial class MasterPasswordPage : ContentPage
         if (!confirmed)
             return;
 
-        DeleteVaultFiles();
+        VaultDataDeletion.DeleteAll();
         _keyManager.ClearLoadedKey();
         _vaultSession.Lock();
         ClearPasswordFields();
 
         SetMode(MasterPasswordMode.Create, preserveFields: false);
         ShowSuccess("Старые данные удалены. Теперь создайте новое хранилище или импортируйте базу.");
-    }
-
-    private void DeleteVaultFiles()
-    {
-        string[] files = ["keys.dat", "passwords.dat", "cards.dat", "notes.dat"];
-
-        foreach (string file in files)
-        {
-            string path = Path.Combine(FileSystem.AppDataDirectory, file);
-            if (File.Exists(path))
-            {
-                try { File.Delete(path); } catch { }
-            }
-        }
-
-        FileWorker.CleanupLeftoverTempFiles();
-        try
-        {
-            var txDirs = Directory.GetDirectories(FileSystem.AppDataDirectory, ".vault-import-*");
-            foreach (var dir in txDirs)
-            {
-                try { Directory.Delete(dir, recursive: true); } catch { }
-            }
-        }
-        catch { }
     }
 
     private void OnToggleLoginPasswordClicked(object sender, EventArgs e)
@@ -408,6 +441,9 @@ public partial class MasterPasswordPage : ContentPage
     public void PrepareForLock()
     {
         _syncCancellation?.Cancel();
+        _activeReceiverBootstrap?.Dispose();
+        _activeReceiverBootstrap = null;
+        ClearReceiverBootstrapDisplay();
         _keyManager.ClearLoadedKey();
         _vaultSession.Lock();
         ClearPasswordFields();
@@ -431,6 +467,7 @@ public partial class MasterPasswordPage : ContentPage
         ClearStatus();
         ClearPasswordFields();
         ImportPanel.IsVisible = false;
+        ClearReceiverBootstrapDisplay();
         _vaultSession.MarkAuthenticated();
         _rootNavigator.ShowUnlockedRoot();
     }
@@ -439,6 +476,24 @@ public partial class MasterPasswordPage : ContentPage
     {
         SyncStatusLabel.Text = string.Empty;
         SyncStatusContainer.IsVisible = false;
+    }
+
+    private void ShowReceiverBootstrap(ReceiverPairingBootstrap bootstrap)
+    {
+        ReceiverQrCode.Value = bootstrap.QrPayload;
+        ReceiverAddressLabel.Text = bootstrap.ReceiverAddress;
+        ReceiverPairingCodeLabel.Text = bootstrap.PairingCode;
+        ReceiverExpiryLabel.Text = $"Действует до {bootstrap.ExpiresAt.LocalDateTime:t}";
+        ReceiverBootstrapContainer.IsVisible = true;
+    }
+
+    private void ClearReceiverBootstrapDisplay()
+    {
+        ReceiverBootstrapContainer.IsVisible = false;
+        ReceiverQrCode.Value = string.Empty;
+        ReceiverAddressLabel.Text = string.Empty;
+        ReceiverPairingCodeLabel.Text = string.Empty;
+        ReceiverExpiryLabel.Text = string.Empty;
     }
 
     private void ShowSyncStatus(string message, bool isError = false, bool isSuccess = false)
@@ -511,8 +566,4 @@ public partial class MasterPasswordPage : ContentPage
         StatusContainer.IsVisible = false;
     }
 
-    private Task<bool> DisplayAlertAsync(string title, string message, string accept, string cancel)
-    {
-        return DisplayAlert(title, message, accept, cancel);
-    }
 }

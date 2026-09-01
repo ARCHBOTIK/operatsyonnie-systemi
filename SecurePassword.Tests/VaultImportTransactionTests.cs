@@ -418,4 +418,106 @@ public class VaultImportTransactionTests : IDisposable
         var directoriesAfter = Directory.GetDirectories(_testBaseDir, ".vault-import-*");
         Assert.Empty(directoriesAfter);
     }
+
+    [Fact]
+    public void DeleteAll_RecoversInterruptedCommitBeforeRemovingVault()
+    {
+        SeedInitialVault(
+            Encoding.UTF8.GetBytes("OLD_KEYS"),
+            Encoding.UTF8.GetBytes("OLD_PASSWORDS"),
+            Encoding.UTF8.GetBytes("OLD_CARDS"),
+            Encoding.UTF8.GetBytes("OLD_NOTES"));
+
+        byte[] archive = CreateTestArchive(new Dictionary<string, byte[]>
+        {
+            ["keys.dat"] = Encoding.UTF8.GetBytes("NEW_KEYS"),
+            ["passwords.dat"] = Encoding.UTF8.GetBytes("NEW_PASSWORDS")
+        }, includeKeys: false);
+
+        VaultImportTransaction.TestingFailPointHook = (_, stage, _) =>
+        {
+            if (stage == TransactionFailPoint.AfterFileReplaced)
+                throw new InvalidOperationException("Simulated interrupted commit.");
+        };
+
+        var transaction = new VaultImportTransaction();
+        transaction.Prepare(archive);
+        Assert.Throws<InvalidOperationException>(() => transaction.Commit());
+        VaultImportTransaction.TestingFailPointHook = null;
+
+        VaultDataDeletion.DeleteAll();
+
+        foreach (string file in VaultImportTransaction.VaultFiles)
+        {
+            Assert.False(File.Exists(Path.Combine(_testBaseDir, file)));
+        }
+
+        Assert.Empty(Directory.GetDirectories(_testBaseDir, ".vault-import-*"));
+    }
+
+    [Fact]
+    public void DeleteAll_WhenRecoveryRollbackFails_RetainsTransactionAndStopsDeletion()
+    {
+        byte[] oldKeys = Encoding.UTF8.GetBytes("OLD_KEYS");
+        byte[] oldPass = Encoding.UTF8.GetBytes("OLD_PASSWORDS");
+        byte[] oldCards = Encoding.UTF8.GetBytes("OLD_CARDS");
+        byte[] oldNotes = Encoding.UTF8.GetBytes("OLD_NOTES");
+        SeedInitialVault(oldKeys, oldPass, oldCards, oldNotes);
+
+        byte[] archive = CreateTestArchive(new Dictionary<string, byte[]>
+        {
+            ["keys.dat"] = Encoding.UTF8.GetBytes("NEW_KEYS"),
+            ["passwords.dat"] = Encoding.UTF8.GetBytes("NEW_PASSWORDS")
+        }, includeKeys: false);
+
+        VaultImportTransaction.TestingFailPointHook = (_, stage, _) =>
+        {
+            if (stage == TransactionFailPoint.AfterFileReplaced)
+                throw new InvalidOperationException("Simulated interrupted commit.");
+        };
+
+        var transaction = new VaultImportTransaction();
+        transaction.Prepare(archive);
+        Assert.Throws<InvalidOperationException>(() => transaction.Commit());
+        VaultImportTransaction.TestingFailPointHook = null;
+
+        string transactionDirectory = Assert.Single(
+            Directory.GetDirectories(_testBaseDir, ".vault-import-*"));
+        string manifestPath = Path.Combine(transactionDirectory, "manifest.json");
+        string backupPath = Path.Combine(transactionDirectory, "backup", "passwords.dat");
+
+        FileWorker.TestingFailPointHook = (targetPath, stage) =>
+        {
+            if (stage == AtomicWriteStage.BeforeCommit &&
+                string.Equals(Path.GetFileName(targetPath), "passwords.dat", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException("Simulated rollback target failure.");
+            }
+        };
+
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() => VaultDataDeletion.DeleteAll());
+        }
+        finally
+        {
+            FileWorker.TestingFailPointHook = null;
+        }
+
+        Assert.True(File.Exists(Path.Combine(_testBaseDir, "keys.dat")));
+        Assert.True(File.Exists(manifestPath));
+        Assert.True(File.Exists(backupPath));
+        Assert.True(Directory.Exists(transactionDirectory));
+        Assert.Equal(oldKeys, File.ReadAllBytes(Path.Combine(_testBaseDir, "keys.dat")));
+
+        VaultImportTransaction.RecoverPendingTransactions();
+
+        Assert.Equal(oldKeys, File.ReadAllBytes(Path.Combine(_testBaseDir, "keys.dat")));
+        Assert.Equal(oldPass, File.ReadAllBytes(Path.Combine(_testBaseDir, "passwords.dat")));
+        Assert.Equal(oldCards, File.ReadAllBytes(Path.Combine(_testBaseDir, "cards.dat")));
+        Assert.Equal(oldNotes, File.ReadAllBytes(Path.Combine(_testBaseDir, "notes.dat")));
+        Assert.False(File.Exists(manifestPath));
+        Assert.False(File.Exists(backupPath));
+        Assert.False(Directory.Exists(transactionDirectory));
+    }
 }

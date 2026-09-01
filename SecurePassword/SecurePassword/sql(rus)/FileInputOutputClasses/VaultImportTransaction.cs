@@ -256,13 +256,7 @@ public sealed class VaultImportTransaction
                 // File did not exist before; remove target if it was created
                 if (File.Exists(record.TargetPath))
                 {
-                    try
-                    {
-                        File.Delete(record.TargetPath);
-                    }
-                    catch
-                    {
-                    }
+                    File.Delete(record.TargetPath);
                 }
             }
         }
@@ -352,9 +346,13 @@ public sealed class VaultImportTransaction
                         break;
                 }
             }
-            catch
+            catch (Exception exception)
             {
-                TryDeleteDirectory(dir);
+                // A failed rollback must leave the manifest and backups in place so
+                // the next startup/delete attempt can retry recovery safely.
+                throw new InvalidOperationException(
+                    "Vault recovery failed; transaction metadata was retained.",
+                    exception);
             }
         }
     }

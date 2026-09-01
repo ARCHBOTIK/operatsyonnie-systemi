@@ -43,7 +43,7 @@ public class keyManager
 
     public void LoadKeyFile(string password)
     {
-        byte[] keyFileBytes = FileWorker.readFile(Path.GetFileName(_keyFilePath));
+        byte[] keyFileBytes = FileWorker.readFile(_keyFilePath);
         ReadKeyFile(keyFileBytes, out byte[] loadedSalt, out byte[] loadedEncryptedDek, out ArgonParameters loadedParameters);
 
         byte[] kek = EncryptionFunctions.GenerateKEKwArgon2id(password, loadedSalt, loadedParameters);
@@ -113,7 +113,7 @@ public class keyManager
         }
 
         byte[] keyFileBytes = PackKeyFile(newSalt, newEncryptedDek, targetParameters);
-        FileWorker.writeFile(keyFileBytes, Path.GetFileName(_keyFilePath));
+        FileWorker.writeFile(keyFileBytes, _keyFilePath);
 
         _salt = newSalt;
         _encryptedDek = newEncryptedDek;
@@ -135,7 +135,7 @@ public class keyManager
             _salt,
             _encryptedDek,
             EncryptionFunctions.GetArgonParameters(GetPlatformType()));
-        FileWorker.writeFile(keyFileBytes, Path.GetFileName(_keyFilePath));
+        FileWorker.writeFile(keyFileBytes, _keyFilePath);
     }
 
     private void UpgradeKdfIfNeeded(ArgonParameters loadedArgonParameters, string password)
@@ -160,7 +160,7 @@ public class keyManager
         }
 
         byte[] keyFileBytes = PackKeyFile(newSalt, newEncryptedDek, targetParameters);
-        FileWorker.writeFile(keyFileBytes, Path.GetFileName(_keyFilePath));
+        FileWorker.writeFile(keyFileBytes, _keyFilePath);
 
         _salt = newSalt;
         _encryptedDek = newEncryptedDek;

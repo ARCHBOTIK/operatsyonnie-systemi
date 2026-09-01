@@ -140,6 +140,49 @@ public class VaultViewModelTests : IDisposable
         Assert.False(vm.HasNoSearchResults);
     }
 
+    [Fact]
+    public async Task SelectItemAsync_AwaitsDetailNavigation()
+    {
+        using var vm = new VaultViewModel(_passwordRepo, _cardRepo, _noteRepo, _session);
+        var item = new VaultListItemViewModel
+        {
+            Id = 42,
+            Type = VaultItemType.Password,
+            Title = "Test"
+        };
+        bool navigationCompleted = false;
+
+        vm.NavigateToDetailAction = async selectedItem =>
+        {
+            Assert.Same(item, selectedItem);
+            await Task.Yield();
+            navigationCompleted = true;
+        };
+
+        await vm.SelectItemAsync(item);
+
+        Assert.True(navigationCompleted);
+        Assert.Same(item, vm.SelectedItem);
+    }
+
+    [Fact]
+    public async Task SelectItemAsync_ContainsNavigationFailure()
+    {
+        using var vm = new VaultViewModel(_passwordRepo, _cardRepo, _noteRepo, _session);
+        var item = new VaultListItemViewModel
+        {
+            Id = 42,
+            Type = VaultItemType.Note,
+            Title = "Test"
+        };
+        vm.NavigateToDetailAction = _ => Task.FromException(new InvalidOperationException("Navigation failed"));
+
+        Exception? exception = await Record.ExceptionAsync(() => vm.SelectItemAsync(item));
+
+        Assert.Null(exception);
+        Assert.Same(item, vm.SelectedItem);
+    }
+
     // ─── Filtering Tests ───────────────────────────────────────────────────────
 
     [Fact]

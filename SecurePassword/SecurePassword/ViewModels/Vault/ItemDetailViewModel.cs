@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using SecurePassword.ViewModels.Base;
 
 
@@ -16,6 +17,7 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
     private readonly SecureRepository<NoteEntry> _noteRepo;
     private readonly ISecureClipboardService _secureClipboard;
     private readonly VaultSessionService _vaultSession;
+    private readonly ILogger<ItemDetailViewModel>? _logger;
 
     private int _itemId;
     private VaultItemType _itemType;
@@ -51,23 +53,25 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
 
     // Navigation and orchestration callbacks
     public Func<string, Task<bool>>? ConfirmDeleteAction { get; set; }
-    public Action<int, VaultItemType>? NavigateToEditAction { get; set; }
-    public Action? ItemDeletedAction { get; set; }
-    public Action? CloseAction { get; set; }
-    public Action? RequestLockAction { get; set; }
+    public Func<int, VaultItemType, Task>? NavigateToEditAction { get; set; }
+    public Func<Task>? ItemDeletedAction { get; set; }
+    public Func<Task>? CloseAction { get; set; }
+    public Func<Task>? RequestLockAction { get; set; }
 
     public ItemDetailViewModel(
         SecureRepository<PasswordEntry> passwordRepo,
         SecureRepository<CardEntry> cardRepo,
         SecureRepository<NoteEntry> noteRepo,
         ISecureClipboardService secureClipboard,
-        VaultSessionService vaultSession)
+        VaultSessionService vaultSession,
+        ILogger<ItemDetailViewModel>? logger = null)
     {
         _passwordRepo = passwordRepo ?? throw new ArgumentNullException(nameof(passwordRepo));
         _cardRepo = cardRepo ?? throw new ArgumentNullException(nameof(cardRepo));
         _noteRepo = noteRepo ?? throw new ArgumentNullException(nameof(noteRepo));
         _secureClipboard = secureClipboard ?? throw new ArgumentNullException(nameof(secureClipboard));
         _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
+        _logger = logger;
 
         _vaultSession.StateChanged += OnSessionStateChanged;
 
@@ -80,9 +84,9 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
         CopyCardHolderCommand = new AsyncRelayCommand(CopyCardHolderAsync);
         CopyCvvCommand = new AsyncRelayCommand(CopyCvvAsync);
         CopyNoteContentCommand = new AsyncRelayCommand(CopyNoteContentAsync);
-        EditCommand = new RelayCommand(Edit);
+        EditCommand = new AsyncRelayCommand(EditAsync);
         DeleteCommand = new AsyncRelayCommand(DeleteAsync);
-        CloseCommand = new RelayCommand(Close);
+        CloseCommand = new AsyncRelayCommand(CloseAsync);
     }
 
     // ─── Commands ──────────────────────────────────────────────────────────────
@@ -167,8 +171,14 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
     public string ServiceName
     {
         get => _serviceName;
-        set => SetProperty(ref _serviceName, value);
+        set
+        {
+            if (SetProperty(ref _serviceName, value))
+                OnPropertyChanged(nameof(HasServiceName));
+        }
     }
+
+    public bool HasServiceName => !string.IsNullOrWhiteSpace(ServiceName);
 
     public bool ShowPassword
     {
@@ -395,9 +405,14 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
         {
             return;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
             found = false;
+            _logger?.LogError(
+                exception,
+                "Failed to load vault item details. ItemId={ItemId}, ItemType={ItemType}",
+                id,
+                type);
         }
         finally
         {
@@ -503,10 +518,24 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
             await _secureClipboard.CopyToClipboardAsync(NoteContent, isSensitive: true);
     }
 
-    private void Edit()
+    private async Task EditAsync()
     {
         _vaultSession.RecordActivity();
-        NavigateToEditAction?.Invoke(ItemId, ItemType);
+        if (NavigateToEditAction is null)
+            return;
+
+        try
+        {
+            await NavigateToEditAction.Invoke(ItemId, ItemType);
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(
+                exception,
+                "Failed to navigate to item editing. ItemId={ItemId}, ItemType={ItemType}",
+                ItemId,
+                ItemType);
+        }
     }
 
     public async Task DeleteAsync()
@@ -547,11 +576,16 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
             });
 
             ClearSensitiveData();
-            ItemDeletedAction?.Invoke();
+            if (ItemDeletedAction is not null)
+                await ItemDeletedAction.Invoke();
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            // Handled gracefully
+            _logger?.LogError(
+                exception,
+                "Failed to delete vault item. ItemId={ItemId}, ItemType={ItemType}",
+                ItemId,
+                ItemType);
         }
         finally
         {
@@ -559,11 +593,25 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
         }
     }
 
-    private void Close()
+    private async Task CloseAsync()
     {
         _vaultSession.RecordActivity();
         ClearSensitiveData();
-        CloseAction?.Invoke();
+        if (CloseAction is null)
+            return;
+
+        try
+        {
+            await CloseAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(
+                exception,
+                "Failed to close item details. ItemId={ItemId}, ItemType={ItemType}",
+                ItemId,
+                ItemType);
+        }
     }
 
     private static string FormatCardNumber(string? number)
@@ -626,7 +674,22 @@ public sealed class ItemDetailViewModel : BaseViewModel, ISensitiveViewModel
         if (!_vaultSession.IsAuthenticated)
         {
             ClearSensitiveData();
-            RequestLockAction?.Invoke();
+            _ = InvokeRequestLockAsync();
+        }
+    }
+
+    private async Task InvokeRequestLockAsync()
+    {
+        if (RequestLockAction is null)
+            return;
+
+        try
+        {
+            await RequestLockAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to close item details after session lock.");
         }
     }
 

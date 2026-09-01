@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using SecurePassword.ViewModels.Base;
 
 
@@ -15,6 +16,7 @@ public sealed class ItemEditViewModel : BaseViewModel, ISensitiveViewModel
     private readonly SecureRepository<CardEntry> _cardRepo;
     private readonly SecureRepository<NoteEntry> _noteRepo;
     private readonly VaultSessionService _vaultSession;
+    private readonly ILogger<ItemEditViewModel>? _logger;
 
     private bool _isEditMode;
     private int? _itemId;
@@ -46,20 +48,22 @@ public sealed class ItemEditViewModel : BaseViewModel, ISensitiveViewModel
     private bool _disposed;
 
     // Navigation and orchestration callbacks
-    public Action? ItemSavedAction { get; set; }
-    public Action? CloseAction { get; set; }
-    public Action? RequestLockAction { get; set; }
+    public Func<Task>? ItemSavedAction { get; set; }
+    public Func<Task>? CloseAction { get; set; }
+    public Func<Task>? RequestLockAction { get; set; }
 
     public ItemEditViewModel(
         SecureRepository<PasswordEntry> passwordRepo,
         SecureRepository<CardEntry> cardRepo,
         SecureRepository<NoteEntry> noteRepo,
-        VaultSessionService vaultSession)
+        VaultSessionService vaultSession,
+        ILogger<ItemEditViewModel>? logger = null)
     {
         _passwordRepo = passwordRepo ?? throw new ArgumentNullException(nameof(passwordRepo));
         _cardRepo = cardRepo ?? throw new ArgumentNullException(nameof(cardRepo));
         _noteRepo = noteRepo ?? throw new ArgumentNullException(nameof(noteRepo));
         _vaultSession = vaultSession ?? throw new ArgumentNullException(nameof(vaultSession));
+        _logger = logger;
 
         _vaultSession.StateChanged += OnSessionStateChanged;
 
@@ -73,7 +77,7 @@ public sealed class ItemEditViewModel : BaseViewModel, ISensitiveViewModel
         ToggleCvvVisibilityCommand = new RelayCommand(() => ShowCvv = !ShowCvv);
         GeneratePasswordCommand = new RelayCommand(GeneratePassword);
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
-        CancelCommand = new RelayCommand(Cancel);
+        CancelCommand = new AsyncRelayCommand(CancelAsync);
     }
 
     // ─── Commands ──────────────────────────────────────────────────────────────
@@ -373,11 +377,17 @@ public sealed class ItemEditViewModel : BaseViewModel, ISensitiveViewModel
             }
 
             ClearSensitiveData();
-            ItemSavedAction?.Invoke();
+            if (ItemSavedAction is not null)
+                await ItemSavedAction.Invoke();
         }
         catch (Exception ex)
         {
-            ValidationError = $"Ошибка при сохранении: {ex.Message}";
+            _logger?.LogError(
+                ex,
+                "Failed to save vault item. ItemId={ItemId}, ItemType={ItemType}",
+                ItemId,
+                SelectedType);
+            ValidationError = "Не удалось сохранить запись.";
         }
         finally
         {
@@ -568,11 +578,25 @@ public sealed class ItemEditViewModel : BaseViewModel, ISensitiveViewModel
         _noteRepo.Save();
     }
 
-    private void Cancel()
+    private async Task CancelAsync()
     {
         _vaultSession.RecordActivity();
         ClearSensitiveData();
-        CloseAction?.Invoke();
+        if (CloseAction is null)
+            return;
+
+        try
+        {
+            await CloseAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(
+                exception,
+                "Failed to close item editing. ItemId={ItemId}, ItemType={ItemType}",
+                ItemId,
+                SelectedType);
+        }
     }
 
     private static string FormatCardNumberForInput(string? value)
@@ -630,7 +654,22 @@ public sealed class ItemEditViewModel : BaseViewModel, ISensitiveViewModel
         if (!_vaultSession.IsAuthenticated)
         {
             ClearSensitiveData();
-            RequestLockAction?.Invoke();
+            _ = InvokeRequestLockAsync();
+        }
+    }
+
+    private async Task InvokeRequestLockAsync()
+    {
+        if (RequestLockAction is null)
+            return;
+
+        try
+        {
+            await RequestLockAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            _logger?.LogError(exception, "Failed to close item editing after session lock.");
         }
     }
 

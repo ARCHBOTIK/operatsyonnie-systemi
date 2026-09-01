@@ -100,6 +100,38 @@ public sealed class ImportViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Import_CommitAndRollbackFailures_AreContainedByUiFlow()
+    {
+        using var vm = CreateViewModel();
+        await vm.StartReceiverAsync();
+        var pending = new FakePendingImport { ThrowOnCommit = true, ThrowOnRollback = true };
+        _receiver.Complete(pending);
+        await WaitUntilAsync(() => vm.IsAwaitingConfirmation, TimeSpan.FromSeconds(1));
+
+        Exception? escaped = Record.Exception(vm.ConfirmImport);
+
+        Assert.Null(escaped);
+        Assert.Equal(ImportUiState.Failed, vm.UiState);
+        Assert.True(vm.HasError);
+    }
+
+    [Fact]
+    public async Task Import_RejectRollbackFailure_IsContainedByUiFlow()
+    {
+        using var vm = CreateViewModel();
+        await vm.StartReceiverAsync();
+        var pending = new FakePendingImport { ThrowOnRollback = true };
+        _receiver.Complete(pending);
+        await WaitUntilAsync(() => vm.IsAwaitingConfirmation, TimeSpan.FromSeconds(1));
+
+        Exception? escaped = Record.Exception(vm.RejectImport);
+
+        Assert.Null(escaped);
+        Assert.Equal(ImportUiState.Failed, vm.UiState);
+        Assert.True(vm.HasError);
+    }
+
+    [Fact]
     public async Task Import_Lock_CancelsReceiver()
     {
         using var vm = CreateViewModel();
@@ -194,7 +226,23 @@ public sealed class ImportViewModelTests : IDisposable
     {
         public bool Committed { get; private set; }
         public bool RolledBack { get; private set; }
-        public void Commit() => Committed = true;
-        public void Rollback() => RolledBack = true;
+        public bool ThrowOnCommit { get; init; }
+        public bool ThrowOnRollback { get; init; }
+
+        public void Commit()
+        {
+            if (ThrowOnCommit)
+                throw new IOException("simulated commit failure");
+
+            Committed = true;
+        }
+
+        public void Rollback()
+        {
+            if (ThrowOnRollback)
+                throw new IOException("simulated rollback failure");
+
+            RolledBack = true;
+        }
     }
 }
